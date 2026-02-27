@@ -1,0 +1,143 @@
+{
+  "nav": {
+    "brand": "My Wedding",
+    "forCouples": "For Couples",
+    "vendors": "Vendors",
+    "categories": "Categories",
+    "contact": "Contact",
+    "login": "Login",
+    "signup": "Sign Up",
+    "logout": "Logout"
+  },
+  "hero": {
+    "title": "Plan your wedding in one place",
+    "subtitle": "Tools, inspiration and the best vendors for your special day"
+  },
+  "features": {
+    "title": "Everything you need",
+    "checklist": {
+      "title": "Complete Checklist",
+      "description": "Organize your entire wedding step by step"
+    },
+    "budget": {
+      "title": "Budget Control",
+      "description": "Track your budget and expenses"
+    },
+    "vendors": {
+      "title": "Vendors",
+      "description": "Find trusted vendors"
+    },
+    "invitations": {
+      "title": "Online Invitations",
+      "description": "Online RSVP management"
+    },
+    "gallery": {
+      "title": "Photo Gallery",
+      "description": "Share photos with guests"
+    }
+  },
+  "stats": {
+    "weddingOrganized": "Wedding organized",
+    "inMonths": "in 3 months",
+    "happyCouples": "+10,000 happy couples"
+  },
+  "cta": {
+    "startNow": "Get Started",
+    "vendor": "I'm a Vendor",
+    "createWedding": "Create My Wedding",
+    "registerVendor": "Register as Vendor",
+    "startFree": "Start for Free",
+    "noCreditCard": "No credit card required. 100% free."
+  },
+  "vendors": {
+    "title": "Wedding companies near you",
+    "subtitle": "Verified vendors reviewed by real couples",
+    "viewAll": "View all companies",
+    "categories": {
+      "all": "All",
+      "photography": "Photography",
+      "venues": "Venues",
+      "decoration": "Decoration",
+      "catering": "Catering",
+      "music": "Music"
+    },
+    "reviews": "reviews"
+  },
+  "howItWorks": {
+    "title": "How It Works",
+    "subtitle": "Simple, fast and efficient",
+    "step1": {
+      "title": "Create your account",
+      "description": "Sign up for free and start planning"
+    },
+    "step2": {
+      "title": "Plan and organize",
+      "description": "Use our tools to organize everything"
+    },
+    "step3": {
+      "title": "Enjoy your big day",
+      "description": "Have your perfect wedding"
+    }
+  },
+  "forCouples": {
+    "title": "Everything for couples",
+    "subtitle": "Complete tools to plan the wedding of your dreams",
+    "features": {
+      "checklist": "Personalized smart checklist",
+      "budget": "Full budget control",
+      "guests": "Organized guest list",
+      "website": "Custom wedding website"
+    }
+  },
+  "forVendors": {
+    "title": "Promote your services",
+    "subtitle": "Connect with thousands of couples looking for your services",
+    "features": {
+      "profile": "Complete professional profile",
+      "quotes": "Receive quote requests",
+      "reviews": "Real client reviews",
+      "visibility": "Greater online visibility"
+    }
+  },
+  "testimonials": {
+    "title": "What our couples say",
+    "stats": {
+      "couples": "Happy couples",
+      "vendors": "Vendors"
+    },
+    "married": "Married in"
+  },
+  "inspiration": {
+    "title": "Wedding inspiration",
+    "subtitle": "Discover ideas from real weddings"
+  },
+  "ctaSection": {
+    "title": "Your wedding starts here",
+    "subtitle": "Join thousands of couples who have had the wedding of their dreams"
+  },
+  "footer": {
+    "brand": "My Wedding",
+    "brandDescription": "Plan the perfect wedding from start to finish",
+    "forCouples": {
+      "title": "For Couples",
+      "checklist": "Checklist",
+      "budget": "Budget",
+      "community": "Community",
+      "weddingSite": "Wedding Website"
+    },
+    "vendors": {
+      "title": "Vendors",
+      "register": "Sign Up",
+      "plans": "Plans",
+      "support": "Support"
+    },
+    "company": {
+      "title": "Company",
+      "about": "About",
+      "blog": "Blog",
+      "contact": "Contact",
+      "privacy": "Privacy"
+    },
+    "copyright": "© 2024 My Wedding. All rights reserved."
+  }
+}

@@ -1,0 +1,143 @@
+{
+  "nav": {
+    "brand": "Meu casamento",
+    "forCouples": "Para Noivos",
+    "vendors": "Fornecedores",
+    "categories": "Categorias",
+    "contact": "Contato",
+    "login": "Entrar",
+    "signup": "Cadastrar",
+    "logout": "Sair"
+  },
+  "hero": {
+    "title": "Planei o seu casamento em um só lugar",
+    "subtitle": "Ferramentas, inspiração e os melhores fornecedores para o seu grande dia"
+  },
+  "features": {
+    "title": "Tudo que você precisa",
+    "checklist": {
+      "title": "Checklist Completo",
+      "description": "Organize todo o casamento passo a passo"
+    },
+    "budget": {
+      "title": "Controle de Orçamento",
+      "description": "Controle orçamento e gastos"
+    },
+    "vendors": {
+      "title": "Fornecedores",
+      "description": "Encontre fornecedores de confiança"
+    },
+    "invitations": {
+      "title": "Convites Online",
+      "description": "Confirmação de presença online"
+    },
+    "gallery": {
+      "title": "Galeria de Fotos",
+      "description": "Partilhe fotos com os convidados"
+    }
+  },
+  "stats": {
+    "weddingOrganized": "Casamento organizado",
+    "inMonths": "em 3 meses",
+    "happyCouples": "+10.000 casais felizes"
+  },
+  "cta": {
+    "startNow": "Começar agora",
+    "vendor": "Sou fornecedor",
+    "createWedding": "Criar meu casamento",
+    "registerVendor": "Cadastrar como fornecedor",
+    "startFree": "Começar gratuitamente",
+    "noCreditCard": "Sem cartão de crédito. 100% grátis."
+  },
+  "vendors": {
+    "title": "Empresas de casamento perto de si",
+    "subtitle": "Fornecedores verificados e avaliados por casais reais",
+    "viewAll": "Ver todas as empresas",
+    "categories": {
+      "all": "Todos",
+      "photography": "Fotografia",
+      "venues": "Espaços",
+      "decoration": "Decoração",
+      "catering": "Buffet",
+      "music": "Música"
+    },
+    "reviews": "avaliações"
+  },
+  "howItWorks": {
+    "title": "Como funciona",
+    "subtitle": "Simples, rápido e eficiente",
+    "step1": {
+      "title": "Crie sua conta",
+      "description": "Cadastre-se gratuitamente e comece a planejar"
+    },
+    "step2": {
+      "title": "Planei e organize",
+      "description": "Use nossas ferramentas para organizar tudo"
+    },
+    "step3": {
+      "title": "Viva o seu grande dia",
+      "description": "Aproveite seu casamento perfeito"
+    }
+  },
+  "forCouples": {
+    "title": "Tudo para os noivos",
+    "subtitle": "Ferramentas completas para planejar o casamento dos seus sonhos",
+    "features": {
+      "checklist": "Checklist inteligente personalizado",
+      "budget": "Controle completo do orçamento",
+      "guests": "Lista de convidados organizada",
+      "website": "Site personalizado do casamento"
+    }
+  },
+  "forVendors": {
+    "title": "Divulgue seus serviços",
+    "subtitle": "Conecte-se com milhares de noivos em busca dos seus serviços",
+    "features": {
+      "profile": "Perfil profissional completo",
+      "quotes": "Receba pedidos de orçamento",
+      "reviews": "Avaliações reais dos clientes",
+      "visibility": "Maior visibilidade online"
+    }
+  },
+  "testimonials": {
+    "title": "O que dizem nossos casais",
+    "stats": {
+      "couples": "Casais felizes",
+      "vendors": "Fornecedores"
+    },
+    "married": "Casaram em"
+  },
+  "inspiration": {
+    "title": "Inspiração para seu casamento",
+    "subtitle": "Descubra ideias. Pontos de casamentos reais"
+  },
+  "ctaSection": {
+    "title": "Seu casamento começa aqui",
+    "subtitle": "Junte-se a milhares de casais que já realizaron o casamento dos seus sonhos"
+  },
+  "footer": {
+    "brand": "Meu casamento",
+    "brandDescription": "Planei o casamento perfeito do início ao fim",
+    "forCouples": {
+      "title": "Para Noivos",
+      "checklist": "Checklist",
+      "budget": "Orçamento",
+      "community": "Comunidade",
+      "weddingSite": "Site do Casamento"
+    },
+    "vendors": {
+      "title": "Fornecedores",
+      "register": "Cadastre-se",
+      "plans": "Planos",
+      "support": "Suporte"
+    },
+    "company": {
+      "title": "Empresa",
+      "about": "Sobre",
+      "blog": "Blog",
+      "contact": "Contato",
+      "privacy": "Privacidade"
+    },
+    "copyright": "© 2024 Meu Casamento. Todos os direitos reservados."
+  }
+}

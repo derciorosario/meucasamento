@@ -1,0 +1,164 @@
+import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import client, { getStoredToken, getStoredRefreshToken, setStoredToken, setStoredRefreshToken } from "../api/client";
+import { registerPush } from "../services/push";
+
+const AuthContext = createContext(null);
+
+export function AuthProvider({ children }) {
+  const [token, setTokenState] = useState(getStoredToken());
+  const [refreshToken, setRefreshTokenState] = useState(getStoredRefreshToken());
+  const [user, setUser] = useState(null);
+  const [settings, setSettings] = useState(true);
+  const [profile, setProfile] = useState(null);
+  const [loading, setLoading] = useState(Boolean(token));
+  const [ready, setReady] = useState(false); // app has checked 
+  const [pushRegistered,setPushRegistered]=useState(false)
+
+  // Keep axios header in sync
+  useEffect(() => {
+    setStoredToken(token || null);
+  }, [token]);
+
+  useEffect(() => {
+    setStoredRefreshToken(refreshToken || null);
+  }, [refreshToken]);
+
+  const fetchMe = async (overrideToken) => {
+    const currentToken = overrideToken || token;
+    if (!currentToken) {
+      setUser(null);
+      setProfile(null);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // Temporarily set the header for this request if overrideToken is provided
+      const originalHeader = client.defaults.headers.common.Authorization;
+      if (overrideToken) {
+        client.defaults.headers.common.Authorization = `Bearer ${overrideToken}`;
+      }
+      const { data } = await client.get("/auth/profile");
+
+      console.log({data})
+      // Expecting: { user, profile, counts, progress, ... }
+      setUser(data?.user || null);
+      setSettings(data?.settings || null)
+      setProfile(data?.profile || null);
+      // Restore original header if we overrode it
+      if (overrideToken) {
+       // client.defaults.headers.common.Authorization = originalHeader;
+         
+      }
+    } catch (e) {
+      // If unauthorized, clear token
+      if(e?.response?.status==401){
+           setTokenState(null);
+           setRefreshTokenState(null);
+           setUser(null);
+           setProfile(null);
+      }
+      
+    } finally {
+      setLoading(false);
+      setReady(true);
+    }
+  };
+
+  // On boot, fetch /me if token exists
+  useEffect(() => {
+    fetchMe();
+  }, [token]);
+
+  // Listen for global unauthorized event from axios
+  useEffect(() => {
+    const onUnauthorized = () => {
+      setTokenState(null);
+      setRefreshTokenState(null);
+      setUser(null);
+      setProfile(null);
+    };
+    window.addEventListener("auth:unauthorized", onUnauthorized);
+    return () => window.removeEventListener("auth:unauthorized", onUnauthorized);
+  }, []);
+
+  const signInWithToken = async (accessToken, newRefreshToken) => {
+    setTokenState(accessToken);
+    if (newRefreshToken) {
+      setRefreshTokenState(newRefreshToken);
+    }
+    // fetchMe will run via token effect
+    return true;
+  };
+
+
+  const signOut = async () => {
+    setLoading(true);
+
+    localStorage.removeItem('token')
+    localStorage.removeItem('auth_token')
+    
+    // Try to revoke refresh token on server
+    const currentRefreshToken = getStoredRefreshToken();
+    if (currentRefreshToken) {
+      try {
+        await client.post("/auth/revoke-token", {
+          refreshToken: currentRefreshToken
+        });
+      } catch (err) {
+        console.error("Error revoking token:", err);
+      }
+    }
+    
+    // Clear local storage
+    setTokenState(null);
+    setRefreshTokenState(null);
+    setUser(null);
+    setProfile(null);
+    setLoading(false);
+    
+    // Redirect to home
+    window.location.href="/";
+  };
+
+  const hasRole = (roles = []) => {
+    if (!roles?.length) return true;
+    const r = user?.role || user?.accountType; // depending on your field
+    return roles.includes(r);
+  };
+
+  
+    
+
+  const value = useMemo(
+    () => ({
+      pushRegistered,setPushRegistered,
+      token,
+      refreshToken,
+      user,
+      profile,
+      loading,
+      setLoading,
+      ready,
+      setProfile,
+      setToken: signInWithToken,
+      setRefreshToken: setRefreshTokenState,
+      refreshAuth: fetchMe,
+      signOut,
+      hasRole,
+      setUser,
+      settings,
+      setSettings,
+      isAuthed: Boolean(user && token),
+    }),
+    [token, refreshToken, user, profile, loading, ready, settings]
+  );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+export function useAuth() {
+  return useContext(AuthContext);
+}
