@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { getProfile, updateProfile, getVendorCategories, uploadProfileImage, getVendorQuoteRequests, updateQuoteRequestStatus, getMyQuoteRequests } from '../../api/client';
+import { useSearchParams } from 'react-router-dom';
+import { getProfile, updateProfile, getVendorCategories, uploadProfileImage, getVendorQuoteRequests, updateQuoteRequestStatus, getMyQuoteRequests, getVendor } from '../../api/client';
+import VendorProfileModal from '../../components/VendorProfileModal';
 import { API_URL } from '../../api/client';
 import { toast } from 'react-hot-toast';
 import Header from '../../components/Header';
@@ -8,6 +10,7 @@ import Loader from '../../components/loader';
 import { X, Trash2, Upload, Image, Check, XCircle, MessageSquare, Star, Clock, User, Store } from 'lucide-react';
 
 const ProfilePage = () => {
+  const [searchParams] = useSearchParams();
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [user, setUser] = useState(null);
@@ -17,7 +20,7 @@ const ProfilePage = () => {
   const [categories, setCategories] = useState([]);
   const [activeTab, setActiveTab] = useState('personal');
   const [showAddVendorModal, setShowAddVendorModal] = useState(false);
-  const [newVendorData, setNewVendorData] = useState({ name: '', category: '' });
+  const [newVendorData, setNewVendorData] = useState({ name: '', category: '', phone: '', email: '' });
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
   const [vendorImagesInput, setVendorImagesInput] = useState(null);
@@ -27,6 +30,11 @@ const ProfilePage = () => {
   const [responseMessage, setResponseMessage] = useState('');
   const [myQuoteRequests, setMyQuoteRequests] = useState([]);
   const [loadingMyQuotes, setLoadingMyQuotes] = useState(false);
+  
+  // Vendor Profile Modal states
+  const [showProfile, setShowProfile] = useState(false);
+  const [selectedVendorProfile, setSelectedVendorProfile] = useState(null);
+  const [currentSlide, setCurrentSlide] = useState(0);
   const avatarInputRef = useRef(null);
   
   // Form states
@@ -57,9 +65,28 @@ const ProfilePage = () => {
   });
 
   useEffect(() => {
+    // Check for tab parameter in URL
+    const tabParam = searchParams.get('tab');
+    const validTabs = ['personal', 'wedding', 'gallery', 'vendor', 'quotes', 'reviews', 'myquotes'];
+    if (tabParam && validTabs.includes(tabParam)) {
+      setActiveTab(tabParam);
+    }
+    
     fetchProfile();
     fetchCategories();
-  }, []);
+  }, [searchParams]);
+
+  // Load quote counts when user data is available
+  useEffect(() => {
+    if (user) {
+      if (user.userType === 'vendor') {
+        fetchQuoteRequests();
+      }
+      if (user.role === 'couple') {
+        fetchMyQuoteRequests();
+      }
+    }
+  }, [user]);
 
   const fetchProfile = async () => {
     try {
@@ -98,6 +125,9 @@ const ProfilePage = () => {
           vendorStartingPrice: currentVendor?.startingPrice || '',
           vendorPriceRange: currentVendor?.priceRange || 'medium',
           vendorImages: currentVendor?.images || [],
+
+          ...profile,
+          ...user
         });
       }
     } catch (error) {
@@ -281,6 +311,40 @@ const ProfilePage = () => {
     }
   };
 
+  // Price range helpers
+  const getPriceRangeColor = (range) => {
+    const colors = {
+      budget: 'bg-green-100 text-green-700',
+      moderate: 'bg-yellow-100 text-yellow-700',
+      high: 'bg-orange-100 text-orange-700',
+      luxury: 'bg-purple-100 text-purple-700',
+    };
+    return colors[range] || 'bg-gray-100 text-gray-700';
+  };
+
+  const getPriceRangeLabel = (range) => {
+    const labels = {
+      budget: 'Económico',
+      moderate: 'Moderado',
+      high: 'Alto',
+      luxury: 'Luxo',
+    };
+    return labels[range] || range;
+  };
+
+  // Handle opening vendor profile
+  const handleVendorClick = async (vendorId) => {
+    try {
+      const response = await getVendor(vendorId);
+      setSelectedVendorProfile(response.data);
+      setCurrentSlide(0);
+      setShowProfile(true);
+    } catch (error) {
+      console.error('Error fetching vendor:', error);
+      toast.error('Erro ao carregar perfil do fornecedor');
+    }
+  };
+
   const handleAddVendor = async (e) => {
     e.preventDefault();
     if (!newVendorData.name || !newVendorData.category) {
@@ -297,13 +361,15 @@ const ProfilePage = () => {
         vendorData: {
           companyName: newVendorData.name,
           category: newVendorData.category,
+          phone: newVendorData.phone || '',
+          email: newVendorData.email || '',
         },
       };
 
       const response = await updateProfile(updateData);
       
       if (response.data.success) {
-        toast.success('Fornecedor criado com sucesso');
+        toast.success('Fornecedor criado com sucesso! Aguarde a aprovação do administrador.');
         await fetchProfile();
         
         // Select the newly created vendor
@@ -328,7 +394,7 @@ const ProfilePage = () => {
           });
         }
         setShowAddVendorModal(false);
-        setNewVendorData({ name: '', category: '' });
+        setNewVendorData({ name: '', category: '', phone: '', email: '' });
       }
     } catch (error) {
       console.error('Error creating vendor:', error);
@@ -462,19 +528,45 @@ const ProfilePage = () => {
         {/* Header Card */}
         <div className="bg-white rounded-2xl shadow-md p-6 mb-6">
           <div className="flex items-center space-x-6">
-            {formData.avatar ? (
-              <img 
-                src={formData.avatar} 
-                alt={formData.name} 
-                className="w-24 h-24 rounded-full object-cover shadow-lg"
+            <div className="relative">
+              <input
+                type="file"
+                ref={avatarInputRef}
+                accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                onChange={handleAvatarUpload}
+                className="hidden"
               />
-            ) : (
-              <div className="w-24 h-24 rounded-full bg-[#9CAA8E] flex items-center justify-center shadow-lg">
-                <span className="text-4xl text-white font-bold">
-                  {formData.name?.charAt(0)?.toUpperCase() || '?'}
-                </span>
-              </div>
-            )}
+              <button
+                type="button"
+                onClick={() => avatarInputRef.current?.click()}
+                disabled={uploadingAvatar}
+                className="relative group"
+              >
+                {formData.avatar ? (
+                  <img
+                    src={formData.avatar.startsWith('https') ? formData.avatar : `${API_URL}${formData.avatar}`}
+                    alt={formData.name}
+                    className="w-24 h-24 rounded-full object-cover shadow-lg"
+                  />
+                ) : (
+                  <div className="w-24 h-24 rounded-full bg-[#9CAA8E] flex items-center justify-center shadow-lg">
+                    <span className="text-4xl text-white font-bold">
+                      {formData.name?.charAt(0)?.toUpperCase() || '?'}
+                    </span>
+                  </div>
+                )}
+                {/* Upload overlay */}
+                <div className="absolute inset-0 rounded-full bg-black/0 group-hover:bg-black/40 transition-colors flex items-center justify-center">
+                  <div className="opacity-0 group-hover:opacity-100 transition-opacity">
+                    {uploadingAvatar ? (
+                      <div className="w-8 h-8 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    ) : (
+                      <Upload className="w-8 h-8 text-white" />
+                    )}
+                  </div>
+                </div>
+              </button>
+            </div>
             <div>
               <h1 className="text-3xl font-serif font-bold text-black">{formData.name}</h1>
               <p className="text-gray-500 mt-1">{user?.email}</p>
@@ -497,7 +589,7 @@ const ProfilePage = () => {
           >
             Dados Pessoais
           </button>
-         {formData.userType != 'vendor' &&  <button
+         {(formData.role  == 'couple') &&  <button
             onClick={() => setActiveTab('wedding')}
             className={`px-6 py-3 rounded-full font-medium transition-all ${
               activeTab === 'wedding' 
@@ -507,7 +599,7 @@ const ProfilePage = () => {
           >
             Casamento
           </button>}
-          <button
+         {formData.role == 'couple' && <button
             onClick={() => setActiveTab('gallery')}
             className={`px-6 py-3 rounded-full font-medium transition-all ${
               activeTab === 'gallery' 
@@ -516,7 +608,7 @@ const ProfilePage = () => {
             }`}
           >
             Galeria
-          </button>
+          </button>}
           {formData.userType === 'vendor' && (
             <button
               onClick={() => setActiveTab('vendor')}
@@ -526,7 +618,7 @@ const ProfilePage = () => {
                   : 'bg-white text-gray-600 hover:bg-gray-100 shadow-md'
               }`}
             >
-              Fornecedor
+              Serviço/Empresa
             </button>
           )}
           {formData.userType === 'vendor' && selectedVendor && (
@@ -556,7 +648,7 @@ const ProfilePage = () => {
               </button>
             </>
           )}
-          {formData.userType !== 'vendor' && (
+          {formData.role == 'couple' && (
             <button
               onClick={() => setActiveTab('myquotes')}
               className={`px-6 py-3 rounded-full font-medium transition-all ${
@@ -599,7 +691,7 @@ const ProfilePage = () => {
                   />
                 </div>
                 
-                <div>
+                <div className="hidden">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Tipo de Usuário
                   </label>
@@ -617,31 +709,7 @@ const ProfilePage = () => {
                   </select>
                 </div>
                 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Avatar
-                  </label>
-                  <input
-                    type="file"
-                    ref={avatarInputRef}
-                    accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
-                    onChange={handleAvatarUpload}
-                    className="hidden"
-                  />
-                  <div className="flex items-center gap-3">
-                    <button
-                      type="button"
-                      onClick={() => avatarInputRef.current?.click()}
-                      disabled={uploadingAvatar}
-                      className="px-4 py-2 bg-[#9CAA8E] text-white rounded-lg hover:bg-[#8A9A7E] transition-colors disabled:opacity-50"
-                    >
-                      {uploadingAvatar ? 'A carregar...' : 'Escolher Imagem'}
-                    </button>
-                    {formData.avatar && (
-                      <span className="text-sm text-gray-500">Imagem definida</span>
-                    )}
-                  </div>
-                </div>
+               
                 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -789,7 +857,7 @@ const ProfilePage = () => {
                   type="button"
                   onClick={() => {
                     setShowAddVendorModal(true);
-                    setNewVendorData({ name: '', category: '' });
+                    setNewVendorData({ name: '', category: '', phone: '', email: '' });
                   }}
                   className="flex items-center gap-2 px-4 py-2 bg-[#9CAA8E] text-white rounded-full hover:bg-[#8A9A7E] transition-colors"
                 >
@@ -832,6 +900,13 @@ const ProfilePage = () => {
                         }`}
                       >
                         {v.name} {v.category && `(${v.category.name})`}
+                        {v.status && v.status !== 'approved' && (
+                          <span className={`ml-2 px-2 py-0.5 text-xs rounded-full ${
+                            v.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'
+                          }`}>
+                            {v.status === 'pending' ? 'Pendente' : 'Rejeitado'}
+                          </span>
+                        )}
                       </button>
                     ))}
                   </div>
@@ -841,6 +916,36 @@ const ProfilePage = () => {
               {/* Vendor Form - shown when a vendor is selected */}
               {selectedVendor && (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  {/* Pending Status Warning */}
+                  {selectedVendor.status === 'pending' && (
+                    <div className="md:col-span-2 bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-4">
+                      <div className="flex items-start gap-3">
+                        <Clock className="w-5 h-5 text-yellow-600 mt-0.5" />
+                        <div>
+                          <p className="font-medium text-yellow-800">Aguardando Aprovação</p>
+                          <p className="text-sm text-yellow-700 mt-1">
+                            O seu perfil de fornecedor está pendente de aprovação por um administrador. 
+                            Após a aprovação, você poderá receber pedidos de orçamento e seu perfil será visível publicamente.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Rejected Status Warning */}
+                  {selectedVendor.status === 'rejected' && (
+                    <div className="md:col-span-2 bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
+                      <div className="flex items-start gap-3">
+                        <XCircle className="w-5 h-5 text-red-600 mt-0.5" />
+                        <div>
+                          <p className="font-medium text-red-800">Perfil Rejeitado</p>
+                          <p className="text-sm text-red-700 mt-1">
+                            O seu perfil de fornecedor foi rejeitado. Por favor, entre em contacto com o administrador para mais informações.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Nome da Empresa
@@ -999,7 +1104,7 @@ const ProfilePage = () => {
                             className="relative group aspect-square rounded-xl overflow-hidden"
                           >
                             <img 
-                              src={img.startsWith('http') ? img : `${API_URL}${img}`} 
+                              src={img.startsWith('https') ? img : `${API_URL}${img}`} 
                               alt={`Imagem ${index + 1}`}
                               className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
                             />
@@ -1095,8 +1200,8 @@ const ProfilePage = () => {
                             <User className="w-6 h-6 text-[#9CAA8E]" />
                           </div>
                           <div>
-                            <h4 className="font-semibold text-black">{quote.clientName || 'Cliente'}</h4>
-                            <p className="text-sm text-gray-500">{quote.clientEmail}</p>
+                            <h4 className="font-semibold text-black">{quote.client?.name || 'Cliente'}</h4>
+                            <p className="text-sm text-gray-500">{quote.client?.email}</p>
                             <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
                               {quote.eventDate && (
                                 <span className="flex items-center gap-1">
@@ -1265,7 +1370,11 @@ const ProfilePage = () => {
               ) : (
                 <div className="space-y-4">
                   {myQuoteRequests.map((quote) => (
-                    <div key={quote._id} className="bg-white border border-gray-200 rounded-xl p-5">
+                    <div 
+                      key={quote._id} 
+                      className="bg-white border border-gray-200 rounded-xl p-5 hover:shadow-md transition-shadow cursor-pointer"
+                      onClick={() => quote.vendor?._id && handleVendorClick(quote.vendor._id)}
+                    >
                       <div className="flex items-start justify-between">
                         <div className="flex items-start gap-4">
                           <div className="w-12 h-12 bg-[#9CAA8E]/10 rounded-full flex items-center justify-center flex-shrink-0">
@@ -1308,7 +1417,6 @@ const ProfilePage = () => {
                           )}
                           {quote.vendor?._id && (
                             <a 
-                              href={`/vendors/${quote.vendor._id}`}
                               className="text-xs text-[#9CAA8E] hover:underline"
                             >
                               Ver fornecedor
@@ -1354,12 +1462,30 @@ const ProfilePage = () => {
         {/* Add Vendor Modal */}
         {showAddVendorModal && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl p-6 max-w-md w-full">
+            <div className="bg-white rounded-2xl p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-xl font-serif font-bold text-black">Adicionar Novo Fornecedor</h3>
                 <button onClick={() => setShowAddVendorModal(false)}>
                   <X className="w-6 h-6 text-gray-400" />
                 </button>
+              </div>
+              
+              {/* Info message about pending approval */}
+              <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                <div className="flex items-start gap-3">
+                  <div className="flex-shrink-0 mt-0.5">
+                    <svg className="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-sm text-blue-800 font-medium">Aprovação Necessária</p>
+                    <p className="text-xs text-blue-700 mt-1">
+                      Após criar o fornecedor, seu perfil ficará <strong>pendente de aprovação</strong> por um administrador. 
+                      Somente após a aprovação seu fornecedor estará visível publicamente na plataforma.
+                    </p>
+                  </div>
+                </div>
               </div>
               
               <form onSubmit={handleAddVendor} className="space-y-4">
@@ -1394,6 +1520,28 @@ const ProfilePage = () => {
                   </select>
                 </div>
                 
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Telefone</label>
+                  <input
+                    type="tel"
+                    value={newVendorData.phone || ''}
+                    onChange={(e) => setNewVendorData({...newVendorData, phone: e.target.value})}
+                    placeholder="Ex: +258 84/85 xxx xxxx"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg text-black"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">E-mail</label>
+                  <input
+                    type="email"
+                    value={newVendorData.email || ''}
+                    onChange={(e) => setNewVendorData({...newVendorData, email: e.target.value})}
+                    placeholder="Ex: contacto@empresa.com"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg text-black"
+                  />
+                </div>
+                
                 <button
                   type="submit"
                   disabled={saving}
@@ -1404,6 +1552,29 @@ const ProfilePage = () => {
               </form>
             </div>
           </div>
+        )}
+
+        {/* Vendor Profile Modal */}
+        {showProfile && selectedVendorProfile && (
+          <VendorProfileModal
+            vendor={selectedVendorProfile}
+            currentSlide={currentSlide}
+            setCurrentSlide={setCurrentSlide}
+            onClose={() => {
+              setShowProfile(false);
+              setSelectedVendorProfile(null);
+            }}
+            onRequestQuote={(vendor) => {
+              setShowProfile(false);
+              setSelectedVendorProfile(null);
+            }}
+            onAddReview={(vendor) => {
+              setShowProfile(false);
+              setSelectedVendorProfile(null);
+            }}
+            getPriceRangeColor={getPriceRangeColor}
+            getPriceRangeLabel={getPriceRangeLabel}
+          />
         )}
       </div>
     </div>

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import DefaultLayout from "../../layout/DefaultLayout";
-import { Edit2, Trash2, X } from 'lucide-react';
+import { Edit2, Trash2, X, MoreVertical, Filter, ChevronDown, Users, Check, Clock, AlertCircle, Plus, Search, Mail } from 'lucide-react';
 import {
   getGuests,
   getGuestStats,
@@ -21,6 +21,7 @@ import {
   deleteMenu,
   initGuestData,
   sendBulkInvitations,
+  sendInvitationEmails,
 } from "../../api/client";
 import { toast } from "react-hot-toast";
 
@@ -33,19 +34,32 @@ const statusLabels = {
 const getStatusColor = (status) => {
   switch (status) {
     case "confirmed":
-      return "bg-emerald-500 hover:bg-emerald-600";
+      return "bg-emerald-500 text-white";
     case "pending":
-      return "bg-amber-500 hover:bg-amber-600";
+      return "bg-amber-500 text-white";
     case "declined":
-      return "bg-red-500 hover:bg-red-600";
+      return "bg-red-500 text-white";
     default:
-      return "bg-gray-400 hover:bg-gray-500";
+      return "bg-gray-400 text-white";
+  }
+};
+
+const getStatusIcon = (status) => {
+  switch (status) {
+    case "confirmed":
+      return "✓";
+    case "pending":
+      return "⏳";
+    case "declined":
+      return "✕";
+    default:
+      return "•";
   }
 };
 
 const getStatusLabel = (status) => statusLabels[status] || status;
 
-const tabs = ["Lista Geral", "Grupos", "Presenças", "Mesas", "Cardápios"]; //"Mensagens"
+const tabs = ["Lista Geral", "Grupos", "Presenças", "Mesas", "Cardápios"];
 
 const groupColors = [
   "bg-orange-400",
@@ -78,6 +92,11 @@ export default function GuestsPage() {
   const [tables, setTables] = useState([]);
   const [menus, setMenus] = useState([]);
 
+  // Mobile states
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
+  const [mobileActionMenu, setMobileActionMenu] = useState(null);
+  const [activeMobileTab, setActiveMobileTab] = useState("lista");
+
   // Modal states
   const [showGuestModal, setShowGuestModal] = useState(false);
   const [showGroupModal, setShowGroupModal] = useState(false);
@@ -87,8 +106,11 @@ export default function GuestsPage() {
   const [editingGroup, setEditingGroup] = useState(null);
   const [editingTable, setEditingTable] = useState(null);
   const [editingMenu, setEditingMenu] = useState(null);
-  const [deleteConfirm, setDeleteConfirm] = useState(null); // State for delete confirmation modal
-  const [deleteType, setDeleteType] = useState(null); // 'guest', 'group', 'table', 'menu'
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [deleteType, setDeleteType] = useState(null);
+  const [selectedGuests, setSelectedGuests] = useState([]);
+  const [sendingInvites, setSendingInvites] = useState(false);
+  const [showInviteConfirm, setShowInviteConfirm] = useState(false);
 
   // Form states
   const [guestForm, setGuestForm] = useState({
@@ -98,9 +120,9 @@ export default function GuestsPage() {
     group: "",
     table: "",
     menu: "",
-    adults: 1,
-    children: 0,
-    babies: 0,
+    adults: null,
+    children: null,
+    babies: null,
     status: "pending",
   });
 
@@ -112,7 +134,7 @@ export default function GuestsPage() {
 
   const [tableForm, setTableForm] = useState({
     name: "",
-    capacity: 10,
+    capacity: null,
   });
 
   const [menuForm, setMenuForm] = useState({
@@ -204,7 +226,6 @@ export default function GuestsPage() {
   const handleCreateGuest = async (e) => {
     e.preventDefault();
     try {
-      // Clean up form data - convert empty strings to null
       const guestData = {
         name: guestForm.name,
         email: guestForm.email || null,
@@ -212,9 +233,9 @@ export default function GuestsPage() {
         group: guestForm.group || null,
         table: guestForm.table || null,
         menu: guestForm.menu || null,
-        adults: guestForm.adults,
-        children: guestForm.children,
-        babies: guestForm.babies,
+        adults: guestForm.adults ?? 0,
+        children: guestForm.children ?? 0,
+        babies: guestForm.babies ?? 0,
         status: guestForm.status,
       };
       
@@ -244,20 +265,21 @@ export default function GuestsPage() {
       group: guest.group?._id || "",
       table: guest.table?._id || "",
       menu: guest.menu?._id || "",
-      adults: guest.adults || 1,
-      children: guest.children || 0,
-      babies: guest.babies || 0,
+      adults: guest.adults ?? 1,
+      children: guest.children ?? 0,
+      babies: guest.babies ?? 0,
       status: guest.status || "pending",
     });
     setShowGuestModal(true);
+    setMobileActionMenu(null);
   };
 
   const handleDeleteGuest = async (id) => {
     setDeleteConfirm(id);
     setDeleteType('guest');
+    setMobileActionMenu(null);
   };
 
-  // Confirm delete action
   const confirmDelete = async () => {
     if (!deleteConfirm) return;
     
@@ -298,9 +320,9 @@ export default function GuestsPage() {
       group: "",
       table: "",
       menu: "",
-      adults: 1,
-      children: 0,
-      babies: 0,
+      adults: null,
+      children: null,
+      babies: null,
       status: "pending",
     });
   };
@@ -333,11 +355,13 @@ export default function GuestsPage() {
       description: group.description || "",
     });
     setShowGroupModal(true);
+    setMobileActionMenu(null);
   };
 
   const handleDeleteGroup = async (id) => {
     setDeleteConfirm(id);
     setDeleteType('group');
+    setMobileActionMenu(null);
   };
 
   const resetGroupForm = () => {
@@ -349,11 +373,16 @@ export default function GuestsPage() {
   const handleCreateTable = async (e) => {
     e.preventDefault();
     try {
+      const tableData = {
+        name: tableForm.name,
+        capacity: tableForm.capacity ?? 0,
+      };
+      
       if (editingTable) {
-        await updateTable(editingTable._id, tableForm);
+        await updateTable(editingTable._id, tableData);
         toast.success("Mesa atualizada com sucesso");
       } else {
-        await createTable(tableForm);
+        await createTable(tableData);
         toast.success("Mesa criada com sucesso");
       }
       setShowTableModal(false);
@@ -369,19 +398,21 @@ export default function GuestsPage() {
     setEditingTable(table);
     setTableForm({
       name: table.name || "",
-      capacity: table.capacity || 10,
+      capacity: table.capacity ?? null,
     });
     setShowTableModal(true);
+    setMobileActionMenu(null);
   };
 
   const handleDeleteTable = async (id) => {
     setDeleteConfirm(id);
     setDeleteType('table');
+    setMobileActionMenu(null);
   };
 
   const resetTableForm = () => {
     setEditingTable(null);
-    setTableForm({ name: "", capacity: 10 });
+    setTableForm({ name: "", capacity: null });
   };
 
   // Menu handlers
@@ -413,14 +444,15 @@ export default function GuestsPage() {
       price: menu.price || 0,
     });
     setShowMenuModal(true);
+    setMobileActionMenu(null);
   };
 
   const handleDeleteMenu = async (id) => {
     setDeleteConfirm(id);
     setDeleteType('menu');
+    setMobileActionMenu(null);
   };
 
-  // Quick status update for guest
   const handleQuickStatusChange = async (guestId, newStatus) => {
     try {
       await updateGuest(guestId, { status: newStatus });
@@ -455,6 +487,49 @@ export default function GuestsPage() {
     }
   };
 
+  const handleSendInvitationEmails = async () => {
+    setSendingInvites(true);
+    setShowInviteConfirm(false);
+    const guestIds = selectedGuests.length > 0 ? selectedGuests : guests.filter((g) => g.email).map((g) => g._id);
+    
+    if (guestIds.length === 0) {
+      toast.error("Nenhum convidado com email para enviar convite");
+      setSendingInvites(false);
+      return;
+    }
+
+    try {
+      const response = await sendInvitationEmails(guestIds);
+      toast.success(`${response.data.sentCount} convite(s) enviado(s) com sucesso!`);
+      if (response.data.withoutEmail > 0) {
+        toast.error(`${response.data.withoutEmail} convidado(s) sem email`);
+      }
+      await loadGuests();
+      setSelectedGuests([]);
+    } catch (error) {
+      console.error("Error sending invitation emails:", error);
+      toast.error("Erro ao enviar convites por email");
+    } finally {
+      setSendingInvites(false);
+    }
+  };
+
+  const toggleGuestSelection = (guestId) => {
+    setSelectedGuests((prev) =>
+      prev.includes(guestId)
+        ? prev.filter((id) => id !== guestId)
+        : [...prev, guestId]
+    );
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedGuests.length === guests.length) {
+      setSelectedGuests([]);
+    } else {
+      setSelectedGuests(guests.map((g) => g._id));
+    }
+  };
+
   const getInitials = (name) => {
     return name
       .split(" ")
@@ -472,7 +547,7 @@ export default function GuestsPage() {
 
   if (loading) {
     return (
-      <DefaultLayout  hero={{title:"Convidados",subtitle:"Gerencie sua lista de convidados e acompanhe as confirmações"}}>
+      <DefaultLayout hero={{title:"Convidados",subtitle:"Gerencie sua lista de convidados e acompanhe as confirmações"}}>
         <div className="min-h-screen bg-gray-50 flex items-center justify-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
         </div>
@@ -481,32 +556,88 @@ export default function GuestsPage() {
   }
 
   return (
-    <DefaultLayout  hero={{title:"Convidados",subtitle:"Gerencie sua lista de convidados e acompanhe as confirmações"}}>
+    <DefaultLayout hero={{title:"Convidados",subtitle:"Gerencie sua lista de convidados e acompanhe as confirmações"}}>
       <div className="min-h-screen bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+          {/* Mobile Header with Add Button */}
+          <div className="lg:hidden flex items-center justify-between mb-4">
+            <h1 className="text-xl font-bold text-gray-900">Meus Convidados</h1>
+            <button
+              onClick={() => {
+                resetGuestForm();
+                setShowGuestModal(true);
+              }}
+              className="bg-primary-500 text-white p-3 rounded-full shadow-lg hover:bg-primary-600 transition-colors"
+              aria-label="Adicionar convidado"
+            >
+              <Plus className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Desktop Title Row */}
+          <div className="hidden lg:flex items-center justify-between mb-6">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">Meus Convidados</h1>
+            </div>
+            <button
+              onClick={() => {
+                resetGuestForm();
+                setShowGuestModal(true);
+              }}
+              className="bg-primary-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-primary-600 transition flex items-center space-x-2"
+            >
+              <span className="text-lg leading-none">+</span>
+              <span>Adicionar Convidado</span>
+            </button>
+          </div>
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Left Column */}
             <div className="lg:col-span-2">
-              {/* Title Row */}
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Meus Convidados</h1>
-                 
+              {/* Stats Cards - Mobile Scrollable */}
+              <div className="lg:hidden mb-4 overflow-x-auto pb-2 -mx-4 px-4">
+                <div className="flex gap-3 min-w-max">
+                  <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 w-36">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-xs text-gray-500">Total</p>
+                      <div className="w-8 h-8 rounded-full bg-gray-100 text-gray-600 flex items-center justify-center">
+                        <Users className="w-4 h-4" />
+                      </div>
+                    </div>
+                    <p className="text-xl font-bold text-gray-900">{stats.total}</p>
+                  </div>
+                  <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 w-36">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-xs text-gray-500">Confirmados</p>
+                      <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                        <Check className="w-4 h-4" />
+                      </div>
+                    </div>
+                    <p className="text-xl font-bold text-emerald-600">{stats.confirmed}</p>
+                  </div>
+                  <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 w-36">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-xs text-gray-500">Pendentes</p>
+                      <div className="w-8 h-8 rounded-full bg-amber-100 text-amber-600 flex items-center justify-center">
+                        <Clock className="w-4 h-4" />
+                      </div>
+                    </div>
+                    <p className="text-xl font-bold text-amber-600">{stats.pending}</p>
+                  </div>
+                  <div className="bg-white rounded-xl shadow-sm p-4 border border-gray-100 w-36">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-xs text-gray-500">Recusaram</p>
+                      <div className="w-8 h-8 rounded-full bg-red-100 text-red-600 flex items-center justify-center">
+                        <AlertCircle className="w-4 h-4" />
+                      </div>
+                    </div>
+                    <p className="text-xl font-bold text-red-600">{stats.declined}</p>
+                  </div>
                 </div>
-                <button
-                  onClick={() => {
-                    resetGuestForm();
-                    setShowGuestModal(true);
-                  }}
-                  className="bg-primary-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-primary-600 transition flex items-center space-x-2"
-                >
-                  <span className="text-lg leading-none">+</span>
-                  <span>Adicionar Convidado</span>
-                </button>
               </div>
 
-              {/* Stats Cards */}
-              <div className="grid grid-cols-4 gap-4 mb-6">
+              {/* Desktop Stats Cards */}
+              <div className="hidden lg:grid grid-cols-4 gap-4 mb-6">
                 <div className="bg-white rounded-2xl shadow-sm p-4 border border-gray-100">
                   <div className="flex items-center justify-between">
                     <div>
@@ -553,23 +684,35 @@ export default function GuestsPage() {
                 </div>
               </div>
 
+              {/* Mobile Filter Toggle */}
+              <div className="lg:hidden mb-4">
+                <button
+                  onClick={() => setShowMobileFilters(!showMobileFilters)}
+                  className="w-full flex items-center justify-between p-3 bg-white rounded-xl border border-gray-200 shadow-sm"
+                >
+                  <div className="flex items-center gap-2">
+                    <Filter className="w-4 h-4 text-gray-500" />
+                    <span className="text-sm font-medium text-gray-700">Filtros</span>
+                  </div>
+                  <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${showMobileFilters ? 'rotate-180' : ''}`} />
+                </button>
+              </div>
+
               {/* Filters */}
-              <div className="flex items-center gap-3 mb-6">
-                <div className="relative flex-1 max-w-xs">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">
-                    🔍
-                  </span>
+              <div className={`${showMobileFilters ? 'block' : 'hidden lg:flex'} flex-col lg:flex-row items-start lg:items-center gap-3 mb-6`}>
+                <div className="relative flex-1 max-w-xs w-full lg:w-auto">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                   <input
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     placeholder="Buscar convidado..."
-                    className="w-full text-gray-800 pl-9 pr-4 py-2 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className="w-full text-gray-800 pl-9 pr-4 py-2.5 border border-gray-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
                   />
                 </div>
                 <select
                   value={groupFilter}
                   onChange={(e) => setGroupFilter(e.target.value)}
-                  className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-700"
+                  className="w-full lg:w-auto border border-gray-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-700"
                 >
                   <option value="all">Todos os grupos</option>
                   {groups.map((group) => (
@@ -581,28 +724,65 @@ export default function GuestsPage() {
                 <select
                   value={statusFilter}
                   onChange={(e) => setStatusFilter(e.target.value)}
-                  className="border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-700"
+                  className="w-full lg:w-auto border border-gray-200 rounded-lg px-3 py-2.5 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent text-gray-700"
                 >
                   <option value="all">Todos os status</option>
                   <option value="confirmed">Confirmado</option>
                   <option value="pending">Pendente</option>
                   <option value="declined">Recusou</option>
                 </select>
-                <div className="ml-auto flex gap-2">
+                <div className="lg:ml-auto w-full lg:w-auto flex gap-2">
                   <button
-                     onClick={() => {
-                          resetGroupForm();
-                          setShowGroupModal(true);
-                        }}
-                    className="flex items-center gap-1.5 bg-primary-500 text-white text-sm px-3 py-2 rounded-lg hover:bg-primary-600 transition-colors"
+                    onClick={() => setShowInviteConfirm(true)}
+                    disabled={sendingInvites}
+                    className="flex-1 lg:flex-none flex items-center justify-center gap-1.5 bg-green-500 text-white text-sm px-4 py-2.5 rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50"
                   >
-                    Novo Grupo
+                    {sendingInvites ? (
+                      <>
+                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                        <span>Enviando...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Mail className="w-4 h-4" />
+                        <span>Enviar Convites</span>
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => {
+                      resetGroupForm();
+                      setShowGroupModal(true);
+                    }}
+                    className="w-full lg:w-auto flex items-center justify-center gap-1.5 bg-primary-500 text-white text-sm px-4 py-2.5 rounded-lg hover:bg-primary-600 transition-colors"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Novo Grupo</span>
                   </button>
                 </div>
               </div>
 
-              {/* Tabs */}
-              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+              {/* Mobile Tabs */}
+              <div className="lg:hidden mb-4 overflow-x-auto pb-2 -mx-4 px-4">
+                <div className="flex gap-2 min-w-max">
+                  {tabs.map((tab) => (
+                    <button
+                      key={tab}
+                      onClick={() => setActiveTab(tab)}
+                      className={`px-4 py-2.5 text-sm font-medium rounded-lg transition-colors whitespace-nowrap ${
+                        activeTab === tab 
+                          ? "bg-primary-500 text-white shadow-md" 
+                          : "bg-white text-gray-600 border border-gray-200 hover:bg-gray-50"
+                      }`}
+                    >
+                      {tab}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Desktop Tabs */}
+              <div className="hidden lg:block bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-6">
                 <div className="flex border-b border-gray-100 px-4">
                   {tabs.map((tab) => (
                     <button
@@ -619,381 +799,519 @@ export default function GuestsPage() {
                     </button>
                   ))}
                 </div>
+              </div>
 
-                {/* Tab Content */}
-                {activeTab === "Lista Geral" && (
-                  <div className="divide-y divide-gray-50">
-                    {filteredGuests.length === 0 ? (
-                      <div className="p-8 text-center text-gray-500">
-                        Nenhum convidado encontrado. Adicione seu primeiro convidado!
-                      </div>
-                    ) : (
-                      filteredGuests.map((guest) => (
-                        <div
-                          key={guest._id}
-                          className="flex items-center px-4 py-4 hover:bg-gray-50 transition-colors group"
-                        >
-                          <div
-                            className={`w-10 h-10 rounded-full ${getGroupColor(
-                              guest.group?.color
-                            )} flex items-center justify-center text-white text-sm font-bold flex-shrink-0`}
-                          >
-                            {getInitials(guest.name)}
-                          </div>
-
-                          <div className="ml-3 flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-gray-900">{guest.name}</p>
-                            <p className="text-xs text-gray-500">
-                              {guest.email || "Sem email"} • {guest.group?.name || "Sem grupo"}
-                            </p>
-                          </div>
-
-                          <div className="flex items-center gap-6 mr-6">
-                            <div className="text-center">
-                              <p className="text-xs text-gray-400">Adultos</p>
-                              <p className="text-sm font-semibold text-gray-700">{guest.adults}</p>
-                            </div>
-                            <div className="text-center">
-                              <p className="text-xs text-gray-400">Crianças</p>
-                              <p className="text-sm font-semibold text-gray-700">{guest.children}</p>
-                            </div>
-                            <div className="text-center">
-                              <p className="text-xs text-gray-400">Bebês</p>
-                              <p className="text-sm font-semibold text-gray-700">{guest.babies}</p>
-                            </div>
-                          </div>
-
-                          <div className="w-24 relative">
-                            <select
-                              value={guest.status}
-                              onChange={(e) => handleQuickStatusChange(guest._id, e.target.value)}
-                              className={`${getStatusColor(guest.status)} text-white px-3 py-1 rounded-lg text-xs font-medium inline-block w-full text-center cursor-pointer appearance-none focus:outline-none focus:ring-2 focus:ring-primary-500`}
-                            >
-                              <option value="pending">Pendente</option>
-                              <option value="confirmed">Confirmado</option>
-                              <option value="declined">Recusou</option>
-                            </select>
-                          </div>
-
-                          <div className="flex items-center gap-2 ml-4 opacity-60 group-hover:opacity-100 transition-opacity">
-                            <button
-                              onClick={() => handleEditGuest(guest)}
-                              className="text-gray-400 hover:text-gray-600 transition-colors p-1"
-                            >
-                              <Edit2 className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteGuest(guest._id)}
-                              className="text-gray-400 hover:text-red-600 transition-colors p-1"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
+              {/* Tab Content - Always visible (not wrapped in lg:hidden) */}
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden mb-6">
+                <div className="p-4">
+                  {/* Lista Geral Tab */}
+                  {activeTab === "Lista Geral" && (
+                    <div className="divide-y divide-gray-50">
+                      {filteredGuests.length === 0 ? (
+                        <div className="p-8 text-center text-gray-500">
+                          Nenhum convidado encontrado. Adicione seu primeiro convidado!
                         </div>
-                      ))
-                    )}
-                  </div>
-                )}
+                      ) : (
+                        <>
+                          {/* Desktop View */}
+                          <div className="hidden lg:block">
+                            {filteredGuests.map((guest) => (
+                              <div
+                                key={guest._id}
+                                className="flex items-center px-4 py-4 hover:bg-gray-50 transition-colors group"
+                              >
+                                <div
+                                  className={`w-10 h-10 rounded-full ${getGroupColor(
+                                    guest.group?.color
+                                  )} flex items-center justify-center text-white text-sm font-bold flex-shrink-0`}
+                                >
+                                  {getInitials(guest.name)}
+                                </div>
 
-                {activeTab === "Grupos" && (
-                  <div className="p-4">
-                    <div className="flex justify-end mb-4">
-                      <button
-                        onClick={() => {
-                          resetGroupForm();
-                          setShowGroupModal(true);
-                        }}
-                        className="bg-primary-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-primary-600"
-                      >
-                        + Novo Grupo
-                      </button>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {groups.map((group) => (
-                        <div
-                          key={group._id}
-                          className="bg-gray-50 rounded-lg p-4 flex items-center justify-between"
-                        >
-                          <div className="flex items-center gap-3">
-                            <div className={`w-4 h-4 rounded-full ${group.color}`}></div>
-                            <div>
-                              <p className="font-medium text-gray-900">{group.name}</p>
-                              {group.description && (
-                                <p className="text-sm text-gray-500">{group.description}</p>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => handleEditGroup(group)}
-                              className="text-gray-400 hover:text-gray-600"
-                            >
-                              <Edit2 className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteGroup(group._id)}
-                              className="text-gray-400 hover:text-red-600"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
-                          </div>
-                        </div>
-                      ))}
-                      {groups.length === 0 && (
-                        <p className="text-gray-500 col-span-2 text-center py-4">
-                          Nenhum grupo criado ainda.
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {activeTab === "Mesas" && (
-                  <div className="p-4">
-                    <div className="flex justify-between items-center mb-4">
-                      <div className="flex items-center gap-4">
-                        <div className="bg-primary-50 rounded-lg px-4 py-2">
-                          <span className="text-sm text-gray-600">Total lugares:</span>
-                          <span className="ml-2 font-semibold text-gray-900">{tables.reduce((acc, t) => acc + t.capacity, 0)}</span>
-                        </div>
-                        <div className="bg-emerald-50 rounded-lg px-4 py-2">
-                          <span className="text-sm text-gray-600">Ocupados:</span>
-                          <span className="ml-2 font-semibold text-emerald-600">{tables.reduce((acc, t) => acc + (t.guestCount || 0), 0)}</span>
-                        </div>
-                        <div className="bg-amber-50 rounded-lg px-4 py-2">
-                          <span className="text-sm text-gray-600">Disponíveis:</span>
-                          <span className="ml-2 font-semibold text-amber-600">{tables.reduce((acc, t) => acc + (t.availableSeats || 0), 0)}</span>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => {
-                          resetTableForm();
-                          setShowTableModal(true);
-                        }}
-                        className="bg-primary-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-primary-600 flex items-center gap-2"
-                      >
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-                        Nova Mesa
-                      </button>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      {tables.map((table) => {
-                        const occupancyPercent = table.capacity > 0 ? ((table.guestCount || 0) / table.capacity) * 100 : 0;
-                        const isFull = occupancyPercent >= 100;
-                        const isAlmostFull = occupancyPercent >= 80 && occupancyPercent < 100;
-                        
-                        return (
-                          <div
-                            key={table._id}
-                            className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
-                          >
-                            {/* Table Header */}
-                            <div className="bg-gradient-to-r from-primary-500 to-primary-600 px-4 py-3">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                  <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
-                                    <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
-                                  </div>
-                                  <h3 className="font-semibold text-white">{table.name}</h3>
-                                </div>
-                                <div className="flex gap-1">
-                                  <button
-                                    onClick={() => handleEditTable(table)}
-                                    className="p-1.5 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
-                                  >
-                                    <Edit2 className="w-4 h-4 text-white" />
-                                  </button>
-                                  <button
-                                    onClick={() => handleDeleteTable(table._id)}
-                                    className="p-1.5 bg-white/20 hover:bg-red-500 rounded-lg transition-colors"
-                                  >
-                                    <Trash2 className="w-4 h-4 text-white" />
-                                  </button>
-                                </div>
-                              </div>
-                            </div>
-                            
-                            {/* Table Content */}
-                            <div className="p-4">
-                              {/* Capacity Bar */}
-                              <div className="mb-4">
-                                <div className="flex justify-between items-center mb-1">
-                                  <span className="text-sm text-gray-600">Ocupação</span>
-                                  <span className={`text-sm font-medium ${isFull ? 'text-red-600' : isAlmostFull ? 'text-amber-600' : 'text-emerald-600'}`}>
-                                    {table.guestCount || 0} / {table.capacity}
-                                  </span>
-                                </div>
-                                <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                                  <div 
-                                    className={`h-full rounded-full transition-all duration-300 ${
-                                      isFull ? 'bg-red-500' : isAlmostFull ? 'bg-amber-500' : 'bg-emerald-500'
-                                    }`}
-                                    style={{ width: `${Math.min(occupancyPercent, 100)}%` }}
-                                  />
-                                </div>
-                              </div>
-                              
-                              {/* Quick Stats */}
-                              <div className="grid grid-cols-2 gap-3 mb-4">
-                                <div className="bg-gray-50 rounded-lg p-3 text-center">
-                                  <p className="text-xs text-gray-500">Capacidade</p>
-                                  <p className="text-lg font-bold text-gray-900">{table.capacity}</p>
-                                </div>
-                                <div className="bg-gray-50 rounded-lg p-3 text-center">
-                                  <p className="text-xs text-gray-500">Disponíveis</p>
-                                  <p className={`text-lg font-bold ${table.availableSeats > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                                    {table.availableSeats}
+                                <div className="ml-3 flex-1 min-w-0">
+                                  <p className="text-sm font-semibold text-gray-900">{guest.name}</p>
+                                  <p className="text-xs text-gray-500">
+                                    {guest.email || "Sem email"} • {guest.group?.name || "Sem grupo"}
                                   </p>
                                 </div>
+
+                                <div className="flex items-center gap-6 mr-6">
+                                  <div className="text-center">
+                                    <p className="text-xs text-gray-400">Adultos</p>
+                                    <p className="text-sm font-semibold text-gray-700">{guest.adults}</p>
+                                  </div>
+                                  <div className="text-center">
+                                    <p className="text-xs text-gray-400">Crianças</p>
+                                    <p className="text-sm font-semibold text-gray-700">{guest.children}</p>
+                                  </div>
+                                  <div className="text-center">
+                                    <p className="text-xs text-gray-400">Bebês</p>
+                                    <p className="text-sm font-semibold text-gray-700">{guest.babies}</p>
+                                  </div>
+                                </div>
+
+                                <div className="w-24 relative">
+                                  <select
+                                    value={guest.status}
+                                    onChange={(e) => handleQuickStatusChange(guest._id, e.target.value)}
+                                    className={`${getStatusColor(guest.status)} px-3 py-1 rounded-lg text-xs font-medium w-full text-center cursor-pointer appearance-none focus:outline-none focus:ring-2 focus:ring-primary-500`}
+                                  >
+                                    <option value="pending">Pendente</option>
+                                    <option value="confirmed">Confirmado</option>
+                                    <option value="declined">Recusou</option>
+                                  </select>
+                                </div>
+
+                                <div className="flex items-center gap-2 ml-4">
+                                  <button
+                                    onClick={() => handleEditGuest(guest)}
+                                    className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+                                    title="Editar"
+                                  >
+                                    <Edit2 className="w-4 h-4" />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteGuest(guest._id)}
+                                    className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                                    title="Excluir"
+                                  >
+                                    <Trash2 className="w-4 h-4" />
+                                  </button>
+                                </div>
                               </div>
-                              
-                              {/* Guests at this table */}
-                              {table.guests && table.guests.length > 0 && (
-                                <div>
-                                  <p className="text-xs text-gray-500 mb-2">Convidados nesta mesa:</p>
-                                  <div className="flex flex-wrap gap-1">
-                                    {table.guests.slice(0, 5).map((guest, idx) => (
-                                      <span key={idx} className="inline-flex items-center px-2 py-1 bg-primary-50 text-primary-700 text-xs rounded-full">
-                                        {guest.name.split(' ')[0]}
-                                      </span>
-                                    ))}
-                                    {table.guests.length > 5 && (
-                                      <span className="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
-                                        +{table.guests.length - 5} mais
-                                      </span>
+                            ))}
+                          </div>
+
+                          {/* Mobile View */}
+                          <div className="lg:hidden space-y-3">
+                            {filteredGuests.map((guest) => (
+                              <div
+                                key={guest._id}
+                                className="bg-white rounded-xl border border-gray-200 p-4 hover:shadow-sm transition-shadow"
+                              >
+                                <div className="flex items-start justify-between mb-3">
+                                  <div className="flex items-center gap-3">
+                                    <div
+                                      className={`w-10 h-10 rounded-full ${getGroupColor(
+                                        guest.group?.color
+                                      )} flex items-center justify-center text-white text-sm font-bold flex-shrink-0`}
+                                    >
+                                      {getInitials(guest.name)}
+                                    </div>
+                                    <div>
+                                      <p className="font-semibold text-gray-900">{guest.name}</p>
+                                      <p className="text-xs text-gray-500">
+                                        {guest.group?.name || "Sem grupo"}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  
+                                  {/* Mobile 3-dots Menu */}
+                                  <div className="relative">
+                                    <button
+                                      onClick={() => setMobileActionMenu(mobileActionMenu === guest._id ? null : guest._id)}
+                                      className="p-2 text-gray-600 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                                      aria-label="Opções"
+                                    >
+                                      <MoreVertical className="w-5 h-5" />
+                                    </button>
+                                    
+                                    {mobileActionMenu === guest._id && (
+                                      <>
+                                        <div 
+                                          className="fixed inset-0 z-40"
+                                          onClick={() => setMobileActionMenu(null)}
+                                        />
+                                        <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-50 overflow-hidden">
+                                          <button
+                                            onClick={() => handleEditGuest(guest)}
+                                            className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors border-b border-gray-100"
+                                          >
+                                            <Edit2 className="w-5 h-5 text-blue-600" />
+                                            <span className="text-sm font-medium text-gray-700">Editar</span>
+                                          </button>
+                                          <button
+                                            onClick={() => handleDeleteGuest(guest._id)}
+                                            className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+                                          >
+                                            <Trash2 className="w-5 h-5 text-red-600" />
+                                            <span className="text-sm font-medium text-gray-700">Excluir</span>
+                                          </button>
+                                        </div>
+                                      </>
                                     )}
                                   </div>
                                 </div>
-                              )}
-                            </div>
+
+                                <div className="grid grid-cols-3 gap-3 mb-3">
+                                  <div className="bg-gray-50 rounded-lg p-2 text-center">
+                                    <p className="text-xs text-gray-500">Adultos</p>
+                                    <p className="text-lg font-semibold text-gray-900">{guest.adults}</p>
+                                  </div>
+                                  <div className="bg-gray-50 rounded-lg p-2 text-center">
+                                    <p className="text-xs text-gray-500">Crianças</p>
+                                    <p className="text-lg font-semibold text-gray-900">{guest.children}</p>
+                                  </div>
+                                  <div className="bg-gray-50 rounded-lg p-2 text-center">
+                                    <p className="text-xs text-gray-500">Bebês</p>
+                                    <p className="text-lg font-semibold text-gray-900">{guest.babies}</p>
+                                  </div>
+                                </div>
+
+                                <div className="flex items-center justify-between">
+                                  <div className="flex-1 mr-3">
+                                    <select
+                                      value={guest.status}
+                                      onChange={(e) => handleQuickStatusChange(guest._id, e.target.value)}
+                                      className={`${getStatusColor(guest.status)} px-3 py-1.5 rounded-lg text-xs font-medium w-full text-center cursor-pointer appearance-none focus:outline-none focus:ring-2 focus:ring-primary-500`}
+                                    >
+                                      <option value="pending">Pendente</option>
+                                      <option value="confirmed">Confirmado</option>
+                                      <option value="declined">Recusou</option>
+                                    </select>
+                                  </div>
+                                  {guest.email && (
+                                    <span className="text-xs text-gray-400 truncate max-w-[120px]">
+                                      {guest.email}
+                                    </span>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
                           </div>
-                        );
-                      })}
-                      {tables.length === 0 && (
-                        <div className="col-span-full">
-                          <div className="bg-gray-50 rounded-xl p-8 text-center">
-                            <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
-                              <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" /></svg>
-                            </div>
-                            <p className="text-gray-500 mb-4">Nenhuma mesa criada ainda.</p>
-                            <button
-                              onClick={() => {
-                                resetTableForm();
-                                setShowTableModal(true);
-                              }}
-                              className="bg-primary-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-primary-600 inline-flex items-center gap-2"
-                            >
-                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" /></svg>
-                              Criar primeira mesa
-                            </button>
-                          </div>
-                        </div>
+                        </>
                       )}
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {activeTab === "Cardápios" && (
-                  <div className="p-4">
-                    <div className="flex justify-end mb-4">
-                      <button
-                        onClick={() => {
-                          resetMenuForm();
-                          setShowMenuModal(true);
-                        }}
-                        className="bg-primary-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-primary-600"
-                      >
-                        + Novo Cardápio
-                      </button>
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {menus.map((menu) => (
-                        <div
-                          key={menu._id}
-                          className="bg-gray-50 rounded-lg p-4 flex items-center justify-between"
+                  {/* Grupos Tab */}
+                  {activeTab === "Grupos" && (
+                    <div>
+                      <div className="lg:hidden mb-4">
+                        <button
+                          onClick={() => {
+                            resetGroupForm();
+                            setShowGroupModal(true);
+                          }}
+                          className="w-full bg-primary-500 text-white px-4 py-3 rounded-lg text-sm hover:bg-primary-600 flex items-center justify-center gap-2"
                         >
-                          <div>
-                            <p className="font-medium text-gray-900">
-                              {menu.name}
-                              {menu.isAdult && (
-                                <span className="ml-2 text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded">
-                                  Adulto
-                                </span>
-                              )}
-                              {!menu.isAdult && (
-                                <span className="ml-2 text-xs bg-purple-100 text-purple-600 px-2 py-0.5 rounded">
-                                  Criança
-                                </span>
-                              )}
-                            </p>
-                            {menu.description && (
-                              <p className="text-sm text-gray-500">{menu.description}</p>
-                            )}
+                          <Plus className="w-4 h-4" />
+                          Novo Grupo
+                        </button>
+                      </div>
+                      <div className="hidden lg:flex justify-end mb-4">
+                        <button
+                          onClick={() => {
+                            resetGroupForm();
+                            setShowGroupModal(true);
+                          }}
+                          className="bg-primary-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-primary-600"
+                        >
+                          + Novo Grupo
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {groups.map((group) => (
+                          <div
+                            key={group._id}
+                            className="bg-gray-50 rounded-lg p-4 flex items-center justify-between"
+                          >
+                            <div className="flex items-center gap-3">
+                              <div className={`w-4 h-4 rounded-full ${group.color}`}></div>
+                              <div>
+                                <p className="font-medium text-gray-900">{group.name}</p>
+                                {group.description && (
+                                  <p className="text-sm text-gray-500">{group.description}</p>
+                                )}
+                              </div>
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => handleEditGroup(group)}
+                                className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteGroup(group._id)}
+                                className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
                           </div>
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => handleEditMenu(menu)}
-                              className="text-gray-400 hover:text-gray-600"
-                            >
-                              <Edit2 className="w-4 h-4" />
-                            </button>
-                            <button
-                              onClick={() => handleDeleteMenu(menu._id)}
-                              className="text-gray-400 hover:text-red-600"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </button>
+                        ))}
+                        {groups.length === 0 && (
+                          <p className="text-gray-500 col-span-2 text-center py-4">
+                            Nenhum grupo criado ainda.
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Mesas Tab */}
+                  {activeTab === "Mesas" && (
+                    <div>
+                      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-4">
+                        <div className="flex flex-wrap gap-2 w-full lg:w-auto">
+                          <div className="flex-1 lg:flex-none bg-primary-50 rounded-lg px-3 py-2 text-center">
+                            <span className="text-xs text-gray-600 block">Total lugares</span>
+                            <span className="font-semibold text-gray-900">{tables.reduce((acc, t) => acc + t.capacity, 0)}</span>
+                          </div>
+                          <div className="flex-1 lg:flex-none bg-emerald-50 rounded-lg px-3 py-2 text-center">
+                            <span className="text-xs text-gray-600 block">Ocupados</span>
+                            <span className="font-semibold text-emerald-600">{tables.reduce((acc, t) => acc + (t.guestCount || 0), 0)}</span>
+                          </div>
+                          <div className="flex-1 lg:flex-none bg-amber-50 rounded-lg px-3 py-2 text-center">
+                            <span className="text-xs text-gray-600 block">Disponíveis</span>
+                            <span className="font-semibold text-amber-600">{tables.reduce((acc, t) => acc + (t.availableSeats || 0), 0)}</span>
                           </div>
                         </div>
-                      ))}
-                      {menus.length === 0 && (
-                        <p className="text-gray-500 col-span-2 text-center py-4">
-                          Nenhum cardápio criado ainda.
-                        </p>
-                      )}
+                        <button
+                          onClick={() => {
+                            resetTableForm();
+                            setShowTableModal(true);
+                          }}
+                          className="w-full lg:w-auto bg-primary-500 text-white px-4 py-2.5 rounded-lg text-sm hover:bg-primary-600 flex items-center justify-center gap-2"
+                        >
+                          <Plus className="w-4 h-4" />
+                          Nova Mesa
+                        </button>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        {tables.map((table) => {
+                          const occupancyPercent = table.capacity > 0 ? ((table.guestCount || 0) / table.capacity) * 100 : 0;
+                          const isFull = occupancyPercent >= 100;
+                          const isAlmostFull = occupancyPercent >= 80 && occupancyPercent < 100;
+                          
+                          return (
+                            <div
+                              key={table._id}
+                              className="bg-white rounded-xl border border-gray-200 overflow-hidden hover:shadow-md transition-shadow"
+                            >
+                              {/* Table Header */}
+                              <div className="bg-gradient-to-r from-primary-500 to-primary-600 px-4 py-3">
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-2">
+                                    <div className="w-8 h-8 bg-white/20 rounded-lg flex items-center justify-center">
+                                      <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                                      </svg>
+                                    </div>
+                                    <h3 className="font-semibold text-white">{table.name}</h3>
+                                  </div>
+                                  <div className="flex gap-1">
+                                    <button
+                                      onClick={() => handleEditTable(table)}
+                                      className="p-1.5 bg-white/20 hover:bg-white/30 rounded-lg transition-colors"
+                                    >
+                                      <Edit2 className="w-4 h-4 text-white" />
+                                    </button>
+                                    <button
+                                      onClick={() => handleDeleteTable(table._id)}
+                                      className="p-1.5 bg-white/20 hover:bg-red-500 rounded-lg transition-colors"
+                                    >
+                                      <Trash2 className="w-4 h-4 text-white" />
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
+                              
+                              {/* Table Content */}
+                              <div className="p-4">
+                                <div className="mb-4">
+                                  <div className="flex justify-between items-center mb-1">
+                                    <span className="text-sm text-gray-600">Ocupação</span>
+                                    <span className={`text-sm font-medium ${isFull ? 'text-red-600' : isAlmostFull ? 'text-amber-600' : 'text-emerald-600'}`}>
+                                      {table.guestCount || 0} / {table.capacity}
+                                    </span>
+                                  </div>
+                                  <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
+                                    <div 
+                                      className={`h-full rounded-full transition-all duration-300 ${
+                                        isFull ? 'bg-red-500' : isAlmostFull ? 'bg-amber-500' : 'bg-emerald-500'
+                                      }`}
+                                      style={{ width: `${Math.min(occupancyPercent, 100)}%` }}
+                                    />
+                                  </div>
+                                </div>
+                                
+                                <div className="grid grid-cols-2 gap-3 mb-4">
+                                  <div className="bg-gray-50 rounded-lg p-3 text-center">
+                                    <p className="text-xs text-gray-500">Capacidade</p>
+                                    <p className="text-lg font-bold text-gray-900">{table.capacity}</p>
+                                  </div>
+                                  <div className="bg-gray-50 rounded-lg p-3 text-center">
+                                    <p className="text-xs text-gray-500">Disponíveis</p>
+                                    <p className={`text-lg font-bold ${table.availableSeats > 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                                      {table.availableSeats}
+                                    </p>
+                                  </div>
+                                </div>
+                                
+                                {table.guests && table.guests.length > 0 && (
+                                  <div>
+                                    <p className="text-xs text-gray-500 mb-2">Convidados:</p>
+                                    <div className="flex flex-wrap gap-1">
+                                      {table.guests.slice(0, 3).map((guest, idx) => (
+                                        <span key={idx} className="inline-flex items-center px-2 py-1 bg-primary-50 text-primary-700 text-xs rounded-full">
+                                          {guest.name.split(' ')[0]}
+                                        </span>
+                                      ))}
+                                      {table.guests.length > 3 && (
+                                        <span className="inline-flex items-center px-2 py-1 bg-gray-100 text-gray-600 text-xs rounded-full">
+                                          +{table.guests.length - 3}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                        {tables.length === 0 && (
+                          <div className="col-span-full">
+                            <div className="bg-gray-50 rounded-xl p-8 text-center">
+                              <div className="w-16 h-16 bg-gray-200 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <svg className="w-8 h-8 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 10h16M4 14h16M4 18h16" />
+                                </svg>
+                              </div>
+                              <p className="text-gray-500 mb-4">Nenhuma mesa criada ainda.</p>
+                              <button
+                                onClick={() => {
+                                  resetTableForm();
+                                  setShowTableModal(true);
+                                }}
+                                className="bg-primary-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-primary-600 inline-flex items-center gap-2"
+                              >
+                                <Plus className="w-4 h-4" />
+                                Criar primeira mesa
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {activeTab === "Presenças" && (
-                  <div className="p-4">
-                    <div className="grid grid-cols-3 gap-4">
-                      <div className="bg-emerald-50 rounded-lg p-4 text-center">
-                        <p className="text-3xl font-bold text-emerald-600">{stats.confirmed}</p>
-                        <p className="text-sm text-emerald-600">Confirmados</p>
-                        <p className="text-lg font-semibold text-emerald-700 mt-2">
-                          {guests
-                            .filter((g) => g.status === "confirmed")
-                            .reduce((acc, g) => acc + g.adults + g.children, 0)}{" "}
-                          pessoas
-                        </p>
+                  {/* Cardápios Tab */}
+                  {activeTab === "Cardápios" && (
+                    <div>
+                      <div className="lg:hidden mb-4">
+                        <button
+                          onClick={() => {
+                            resetMenuForm();
+                            setShowMenuModal(true);
+                          }}
+                          className="w-full bg-primary-500 text-white px-4 py-3 rounded-lg text-sm hover:bg-primary-600 flex items-center justify-center gap-2"
+                        >
+                          <Plus className="w-4 h-4" />
+                          Novo Cardápio
+                        </button>
                       </div>
-                      <div className="bg-amber-50 rounded-lg p-4 text-center">
-                        <p className="text-3xl font-bold text-amber-600">{stats.pending}</p>
-                        <p className="text-sm text-amber-600">Pendentes</p>
-                        <p className="text-lg font-semibold text-amber-700 mt-2">
-                          {guests
-                            .filter((g) => g.status === "pending")
-                            .reduce((acc, g) => acc + g.adults + g.children, 0)}{" "}
-                          pessoas
-                        </p>
+                      <div className="hidden lg:flex justify-end mb-4">
+                        <button
+                          onClick={() => {
+                            resetMenuForm();
+                            setShowMenuModal(true);
+                          }}
+                          className="bg-primary-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-primary-600"
+                        >
+                          + Novo Cardápio
+                        </button>
                       </div>
-                      <div className="bg-red-50 rounded-lg p-4 text-center">
-                        <p className="text-3xl font-bold text-red-600">{stats.declined}</p>
-                        <p className="text-sm text-red-600">Recusaram</p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {menus.map((menu) => (
+                          <div
+                            key={menu._id}
+                            className="bg-gray-50 rounded-lg p-4 flex items-center justify-between"
+                          >
+                            <div>
+                              <p className="font-medium text-gray-900">
+                                {menu.name}
+                                {menu.isAdult ? (
+                                  <span className="ml-2 text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded">
+                                    Adulto
+                                  </span>
+                                ) : (
+                                  <span className="ml-2 text-xs bg-purple-100 text-purple-600 px-2 py-0.5 rounded">
+                                    Criança
+                                  </span>
+                                )}
+                              </p>
+                              {menu.description && (
+                                <p className="text-sm text-gray-500">{menu.description}</p>
+                              )}
+                            </div>
+                            <div className="flex gap-2">
+                              <button
+                                onClick={() => handleEditMenu(menu)}
+                                className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteMenu(menu._id)}
+                                className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                        {menus.length === 0 && (
+                          <p className="text-gray-500 col-span-2 text-center py-4">
+                            Nenhum cardápio criado ainda.
+                          </p>
+                        )}
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {activeTab === "Mensagens" && (
-                  <div className="p-4 text-center text-gray-500">
-                    <p>Funcionalidade de mensagens em desenvolvimento.</p>
-                    <p className="text-sm mt-2">
-                      Os convites podem ser enviados por email aos convidados pendentes.
-                    </p>
-                  </div>
-                )}
+                  {/* Presenças Tab */}
+                  {activeTab === "Presenças" && (
+                    <div>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        <div className="bg-emerald-50 rounded-xl p-6 text-center">
+                          <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <Check className="w-6 h-6 text-emerald-600" />
+                          </div>
+                          <p className="text-3xl font-bold text-emerald-600">{stats.confirmed}</p>
+                          <p className="text-sm text-emerald-600 font-medium">Confirmados</p>
+                          <p className="text-lg font-semibold text-emerald-700 mt-2">
+                            {guests
+                              .filter((g) => g.status === "confirmed")
+                              .reduce((acc, g) => acc + g.adults + g.children, 0)}{" "}
+                            pessoas
+                          </p>
+                        </div>
+                        <div className="bg-amber-50 rounded-xl p-6 text-center">
+                          <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <Clock className="w-6 h-6 text-amber-600" />
+                          </div>
+                          <p className="text-3xl font-bold text-amber-600">{stats.pending}</p>
+                          <p className="text-sm text-amber-600 font-medium">Pendentes</p>
+                          <p className="text-lg font-semibold text-amber-700 mt-2">
+                            {guests
+                              .filter((g) => g.status === "pending")
+                              .reduce((acc, g) => acc + g.adults + g.children, 0)}{" "}
+                            pessoas
+                          </p>
+                        </div>
+                        <div className="bg-red-50 rounded-xl p-6 text-center">
+                          <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                            <AlertCircle className="w-6 h-6 text-red-600" />
+                          </div>
+                          <p className="text-3xl font-bold text-red-600">{stats.declined}</p>
+                          <p className="text-sm text-red-600 font-medium">Recusaram</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* Tip */}
@@ -1010,7 +1328,7 @@ export default function GuestsPage() {
             </div>
 
             {/* Right Column - Smart Tips */}
-            <div className="lg:col-span-1">
+            <div className="hidden lg:block lg:col-span-1">
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sticky top-8">
                 <div className="flex items-center space-x-2 mb-6">
                   <div className="w-6 h-6 bg-primary-500 rounded-full flex items-center justify-center">
@@ -1021,19 +1339,19 @@ export default function GuestsPage() {
 
                 <div className="space-y-4 mb-6">
                   <div className="flex items-start space-x-3">
-                    <div className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2"></div>
+                    <div className="w-1.5 h-1.5 bg-primary-500 rounded-full mt-2"></div>
                     <p className="text-sm text-gray-700">
                       A média de confirmações é de <span className="font-semibold text-gray-900">60%</span> dos convidados
                     </p>
                   </div>
                   <div className="flex items-start space-x-3">
-                    <div className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2"></div>
+                    <div className="w-1.5 h-1.5 bg-primary-500 rounded-full mt-2"></div>
                     <p className="text-sm text-gray-700">
                       Considere reservar <span className="font-semibold text-gray-900">10%</span> a mais de lugares para imprevistos
                     </p>
                   </div>
                   <div className="flex items-start space-x-3">
-                    <div className="w-1.5 h-1.5 bg-gray-400 rounded-full mt-2"></div>
+                    <div className="w-1.5 h-1.5 bg-primary-500 rounded-full mt-2"></div>
                     <p className="text-sm text-gray-700">
                       Famílias geralmente representam <span className="font-semibold text-gray-900">40%</span> dos convidados
                     </p>
@@ -1064,34 +1382,55 @@ export default function GuestsPage() {
                   </div>
                 </div>
 
-                {/* Quick Actions */}
-                <div className="space-y-2">
-                  <button
-                    onClick={()=>{
-                      resetGuestForm();
-                    setShowGuestModal(true)
-                    }}
-                    className="w-full bg-primary-500 text-white py-3 rounded-lg font-medium hover:bg-primary-600 transition flex items-center justify-center space-x-2"
-                  >
-                    <span>Adicionar convidado</span>
-                  </button>
-                </div>
+                <button
+                  onClick={() => {
+                    resetGuestForm();
+                    setShowGuestModal(true);
+                  }}
+                  className="w-full bg-primary-500 text-white py-3 rounded-lg font-medium hover:bg-primary-600 transition flex items-center justify-center space-x-2"
+                >
+                  <Plus className="w-5 h-5" />
+                  <span>Adicionar convidado</span>
+                </button>
               </div>
             </div>
           </div>
         </div>
 
+        {/* Mobile FAB for adding items based on active tab */}
+        <button
+          onClick={() => {
+            if (activeTab === "Lista Geral") {
+              resetGuestForm();
+              setShowGuestModal(true);
+            } else if (activeTab === "Grupos") {
+              resetGroupForm();
+              setShowGroupModal(true);
+            } else if (activeTab === "Mesas") {
+              resetTableForm();
+              setShowTableModal(true);
+            } else if (activeTab === "Cardápios") {
+              resetMenuForm();
+              setShowMenuModal(true);
+            }
+          }}
+          className="lg:hidden fixed bottom-6 right-6 w-14 h-14 bg-primary-500 rounded-full shadow-lg flex items-center justify-center text-white hover:bg-primary-600 transition-colors z-40"
+          aria-label="Adicionar"
+        >
+          <Plus className="w-6 h-6" />
+        </button>
+
         {/* Guest Modal */}
         {showGuestModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-4 top-0 bg-white">
                 <h2 className="text-xl font-semibold text-black">
                   {editingGuest ? "Editar Convidado" : "Adicionar Convidado"}
                 </h2>
                 <button 
                   onClick={() => { setShowGuestModal(false); resetGuestForm(); }}
-                  className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                 >
                   <X className="w-5 h-5 text-gray-500" />
                 </button>
@@ -1104,7 +1443,7 @@ export default function GuestsPage() {
                     required
                     value={guestForm.name}
                     onChange={(e) => setGuestForm({ ...guestForm, name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-black"
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-black"
                     placeholder="Nome completo"
                   />
                 </div>
@@ -1114,7 +1453,7 @@ export default function GuestsPage() {
                     type="email"
                     value={guestForm.email}
                     onChange={(e) => setGuestForm({ ...guestForm, email: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-black"
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-black"
                     placeholder="email@exemplo.com"
                   />
                 </div>
@@ -1124,7 +1463,7 @@ export default function GuestsPage() {
                     type="tel"
                     value={guestForm.phone}
                     onChange={(e) => setGuestForm({ ...guestForm, phone: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-black"
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-black"
                     placeholder="+258"
                   />
                 </div>
@@ -1133,10 +1472,11 @@ export default function GuestsPage() {
                     <label className="block text-sm font-medium text-gray-900 mb-1">Adultos</label>
                     <input
                       type="number"
-                      min="1"
-                      value={guestForm.adults}
-                      onChange={(e) => setGuestForm({ ...guestForm, adults: parseInt(e.target.value) || 1 })}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-black"
+                      min="0"
+                      value={guestForm.adults ?? ''}
+                      onChange={(e) => setGuestForm({ ...guestForm, adults: parseInt(e.target.value) || null })}
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-black"
+                      placeholder="0"
                     />
                   </div>
                   <div>
@@ -1144,9 +1484,10 @@ export default function GuestsPage() {
                     <input
                       type="number"
                       min="0"
-                      value={guestForm.children}
-                      onChange={(e) => setGuestForm({ ...guestForm, children: parseInt(e.target.value) || 0 })}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-black"
+                      value={guestForm.children ?? ''}
+                      onChange={(e) => setGuestForm({ ...guestForm, children: parseInt(e.target.value) || null })}
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-black"
+                      placeholder="0"
                     />
                   </div>
                   <div>
@@ -1154,9 +1495,10 @@ export default function GuestsPage() {
                     <input
                       type="number"
                       min="0"
-                      value={guestForm.babies}
-                      onChange={(e) => setGuestForm({ ...guestForm, babies: parseInt(e.target.value) || 0 })}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-black"
+                      value={guestForm.babies ?? ''}
+                      onChange={(e) => setGuestForm({ ...guestForm, babies: parseInt(e.target.value) || null })}
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-black"
+                      placeholder="0"
                     />
                   </div>
                 </div>
@@ -1167,7 +1509,7 @@ export default function GuestsPage() {
                       required
                       value={guestForm.group}
                       onChange={(e) => setGuestForm({ ...guestForm, group: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-black"
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-black"
                     >
                       <option value="">Selecione...</option>
                       {groups.map((g) => (
@@ -1182,7 +1524,7 @@ export default function GuestsPage() {
                     <select
                       value={guestForm.table}
                       onChange={(e) => setGuestForm({ ...guestForm, table: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-black"
+                      className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-black"
                     >
                       <option value="">Selecione...</option>
                       {tables.map((t) => (
@@ -1198,7 +1540,7 @@ export default function GuestsPage() {
                   <select
                     value={guestForm.menu}
                     onChange={(e) => setGuestForm({ ...guestForm, menu: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-black"
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-black"
                   >
                     <option value="">Selecione...</option>
                     {menus.map((m) => (
@@ -1213,27 +1555,27 @@ export default function GuestsPage() {
                   <select
                     value={guestForm.status}
                     onChange={(e) => setGuestForm({ ...guestForm, status: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-black"
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-black"
                   >
                     <option value="pending">Pendente</option>
                     <option value="confirmed">Confirmado</option>
                     <option value="declined">Recusou</option>
                   </select>
                 </div>
-                <div className="flex gap-3 pt-4">
+                <div className="flex flex-col sm:flex-row gap-3 pt-4">
                   <button
                     type="button"
                     onClick={() => {
                       setShowGuestModal(false);
                       resetGuestForm();
                     }}
-                    className="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50"
+                    className="w-full sm:flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 order-2 sm:order-1"
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600"
+                    className="w-full sm:flex-1 px-4 py-2.5 bg-primary-500 text-white rounded-lg hover:bg-primary-600 order-1 sm:order-2"
                   >
                     {editingGuest ? "Atualizar" : "Adicionar"}
                   </button>
@@ -1245,7 +1587,7 @@ export default function GuestsPage() {
 
         {/* Group Modal */}
         {showGroupModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-4">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold text-black">
@@ -1253,7 +1595,7 @@ export default function GuestsPage() {
                 </h2>
                 <button 
                   onClick={() => { setShowGroupModal(false); resetGroupForm(); }}
-                  className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                 >
                   <X className="w-5 h-5 text-gray-500" />
                 </button>
@@ -1266,7 +1608,7 @@ export default function GuestsPage() {
                     required
                     value={groupForm.name}
                     onChange={(e) => setGroupForm({ ...groupForm, name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-black"
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-black"
                     placeholder="Nome do grupo"
                   />
                 </div>
@@ -1290,25 +1632,25 @@ export default function GuestsPage() {
                   <textarea
                     value={groupForm.description}
                     onChange={(e) => setGroupForm({ ...groupForm, description: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-black"
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-black"
                     rows={2}
                     placeholder="Descrição opcional"
                   />
                 </div>
-                <div className="flex gap-3 pt-4">
+                <div className="flex flex-col sm:flex-row gap-3 pt-4">
                   <button
                     type="button"
                     onClick={() => {
                       setShowGroupModal(false);
                       resetGroupForm();
                     }}
-                    className="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50"
+                    className="w-full sm:flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 order-2 sm:order-1"
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600"
+                    className="w-full sm:flex-1 px-4 py-2.5 bg-primary-500 text-white rounded-lg hover:bg-primary-600 order-1 sm:order-2"
                   >
                     {editingGroup ? "Atualizar" : "Criar"}
                   </button>
@@ -1320,7 +1662,7 @@ export default function GuestsPage() {
 
         {/* Table Modal */}
         {showTableModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-4">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold text-black">
@@ -1328,7 +1670,7 @@ export default function GuestsPage() {
                 </h2>
                 <button 
                   onClick={() => { setShowTableModal(false); resetTableForm(); }}
-                  className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                 >
                   <X className="w-5 h-5 text-gray-500" />
                 </button>
@@ -1341,7 +1683,7 @@ export default function GuestsPage() {
                     required
                     value={tableForm.name}
                     onChange={(e) => setTableForm({ ...tableForm, name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-black"
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-black"
                     placeholder="Ex: Mesa 1"
                   />
                 </div>
@@ -1349,27 +1691,28 @@ export default function GuestsPage() {
                   <label className="block text-sm font-medium text-gray-900 mb-1">Capacidade</label>
                   <input
                     type="number"
-                    min="1"
+                    min="0"
                     max="20"
-                    value={tableForm.capacity}
-                    onChange={(e) => setTableForm({ ...tableForm, capacity: parseInt(e.target.value) || 10 })}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-black"
+                    value={tableForm.capacity ?? ''}
+                    onChange={(e) => setTableForm({ ...tableForm, capacity: parseInt(e.target.value) || null })}
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-black"
+                    placeholder="0"
                   />
                 </div>
-                <div className="flex gap-3 pt-4">
+                <div className="flex flex-col sm:flex-row gap-3 pt-4">
                   <button
                     type="button"
                     onClick={() => {
                       setShowTableModal(false);
                       resetTableForm();
                     }}
-                    className="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50"
+                    className="w-full sm:flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 order-2 sm:order-1"
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600"
+                    className="w-full sm:flex-1 px-4 py-2.5 bg-primary-500 text-white rounded-lg hover:bg-primary-600 order-1 sm:order-2"
                   >
                     {editingTable ? "Atualizar" : "Criar"}
                   </button>
@@ -1381,7 +1724,7 @@ export default function GuestsPage() {
 
         {/* Menu Modal */}
         {showMenuModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-4">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold text-black">
@@ -1389,7 +1732,7 @@ export default function GuestsPage() {
                 </h2>
                 <button 
                   onClick={() => { setShowMenuModal(false); resetMenuForm(); }}
-                  className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                 >
                   <X className="w-5 h-5 text-gray-500" />
                 </button>
@@ -1402,7 +1745,7 @@ export default function GuestsPage() {
                     required
                     value={menuForm.name}
                     onChange={(e) => setMenuForm({ ...menuForm, name: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-black"
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-black"
                     placeholder="Nome do cardápio"
                   />
                 </div>
@@ -1411,7 +1754,7 @@ export default function GuestsPage() {
                   <textarea
                     value={menuForm.description}
                     onChange={(e) => setMenuForm({ ...menuForm, description: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-black"
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-black"
                     rows={2}
                     placeholder="Descrição do menu"
                   />
@@ -1421,26 +1764,26 @@ export default function GuestsPage() {
                   <select
                     value={menuForm.isAdult ? "adult" : "child"}
                     onChange={(e) => setMenuForm({ ...menuForm, isAdult: e.target.value === "adult" })}
-                    className="w-full px-3 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-black"
+                    className="w-full px-3 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary-500 text-black"
                   >
                     <option value="adult">Adulto</option>
                     <option value="child">Criança</option>
                   </select>
                 </div>
-                <div className="flex gap-3 pt-4">
+                <div className="flex flex-col sm:flex-row gap-3 pt-4">
                   <button
                     type="button"
                     onClick={() => {
                       setShowMenuModal(false);
                       resetMenuForm();
                     }}
-                    className="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50"
+                    className="w-full sm:flex-1 px-4 py-2.5 border border-gray-200 rounded-lg text-gray-700 hover:bg-gray-50 order-2 sm:order-1"
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600"
+                    className="w-full sm:flex-1 px-4 py-2.5 bg-primary-500 text-white rounded-lg hover:bg-primary-600 order-1 sm:order-2"
                   >
                     {editingMenu ? "Atualizar" : "Criar"}
                   </button>
@@ -1452,12 +1795,12 @@ export default function GuestsPage() {
 
         {/* Delete Confirmation Modal */}
         {deleteConfirm && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl p-6 w-full max-w-sm mx-4">
               <div className="flex items-center justify-end mb-2">
                 <button 
                   onClick={() => { setDeleteConfirm(null); setDeleteType(null); }}
-                  className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                 >
                   <X className="w-5 h-5 text-gray-500" />
                 </button>
@@ -1472,21 +1815,61 @@ export default function GuestsPage() {
                 {deleteType === 'table' && "Tem certeza que deseja excluir esta mesa? Os convidados nesta mesa ficarão sem mesa."}
                 {deleteType === 'menu' && "Tem certeza que deseja excluir este cardápio? Os convidados com este cardápio ficarão sem cardápio."}
               </p>
-              <div className="flex space-x-3">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <button
                   onClick={() => {
                     setDeleteConfirm(null);
                     setDeleteType(null);
                   }}
-                  className="flex-1 text-gray-500 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium"
+                  className="w-full sm:flex-1 text-gray-500 px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium order-2 sm:order-1"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={confirmDelete}
-                  className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 font-medium"
+                  className="w-full sm:flex-1 px-4 py-2.5 bg-red-500 text-white rounded-lg hover:bg-red-600 font-medium order-1 sm:order-2"
                 >
                   Excluir
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Send Invitation Confirmation Modal */}
+        {showInviteConfirm && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl p-6 w-full max-w-sm mx-4">
+              <div className="flex items-center justify-end mb-2">
+                <button 
+                  onClick={() => setShowInviteConfirm(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+              <div className="flex items-center justify-center w-16 h-16 mx-auto bg-green-100 rounded-full mb-4">
+                <Mail className="w-8 h-8 text-green-500" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 text-center mb-2">Enviar Convites</h3>
+              <p className="text-gray-600 text-center mb-6">
+                {selectedGuests.length > 0 
+                  ? `Tem certeza que deseja enviar convites para ${selectedGuests.length} convidado(s) selecionado(s)?`
+                  : "Tem certeza que deseja enviar convites para todos os convidados com email?"}
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button
+                  onClick={() => setShowInviteConfirm(false)}
+                  className="w-full sm:flex-1 text-gray-500 px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium order-2 sm:order-1"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleSendInvitationEmails}
+                  disabled={sendingInvites}
+                  className="w-full sm:flex-1 px-4 py-2.5 bg-green-500 text-white rounded-lg hover:bg-green-600 font-medium order-1 sm:order-2 disabled:opacity-50"
+                >
+                  {sendingInvites ? 'Enviando...' : 'Enviar'}
                 </button>
               </div>
             </div>

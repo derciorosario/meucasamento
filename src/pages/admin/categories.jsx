@@ -4,14 +4,13 @@ import {
   getAdminCategories, 
   createAdminCategory, 
   updateAdminCategory, 
-  deleteAdminCategory 
+  deleteAdminCategory, 
+  API_URL
 } from '../../api/client';
 import { useAuth } from '../../contexts/AuthContext';
 import Header from '../../components/Header';
 import Loader from '../../components/loader';
 import { toast } from 'react-hot-toast';
-
-const API_URL = 'http://localhost:5005';
 
 const AdminCategories = () => {
   const { user: currentUser } = useAuth();

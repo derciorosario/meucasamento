@@ -19,8 +19,17 @@ import SharedGallery from './pages/shared-gallery';
 import AdminDashboard from './pages/admin';
 import AdminUsers from './pages/admin/users';
 import AdminVendors from './pages/admin/vendors';
-import AdminCategories from './pages/admin/categories';
 import AdminGalleries from './pages/admin/galleries';
+import VendorPlans from './pages/vendors/plans';
+import Support from './pages/support';
+import About from './pages/about';
+import Contact from './pages/contact';
+import Privacy from './pages/privacy';
+import Terms from './pages/terms';
+import PublicGallery from './pages/public-gallery';
+import Settings from './pages/settings';
+import Gallery from './pages/gallery';
+import GuestConfirm from './pages/guest-confirm';
 
 function App() {
   return (
@@ -36,21 +45,33 @@ function App() {
       <Route path="/" element={<Home />} />
       <Route path="/gallery/shared/:shareCode" element={<SharedGallery />} />
       <Route path="/profile/:userId" element={<UserProfile />} />
+      <Route path="/vendors" element={<WeddingVendors />} />
+      <Route path="/vendors/plans" element={<VendorPlans />} />
+      <Route path="/support" element={<Support />} />
+      <Route path="/about" element={<About />} />
+      <Route path="/contact" element={<Contact />} />
+      <Route path="/privacy" element={<Privacy />} />
+      <Route path="/terms" element={<Terms />} />
+      <Route path="/public-gallery" element={<PublicGallery />} />
+      <Route path="/guest-confirm/:token" element={<GuestConfirm />} />
       
       {/* Protected Routes - Require authentication */}
       <Route element={<ProtectedRoute />}>
         <Route path="/budget" element={<WeddingBudget />} />
         <Route path="/checklist" element={<WeddingChecklist />} />
-        <Route path="/vendors" element={<WeddingVendors />} />
         <Route path="/guests" element={<GuestsPage/>} />
         <Route path="/profile" element={<ProfilePage />} />
+        <Route path="/settings" element={<Settings />} />
+        <Route path="/gallery" element={<Gallery />} />
+
         
         {/* Admin Routes - Require admin role */}
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/admin/users" element={<AdminUsers />} />
         <Route path="/admin/vendors" element={<AdminVendors />} />
-        <Route path="/admin/categories" element={<AdminCategories />} />
         <Route path="/admin/galleries" element={<AdminGalleries />} />
+
+
       </Route>
     </Routes>
   );

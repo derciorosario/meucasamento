@@ -221,11 +221,15 @@ export default function WeddingLogin() {
     setLoading(true);
 
     try {
+
       const response = await client.post('/auth/google/mobile', {
+        
         googleId: googleData.googleId,
         email: googleData.email,
         name: googleData.name,
-        avatar: googleData.avatar
+        avatar: googleData.avatar,
+        isLogin:true
+
       });
 
 

@@ -24,6 +24,11 @@ const Header = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Scroll to top when pathname changes
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [location.pathname]);
+
   const handleLogout = async () => {
     setShowLogoutModal(false);
     await signOut();
@@ -37,7 +42,7 @@ const Header = () => {
 
   const handleSettingsClick = () => {
     setIsProfileMenuOpen(false);
-    navigate('/profile');
+    navigate('/settings');
   };
 
   return (
@@ -54,37 +59,83 @@ const Header = () => {
         </div>
         {/* Desktop Navigation - Hidden on mobile/tablet */}
         
-      {user?.role!="admin" && <div className="hidden lg:flex gap-6 xl:gap-8 text-gray-600">
+          {user?.role!="admin" && <div className="hidden lg:flex gap-6 xl:gap-8 text-gray-600">
+         
+         
+       {user && <>
+
           <button 
             onClick={() => navigate('/')} 
             className={`transition-colors font-medium ${location.pathname === '/' ? 'text-[#9CAA8E] font-bold' : 'hover:text-[#9CAA8E]'}`}
           >
-           Painel
+          Painel
           </button>
+
           <button 
             onClick={() => navigate('/checklist')} 
             className={`transition-colors font-medium ${location.pathname === '/checklist' ? 'text-[#9CAA8E] font-bold' : 'hover:text-[#9CAA8E]'}`}
           >
             Agenda e Tarefas
           </button>
+
           <button 
             onClick={() => navigate('/vendors')} 
             className={`transition-colors font-medium ${location.pathname === '/vendors' ? 'text-[#9CAA8E] font-bold' : 'hover:text-[#9CAA8E]'}`}
           >
             Fornecedores
           </button>
+
           <button 
             onClick={() => navigate('/budget')} 
             className={`transition-colors font-medium ${location.pathname === '/budget' ? 'text-[#9CAA8E] font-bold' : 'hover:text-[#9CAA8E]'}`}
           >
             Orçamento
           </button>
+
           <button 
             onClick={() => navigate('/guests')} 
             className={`transition-colors font-medium ${location.pathname === '/guests' ? 'text-[#9CAA8E] font-bold' : 'hover:text-[#9CAA8E]'}`}
           >
             Convidados
           </button>
+
+          <button 
+            onClick={() => navigate('/gallery')} 
+            className={`transition-colors font-medium ${location.pathname === '/gallery' ? 'text-[#9CAA8E] font-bold' : 'hover:text-[#9CAA8E]'}`}
+          >
+            Galeria
+          </button>
+
+          </>}
+
+
+          {!user && <>
+
+          <button 
+            onClick={() => navigate('/vendors')} 
+            className={`transition-colors font-medium ${location.pathname === '/vendors' ? 'text-[#9CAA8E] font-bold' : 'hover:text-[#9CAA8E]'}`}
+          >
+            Fornecedores
+          </button>
+
+          <button 
+            onClick={() => navigate('/public-gallery')} 
+            className={`transition-colors font-medium ${location.pathname === '/public-gallery' ? 'text-[#9CAA8E] font-bold' : 'hover:text-[#9CAA8E]'}`}
+          >
+            Gallery
+          </button>
+
+          <button 
+            onClick={() => navigate('/contact')} 
+            className={`transition-colors font-medium ${location.pathname === '/contact' ? 'text-[#9CAA8E] font-bold' : 'hover:text-[#9CAA8E]'}`}
+          >
+            Contacto
+          </button>
+
+          </>}
+
+
+
           {user?.role === 'admin' && (
             <button 
               onClick={() => navigate('/admin')} 
@@ -234,6 +285,12 @@ const Header = () => {
                 className={`py-2 border-b border-gray-100 text-left font-medium ${location.pathname === '/budget' ? 'text-[#9CAA8E]' : 'text-gray-600 hover:text-[#9CAA8E]'}`}
               >
                 Orçamento
+              </button>
+              <button 
+                onClick={() => { navigate('/gallery'); setIsMenuOpen(false); }} 
+                className={`py-2 border-b border-gray-100 text-left font-medium ${location.pathname === '/gallery' ? 'text-[#9CAA8E]' : 'text-gray-600 hover:text-[#9CAA8E]'}`}
+              >
+                Galeria
               </button>
               
               {/* Mobile/Tablet Auth Buttons */}

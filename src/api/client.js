@@ -309,6 +309,12 @@ export const sendGuestReminder = (id) => client.post(`/guests/${id}/remind`);
 // Send bulk invitations
 export const sendBulkInvitations = (guestIds) => client.post('/guests/bulk-invite', { guestIds });
 
+// Send invitation emails with confirmation links
+export const sendInvitationEmails = (guestIds) => client.post('/guests/send-invitations', { guestIds });
+
+// Confirm/decline invitation (public)
+export const confirmInvitation = (token, response) => client.post('/guests/confirm', { token, response });
+
 // Initialize default guest data
 export const initGuestData = () => client.post('/guests/initialize');
 
@@ -389,6 +395,12 @@ export const getUserProfileById = (userId) => client.get(`/auth/users/${userId}/
 // Update current user's profile
 export const updateProfile = (data) => client.put('/auth/profile', data);
 
+// Settings API
+export const getSettings = () => client.get('/settings');
+export const updateSettings = (data) => client.put('/settings', data);
+export const changePassword = (data) => client.put('/settings/password', data);
+export const deleteAccount = (data) => client.delete('/settings/account', { data });
+
 // Upload profile image
 export const uploadProfileImage = (formData) => client.post('/upload/profile', formData, {
   headers: { 'Content-Type': 'multipart/form-data' }
@@ -426,6 +438,9 @@ export const updatePhotoCaption = (albumId, photoId, caption) =>
 // Get shared album
 export const getSharedAlbum = (shareCode) => client.get(`/gallery/shared/${shareCode}`);
 
+// Get all public galleries
+export const getAllPublicGalleries = (params) => client.get('/gallery/public/all', { params });
+
 // Get user public albums
 export const getUserPublicAlbums = (userId) => client.get(`/gallery/user/${userId}`);
 
@@ -458,6 +473,12 @@ export const updateAdminVendor = (id, data) => client.put(`/admin/vendors/${id}`
 // Delete vendor
 export const deleteAdminVendor = (id) => client.delete(`/admin/vendors/${id}`);
 
+// Approve vendor
+export const approveVendor = (id) => client.put(`/admin/vendors/${id}/approve`);
+
+// Reject vendor
+export const rejectVendor = (id, reason) => client.put(`/admin/vendors/${id}/reject`, { reason });
+
 // Get all categories
 export const getAdminCategories = () => client.get('/admin/categories');
 
@@ -476,3 +497,22 @@ export const getAdminGalleries = (params) => client.get('/admin/galleries', { pa
 
 // Delete gallery
 export const deleteAdminGallery = (id) => client.delete(`/admin/galleries/${id}`);
+
+// ==================== FAVORITES API ====================
+
+// Get user's favorite vendors
+export const getFavorites = () => client.get('/auth/favorites');
+
+// Add a vendor to favorites
+export const addFavorite = (vendorId) => client.post(`/auth/favorites/${vendorId}`);
+
+// Remove a vendor from favorites
+export const removeFavorite = (vendorId) => client.delete(`/auth/favorites/${vendorId}`);
+
+// Get vendors by IDs (for favorites filter)
+export const getVendorsByIds = (ids, params) => client.get('/vendors/by-ids', { params: { ids, ...params } });
+
+// ==================== CONTACT API ====================
+
+// Submit contact form
+export const submitContactForm = (data) => client.post('/contact', data);

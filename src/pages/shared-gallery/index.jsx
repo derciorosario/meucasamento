@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams } from 'react-router-dom';
-import { getSharedAlbum } from '../../api/client';
+import { API_URL, getSharedAlbum } from '../../api/client';
 import { toast } from 'react-hot-toast';
 import { 
   Download, 
@@ -10,8 +10,7 @@ import {
   Image
 } from 'lucide-react';
 import Header from '../../components/Header';
-
-const API_URL = 'http://localhost:5005';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const SharedGallery = () => {
   const { shareCode } = useParams();
@@ -19,6 +18,26 @@ const SharedGallery = () => {
   const [loading, setLoading] = useState(true);
   const [lightboxIndex, setLightboxIndex] = useState(-1);
   const [error, setError] = useState(null);
+
+  // Keyboard navigation
+  const handleKeyDown = useCallback((e) => {
+    if (lightboxIndex < 0) return;
+    
+    if (e.key === 'ArrowLeft' && lightboxIndex > 0) {
+      setLightboxIndex(lightboxIndex - 1);
+    } else if (e.key === 'ArrowRight' && lightboxIndex < album.photos.length - 1) {
+      setLightboxIndex(lightboxIndex + 1);
+    } else if (e.key === 'Escape') {
+      setLightboxIndex(-1);
+    }
+  }, [lightboxIndex, album?.photos?.length]);
+
+  useEffect(() => {
+    if (lightboxIndex >= 0) {
+      window.addEventListener('keydown', handleKeyDown);
+      return () => window.removeEventListener('keydown', handleKeyDown);
+    }
+  }, [lightboxIndex, handleKeyDown]);
 
   useEffect(() => {
     fetchSharedAlbum();
@@ -148,40 +167,100 @@ const SharedGallery = () => {
       </div>
 
       {/* Lightbox */}
-      {lightboxIndex >= 0 && (
-        <div className="fixed inset-0 bg-black z-50 flex items-center justify-center">
-          <button
-            onClick={() => setLightboxIndex(-1)}
-            className="absolute top-4 right-4 p-2 text-white/70 hover:text-white"
+      <AnimatePresence>
+        {lightboxIndex >= 0 && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black z-50 flex items-center justify-center"
           >
-            <X className="w-8 h-8" />
-          </button>
-          
-          {lightboxIndex > 0 && (
+            {/* Close button */}
             <button
-              onClick={() => setLightboxIndex(lightboxIndex - 1)}
-              className="absolute left-4 p-2 text-white/70 hover:text-white"
+              onClick={() => setLightboxIndex(-1)}
+              className="absolute top-4 right-4 p-2 text-white/70 hover:text-white z-10"
             >
-              <ChevronLeft className="w-8 h-8" />
+              <X className="w-8 h-8" />
             </button>
-          )}
-          
-          {lightboxIndex < album.photos.length - 1 && (
-            <button
-              onClick={() => setLightboxIndex(lightboxIndex + 1)}
-              className="absolute right-4 p-2 text-white/70 hover:text-white"
-            >
-              <ChevronRight className="w-8 h-8" />
-            </button>
-          )}
-          
-          <img
-            src={`${API_URL}${album.photos[lightboxIndex].url}`}
-            alt=""
-            className="max-h-[90vh] max-w-[90vw] object-contain"
-          />
-        </div>
-      )}
+            
+            {/* Album Info */}
+            <div className="absolute top-4 left-4 z-10 text-white">
+              <p className="text-white/70 text-sm">
+                {album.photos.length} fotos
+              </p>
+            </div>
+            
+            {/* Navigation */}
+            {lightboxIndex > 0 && (
+              <button
+                onClick={() => setLightboxIndex(lightboxIndex - 1)}
+                className="absolute left-4 p-3 text-white/70 hover:text-white z-10"
+              >
+                <ChevronLeft className="w-10 h-10" />
+              </button>
+            )}
+            
+            {lightboxIndex < album.photos.length - 1 && (
+              <button
+                onClick={() => setLightboxIndex(lightboxIndex + 1)}
+                className="absolute right-4 p-3 text-white/70 hover:text-white z-10"
+              >
+                <ChevronRight className="w-10 h-10" />
+              </button>
+            )}
+            
+            {/* Main Image with Animation */}
+            <motion.img
+              key={lightboxIndex}
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.3 }}
+              src={`${API_URL}${album.photos[lightboxIndex].url}`}
+              alt=""
+              className="max-h-[90vh] max-w-[90vw] object-contain"
+            />
+            
+            {/* Thumbnail Strip */}
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 max-w-[90vw] overflow-x-auto px-4">
+              {album.photos.map((photo, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => setLightboxIndex(idx)}
+                  className={`flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden transition-all ${
+                    idx === lightboxIndex
+                      ? 'ring-2 ring-white scale-110'
+                      : 'opacity-50 hover:opacity-80'
+                  }`}
+                >
+                  <img
+                    src={`${API_URL}${photo.url}`}
+                    alt=""
+                    className="w-full h-full object-cover"
+                  />
+                </button>
+              ))}
+            </div>
+            
+            {/* Counter */}
+            <div className="absolute top-4 right-16 px-3 py-1 bg-white/20 backdrop-blur-sm text-white text-sm rounded-full">
+              {lightboxIndex + 1} / {album.photos.length}
+            </div>
+            
+            {/* Download button */}
+            {album.allowDownload && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  downloadPhoto(album.photos[lightboxIndex].url);
+                }}
+                className="absolute bottom-4 right-4 p-3 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white rounded-full z-10"
+              >
+                <Download className="w-6 h-6" />
+              </button>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

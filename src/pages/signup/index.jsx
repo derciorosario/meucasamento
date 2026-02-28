@@ -1,6 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { GoogleOAuthProvider, useGoogleLogin } from '@react-oauth/google';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from '../../lib/toast';
 import client from '../../api/client';
@@ -81,7 +81,33 @@ const validateWeddingDate = (date) => {
 };
 
 export default function WeddingSignUp() {
+
+  
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  
+  // Get 'as' param from URL to set default userType
+  useEffect(() => {
+    const asParam = searchParams.get('as');
+    if (asParam) {
+      // Map URL param values to userType values
+      const userTypeMap = {
+        'vendor': 'vendor',
+        'groom': 'groom',
+        'bride': 'bride',
+        'planner': 'wedding_planner',
+        'wedding_planner': 'wedding_planner'
+      };
+      
+      const mappedType = userTypeMap[asParam.toLowerCase()];
+      if (mappedType) {
+        setFormData(prev => ({ ...prev, userType: mappedType }));
+      }
+
+
+    }
+  }, [searchParams]);
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -201,7 +227,7 @@ export default function WeddingSignUp() {
 
     // Wedding date validation
     const dateError = validateWeddingDate(formData.weddingDate);
-    if (dateError) {
+    if (dateError && formData.userType!="vendor") {
       newErrors.weddingDate = dateError;
       isValid = false;
     }
@@ -341,9 +367,9 @@ export default function WeddingSignUp() {
   const userTypeOptions = [
     { value: 'bride', label: 'Noiva' },
     { value: 'groom', label: 'Noivo' },
-    { value: 'wedding_planner', label: 'Wedding Planner' },
+    //{ value: 'wedding_planner', label: 'Wedding Planner' },
     { value: 'vendor', label: 'Fornecedor' },
-    { value: 'other', label: 'Outros' }
+   // { value: 'other', label: 'Outros' }
   ];
 
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID';
@@ -578,23 +604,6 @@ export default function WeddingSignUp() {
                 </div>
               </div>
 
-              {/* Wedding Date */}
-              <div>
-                <label className="block text-sm font-medium text-[#4a4a4a] mb-2">Data do Casamento</label>
-                <input
-                  type="date"
-                  name="weddingDate"
-                  value={formData.weddingDate}
-                  onChange={handleChange}
-                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9CAF88] focus:border-transparent bg-white text-[#2a2a2a] placeholder-[#a8a8a8] transition-all ${
-                    errors.weddingDate ? 'border-red-400 ring-red-400' : 'border-[#d4d4d4]'
-                  }`}
-                />
-                {errors.weddingDate && (
-                  <p className="mt-1 text-xs text-red-600">{errors.weddingDate}</p>
-                )}
-              </div>
-
               {/* User Type */}
               <div>
                 <label className="block text-sm font-medium text-[#4a4a4a] mb-3">Você é:</label>
@@ -622,6 +631,25 @@ export default function WeddingSignUp() {
                 )}
               </div>
 
+              
+              {/* Wedding Date */}
+              {formData.userType!="vendor" && <div>
+                <label className="block text-sm font-medium text-[#4a4a4a] mb-2">Data do Casamento</label>
+                <input
+                  type="date"
+                  name="weddingDate"
+                  value={formData.weddingDate}
+                  onChange={handleChange}
+                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9CAF88] focus:border-transparent bg-white text-[#2a2a2a] placeholder-[#a8a8a8] transition-all ${
+                    errors.weddingDate ? 'border-red-400 ring-red-400' : 'border-[#d4d4d4]'
+                  }`}
+                />
+                {errors.weddingDate && (
+                  <p className="mt-1 text-xs text-red-600">{errors.weddingDate}</p>
+                )}
+              </div>}
+
+
               {/* Terms and Conditions */}
               <div className="flex items-start gap-3">
                 <input
@@ -637,11 +665,11 @@ export default function WeddingSignUp() {
                 />
                 <label className="text-sm text-[#6b6b6b] leading-relaxed">
                   Aceito os{' '}
-                  <a href="#" className="text-[#9CAF88] hover:text-[#8a9d85] font-medium transition-colors underline">
+                  <a target="_blank" href="/terms" className="text-[#9CAF88] hover:text-[#8a9d85] font-medium transition-colors underline">
                     Termos de Uso
                   </a>
                   {' '}e a{' '}
-                  <a href="#" className="text-[#9CAF88] hover:text-[#8a9d85] font-medium transition-colors underline">
+                  <a target="_blank"  href="/privacy" className="text-[#9CAF88] hover:text-[#8a9d85] font-medium transition-colors underline">
                     Política de Privacidade
                   </a>
                 </label>

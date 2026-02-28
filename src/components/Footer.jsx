@@ -1,7 +1,10 @@
 import React from 'react';
 import { Instagram, Facebook, Youtube } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const Footer = () => {
+  const navigate = useNavigate();
+
   return (
      <footer className="bg-[#1a2332] text-white py-12">
         <div className="max-w-7xl mx-auto px-8">
@@ -16,36 +19,33 @@ const Footer = () => {
                 <span className="text-xl font-semibold text-white">Meu casamento</span>
               </div>
               <p className="text-gray-400 text-sm">
-                Planei o casamento perfeito do início ao fim
+                Planeje o casamento perfeito do início ao fim
               </p>
             </div>
             
             <div>
               <h4 className="font-semibold mb-4">Para Noivos</h4>
               <ul className="space-y-2 text-gray-400 text-sm">
-                <li><a href="#" className="hover:text-white !text-gray-400">Checklist</a></li>
-                <li><a href="#" className="hover:text-white !text-gray-400">Orçamento</a></li>
-                <li><a href="#" className="hover:text-white !text-gray-400">Comunidade</a></li>
-                <li><a href="#" className="hover:text-white !text-gray-400">Site do Casamento</a></li>
+                <li><button onClick={() => navigate('/checklist')} className="hover:text-white !text-gray-400">Checklist</button></li>
+                <li><button onClick={() => navigate('/budget')} className="hover:text-white !text-gray-400">Orçamento</button></li>
               </ul>
             </div>
             
             <div>
               <h4 className="font-semibold mb-4">Fornecedores</h4>
               <ul className="space-y-2 text-gray-400 text-sm">
-                <li><a href="#" className="hover:text-white !text-gray-400">Cadastre-se</a></li>
-                <li><a href="#" className="hover:text-white !text-gray-400">Planos</a></li>
-                <li><a href="#" className="hover:text-white !text-gray-400">Suporte</a></li>
+                <li><button onClick={() => navigate('/signup?as=vendor')} className="hover:text-white !text-gray-400">Cadastre-se</button></li>
+                <li><button onClick={() => navigate('/vendors/plans')} className="hover:text-white !text-gray-400">Planos</button></li>
+                <li><button onClick={() => navigate('/support')} className="hover:text-white !text-gray-400">Suporte</button></li>
               </ul>
             </div>
             
             <div>
               <h4 className="font-semibold mb-4">Empresa</h4>
               <ul className="space-y-2 text-gray-400 text-sm">
-                <li><a href="#" className="hover:text-white !text-gray-400">Sobre</a></li>
-                <li><a href="#" className="hover:text-white !text-gray-400">Blog</a></li>
-                <li><a href="#" className="hover:text-white !text-gray-400">Contato</a></li>
-                <li><a href="#" className="hover:text-white !text-gray-400">Privacidade</a></li>
+                <li><button onClick={() => navigate('/about')} className="hover:text-white !text-gray-400">Sobre</button></li>
+                <li><button onClick={() => navigate('/contact')} className="hover:text-white !text-gray-400">Contato</button></li>
+                <li><button onClick={() => navigate('/privacy')} className="hover:text-white !text-gray-400">Privacidade</button></li>
               </ul>
             </div>
           </div>

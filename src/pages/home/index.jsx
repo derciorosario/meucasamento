@@ -1,55 +1,173 @@
-import React, { useState } from 'react';
-import { Calendar, Users, Mail, Globe, CheckSquare, DollarSign, Star, Check, Instagram, Facebook, Youtube, Camera, MapIcon, MapPin } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Calendar, Users, Mail, Globe, CheckSquare, DollarSign, Star, Check, Instagram, Facebook, Youtube, Camera, MapIcon, MapPin, Phone, X, ChevronLeft, ChevronRight, Send, MessageCircle } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import Loader from '../../components/loader';
-import WeddingDashboard from '../dashboad';
+import WeddingDashboard from '../dashboard';
+import { getFeaturedVendors, getVendorCategories, getVendor } from '../../api/client';
+import VendorProfileModal from '../../components/VendorProfileModal';
+import { toast } from 'react-hot-toast';
 
 export default function WeddingLanding() {
+
   const { t, i18n } = useTranslation();
   const data=useData()
   const navigate=useNavigate()
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const {user,loading,signOut}  = useAuth()
-  
-  const vendors = [
-    {
-      name: 'Atelier Moments',
-      category: 'Fotografia',
-      rating: 4.9,
-      reviews: 127,
-      location: 'Lisboa',
-      image: 'https://images.unsplash.com/photo-1606800052052-a08af7148866?w=400&h=300&fit=crop'
-    },
-    {
-      name: 'Quinta da Vale',
-      category: 'Espaço para Eventos',
-      rating: 5.0,
-      reviews: 89,
-      location: 'Sintra',
-      image: 'https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=400&h=300&fit=crop'
-    },
-    {
-      name: 'Flora & Design',
-      category: 'Decoração Floral',
-      rating: 4.8,
-      reviews: 156,
-      location: 'Porto',
-      image: 'https://images.unsplash.com/photo-1522673607200-164d1b6ce486?w=400&h=300&fit=crop'
-    },
-    {
-      name: 'Sabor Premium',
-      category: 'Buffet & Catering',
-      rating: 4.9,
-      reviews: 203,
-      location: 'Cascais',
-      image: 'https://images.unsplash.com/photo-1555244162-803834f70033?w=400&h=300&fit=crop'
-    }
-  ];
+  const [vendors, setVendors] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [vendorsLoading, setVendorsLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedVendor, setSelectedVendor] = useState(null);
+  const [showProfile, setShowProfile] = useState(false);
+  const [currentSlide, setCurrentSlide] = useState(0);
 
-  const categories = ['Todos', 'Fotografia', 'Espaços', 'Decoração', 'Buffet', 'Música'];
+
+    // Scroll to top when pathname changes
+    useEffect(() => {
+      window.scrollTo(0, 0);
+    }, []);
+  
+  // Inspiration gallery lightbox state
+  const [showInspirationModal, setShowInspirationModal] = useState(false);
+  const [currentInspirationSlide, setCurrentInspirationSlide] = useState(0);
+
+  useEffect(() => {
+    fetchVendors();
+    fetchCategories();
+  }, []);
+
+  const fetchVendors = async () => {
+    try {
+      setVendorsLoading(true);
+      const response = await getFeaturedVendors();
+      setVendors(response.data || []);
+    } catch (error) {
+      console.error('Error fetching vendors:', error);
+    } finally {
+      setVendorsLoading(false);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const response = await getVendorCategories();
+      setCategories(response.data || []);
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+    }
+  };
+
+  const filteredVendors = selectedCategory === 'all' 
+    ? vendors 
+    : vendors.filter(v => v.category?.slug === selectedCategory);
+
+  // Get categories that have vendors associated with them
+  const categoriesWithVendors = categories.filter(cat => 
+    vendors.some(vendor => vendor.category?.slug === cat.slug || vendor.category?._id === cat._id)
+  );
+
+  const handleViewProfile = async (vendor) => {
+    try {
+      const response = await getVendor(vendor._id);
+      setSelectedVendor(response.data);
+      setCurrentSlide(0);
+      setShowProfile(true);
+    } catch (error) {
+      console.error('Error loading vendor:', error);
+    }
+  };
+
+  const nextSlide = () => {
+    const allImages = getAllVendorImages(selectedVendor);
+    if (allImages.length > 1) {
+      setCurrentSlide((prev) => (prev + 1) % allImages.length);
+    }
+  };
+
+  const prevSlide = () => {
+    const allImages = getAllVendorImages(selectedVendor);
+    if (allImages.length > 1) {
+      setCurrentSlide((prev) => (prev - 1 + allImages.length) % allImages.length);
+    }
+  };
+
+  // Get all images including gallery photos
+  const getAllVendorImages = (vendor) => {
+    if (!vendor) return [];
+    const images = [...(vendor.images || [])];
+    
+    // Add gallery album photos
+    if (vendor.galleries && vendor.galleries.length > 0) {
+      vendor.galleries.forEach(gallery => {
+        if (gallery.photos && gallery.photos.length > 0) {
+          gallery.photos.forEach(photo => {
+            if (photo.url) {
+              images.push(photo.url);
+            }
+          });
+        }
+      });
+    }
+    
+    return images;
+  };
+
+  // Price range helpers
+  const getPriceRangeColor = (range) => {
+    const colors = {
+      budget: 'text-green-600 bg-green-50',
+      medium: 'text-yellow-600 bg-yellow-50',
+      high: 'text-orange-600 bg-orange-50',
+      luxury: 'text-purple-600 bg-purple-50'
+    };
+    return colors[range] || 'text-gray-600 bg-gray-50';
+  };
+
+  const getPriceRangeLabel = (range) => {
+    const labels = {
+      budget: 'Económico',
+      medium: 'Médio',
+      high: 'Alto',
+      luxury: 'Luxo'
+    };
+    return labels[range] || range;
+  };
+
+  const handleRequestQuote = (vendor) => {
+    if (!user) {
+      toast.error('Precisa fazer login para pedir orçamento');
+      navigate('/login');
+      return;
+    }
+    navigate('/vendors');
+  };
+
+  const handleAddReview = (vendor) => {
+    if (!user) {
+      toast.error('Precisa fazer login para avaliar');
+      navigate('/login');
+      return;
+    }
+    navigate('/vendors');
+  };
+
+  // Inspiration gallery navigation
+  const nextInspirationSlide = () => {
+    setCurrentInspirationSlide((prev) => (prev + 1) % inspirationImages.length);
+  };
+
+  const prevInspirationSlide = () => {
+    setCurrentInspirationSlide((prev) => (prev - 1 + inspirationImages.length) % inspirationImages.length);
+  };
+
+  const openInspirationModal = (index) => {
+    setCurrentInspirationSlide(index);
+    setShowInspirationModal(true);
+  };
 
   const testimonials = [
     {
@@ -94,10 +212,10 @@ export default function WeddingLanding() {
     return <WeddingDashboard />;
   }
 
-  
+
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className={` min-h-screen bg-white `}>
       {/* Navigation */}
       
       
@@ -115,9 +233,9 @@ export default function WeddingLanding() {
   
   {/* Desktop Navigation - Hidden on mobile/tablet */}
   <div className="hidden lg:flex gap-6 xl:gap-8 text-gray-600">
-    <a href="#" className="hover:text-gray-900 transition-colors">{t('nav.forCouples')}</a>
-    <a href="#" className="hover:text-gray-900 transition-colors">{t('nav.vendors')}</a>
-    <a href="#" className="hover:text-gray-900 transition-colors">{t('nav.contact')}</a>
+    <a href="/vendors" className="hover:text-gray-900 transition-colors">{t('nav.vendors')}</a>
+    <a href="/public-gallery" className="hover:text-gray-900 transition-colors">Galeria</a>
+    <a href="/contact" className="hover:text-gray-900 transition-colors">{t('nav.contact')}</a>
   </div>
   
   {/* Right side: Auth buttons and mobile menu */}
@@ -255,7 +373,7 @@ export default function WeddingLanding() {
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <div>
             <h1 className="text-5xl md:text-6xl font-serif mb-6 text-black">
-              Planei o seu <span className="text-[#9CAA8E]">casamento</span><br />
+              Planeje o seu <span className="text-[#9CAA8E]">casamento</span><br />
               em um só lugar
             </h1>
             <p className="text-gray-600 text-lg mb-8">
@@ -399,7 +517,7 @@ export default function WeddingLanding() {
                 </div>
               </div>
               
-              <div className="flex items-center gap-2">
+              <div onClick={()=>navigate('/public-gallery')} className="flex cursor-pointer items-center gap-2">
                 <div className="flex -space-x-2 max-sm:hidden">
                   <div className="w-8 h-8 rounded-full bg-gray-300 border-2 border-white overflow-hidden">
                     <img 
@@ -431,7 +549,7 @@ export default function WeddingLanding() {
               <button onClick={()=>navigate('/signup')} className="px-8  py-3 bg-[#9CAA8E] text-white rounded-full hover:bg-[#8A9A7E] font-medium">
                 {t('cta.startNow')}
               </button>
-              <button onClick={()=>navigate('/signup')} className="px-8 py-3 border-2 border-gray-300 text-gray-700 rounded-full hover:border-[#9CAA8E] hover:text-[#9CAA8E] font-medium">
+              <button onClick={()=>navigate('/signup?as=vendor')} className="px-8 py-3 border-2 border-gray-300 text-gray-700 rounded-full hover:border-[#9CAA8E] hover:text-[#9CAA8E] font-medium">
                 {t('cta.vendor')}
               </button>
             </div>
@@ -504,60 +622,86 @@ export default function WeddingLanding() {
       </section>
 
       {/* Vendors Section */}
-      <section className="py-16 max-w-7xl mx-auto px-8">
+      <section className={`${filteredVendors.length==0 ? 'hidden':""} py-16 max-w-7xl mx-auto px-8`}>
         <div className="flex justify-between items-center mb-8 flex-wrap gap-3">
           <div>
             <h2 className="text-4xl font-serif mb-2 text-black">{t('vendors.title')}</h2>
             <p className="text-gray-600">{t('vendors.subtitle')}</p>
           </div>
-          <button className="px-6 text-black py-2 border border-gray-300 rounded-full hover:border-gray-400">
+          <button onClick={()=>navigate('/vendors')} className="px-6 text-black py-2 border border-gray-300 rounded-full hover:border-gray-400">
             {t('vendors.viewAll')}
           </button>
         </div>
         
         <div className="flex gap-3 mb-8 overflow-x-auto">
-          {categories.map((cat, idx) => (
-            <button
-              key={cat}
-              className={`px-6 py-2 rounded-full whitespace-nowrap ${
-                idx === 0 
-                  ? 'bg-[#9CAA8E] text-white' 
-                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
-            >
-              {cat}
-            </button>
-          ))}
+          <button
+            key="all"
+            onClick={() => setSelectedCategory('all')}
+            className={`px-6 py-2 rounded-full whitespace-nowrap ${
+              selectedCategory === 'all'
+                ? 'bg-[#9CAA8E] text-white' 
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            All
+          </button>
+          {categoriesWithVendors.length > 0 ? (
+            categoriesWithVendors.map((cat, idx) => (
+              <button
+                key={cat._id || cat.slug || idx}
+                onClick={() => setSelectedCategory(cat.slug || 'all')}
+                className={`px-6 py-2 rounded-full whitespace-nowrap ${
+                  (cat.slug || 'all') === selectedCategory 
+                    ? 'bg-[#9CAA8E] text-white' 
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {cat.name || cat}
+              </button>
+            ))
+          ) : (
+            <></>
+          )}
         </div>
         
+        {vendorsLoading ? (
+          <div className="flex justify-center py-12">
+            <Loader />
+          </div>
+        ) : (
         <div className="grid md:grid-cols-4 gap-6">
-          {vendors.map((vendor, idx) => (
-            <div key={idx} className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-shadow">
+          {filteredVendors.map((vendor, idx) => (
+            <div 
+              key={vendor._id || idx} 
+              className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-shadow cursor-pointer"
+              onClick={() => handleViewProfile(vendor)}
+            >
               <div className="h-48 overflow-hidden">
                 <img 
-                  src={vendor.image} 
+                  src={vendor.coverImage || vendor.images?.[0] || 'https://images.unsplash.com/photo-1606800052052-a08af7148866?w=400&h=300&fit=crop'} 
                   alt={vendor.name}
                   className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                 />
               </div>
               <div className="p-4">
-                <h3 className="font-semibold text-lg mb-1">{vendor.name}</h3>
-                <p className="text-sm text-gray-600 mb-3">{vendor.category}</p>
+                <h3 className="font-semibold text-lg mb-1 text-gray-600">{vendor.name}</h3>
+                <p className="text-sm text-gray-600 mb-3">{vendor.category?.name || vendor.city || 'General'}</p>
                 <div className="flex items-center justify-between text-sm">
                   <div className="flex items-center gap-1">
                     <span className="text-yellow-500">⭐</span>
-                    <span className="font-semibold">{vendor.rating}</span>
-                    <span className="text-gray-500">({vendor.reviews})</span>
+                    <span className="font-semibold text-gray-500">{vendor.averageRating?.toFixed(1) || '0.0'}</span>
+                    <span className="text-gray-500">({vendor.totalReviews || 0})</span>
                   </div>
                   <div className="flex items-center gap-1 text-gray-600">
                     <span><MapPin size={16}/></span>
-                    <span>{vendor.location}</span>
+                    <span>{vendor.city || '-'}</span>
                   </div>
                 </div>
               </div>
             </div>
           ))}
         </div>
+        )}
       </section>
 
       {/* How it Works Section */}
@@ -630,7 +774,9 @@ export default function WeddingLanding() {
               </div>
             </div>
             
-            <button className="px-8 py-3 bg-[#9CAA8E] text-white rounded-full hover:bg-[#8A9A7E]">
+            <button onClick={()=>{
+                navigate('/signup')
+            }} className="px-8 py-3 bg-[#9CAA8E] text-white rounded-full hover:bg-[#8A9A7E]">
               {t('cta.createWedding')}
             </button>
           </div>
@@ -664,7 +810,7 @@ export default function WeddingLanding() {
                 </div>
               </div>
               
-              <button className="px-8 py-3 border-2 border-[#9CAA8E] text-[#9CAA8E] rounded-full hover:bg-[#9CAA8E] hover:text-white">
+              <button onClick={()=>navigate('/signup')} className="px-8 py-3 border-2 border-[#9CAA8E] text-[#9CAA8E] rounded-full hover:bg-[#9CAA8E] hover:text-white">
                 {t('cta.registerVendor')}
               </button>
             </div>
@@ -681,7 +827,7 @@ export default function WeddingLanding() {
       </section>
 
       {/* Testimonials Section */}
-      <section className="py-16 max-w-7xl mx-auto px-8">
+      <section className="py-16 max-w-7xl mx-auto px-8 hidden">
         <div className="text-center mb-12">
           <h2 className="text-4xl font-serif mb-4 text-black">{t('testimonials.title')}</h2>
           <div className="flex items-center justify-center gap-8 text-gray-600 max-sm:hidden">
@@ -739,7 +885,11 @@ export default function WeddingLanding() {
           
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             {inspirationImages.map((img, idx) => (
-              <div key={idx} className="rounded-2xl overflow-hidden hover:scale-105 transition-transform cursor-pointer">
+              <div 
+                key={idx} 
+                className="rounded-2xl overflow-hidden hover:scale-105 transition-transform cursor-pointer"
+                onClick={() => openInspirationModal(idx)}
+              >
                 <img 
                   src={img} 
                   alt={`Inspiration ${idx + 1}`}
@@ -747,6 +897,15 @@ export default function WeddingLanding() {
                 />
               </div>
             ))}
+          </div>
+          
+          <div className="text-center mt-8">
+            <button 
+              onClick={() => navigate('/public-gallery')} 
+              className="px-8 py-3 bg-[#9CAA8E] text-white rounded-full hover:bg-[#8A9A7E] transition-colors font-medium"
+            >
+              Ver mais images
+            </button>
           </div>
         </div>
       </section>
@@ -788,29 +947,26 @@ export default function WeddingLanding() {
             <div>
               <h4 className="font-semibold mb-4">{t('footer.forCouples.title')}</h4>
               <ul className="space-y-2 text-gray-400 text-sm">
-                <li><a href="#" className="hover:text-white !text-gray-400">{t('footer.forCouples.checklist')}</a></li>
-                <li><a href="#" className="hover:text-white !text-gray-400">{t('footer.forCouples.budget')}</a></li>
-                <li><a href="#" className="hover:text-white !text-gray-400">{t('footer.forCouples.community')}</a></li>
-                <li><a href="#" className="hover:text-white !text-gray-400">{t('footer.forCouples.weddingSite')}</a></li>
+                <li><a href="/checklist" className="hover:text-white !text-gray-400">{t('footer.forCouples.checklist')}</a></li>
+                <li><a href="/budget" className="hover:text-white !text-gray-400">{t('footer.forCouples.budget')}</a></li>
               </ul>
             </div>
             
             <div>
               <h4 className="font-semibold mb-4">{t('footer.vendors.title')}</h4>
               <ul className="space-y-2 text-gray-400 text-sm">
-                <li><a href="#" className="hover:text-white !text-gray-400">{t('footer.vendors.register')}</a></li>
-                <li><a href="#" className="hover:text-white !text-gray-400">{t('footer.vendors.plans')}</a></li>
-                <li><a href="#" className="hover:text-white !text-gray-400">{t('footer.vendors.support')}</a></li>
+                <li><a href="/signup?as=vendor" className="hover:text-white !text-gray-400">{t('footer.vendors.register')}</a></li>
+                <li><a href="/vendors/plans" className="hover:text-white !text-gray-400">{t('footer.vendors.plans')}</a></li>
+                <li><a href="/support" className="hover:text-white !text-gray-400">{t('footer.vendors.support')}</a></li>
               </ul>
             </div>
             
             <div>
               <h4 className="font-semibold mb-4">{t('footer.company.title')}</h4>
               <ul className="space-y-2 text-gray-400 text-sm">
-                <li><a href="#" className="hover:text-white !text-gray-400">{t('footer.company.about')}</a></li>
-                <li><a href="#" className="hover:text-white !text-gray-400">{t('footer.company.blog')}</a></li>
-                <li><a href="#" className="hover:text-white !text-gray-400">{t('footer.company.contact')}</a></li>
-                <li><a href="#" className="hover:text-white !text-gray-400">{t('footer.company.privacy')}</a></li>
+                <li><a href="/about" className="hover:text-white !text-gray-400">{t('footer.company.about')}</a></li>
+                <li><a href="/contact" className="hover:text-white !text-gray-400">{t('footer.company.contact')}</a></li>
+                <li><a href="/privacy" className="hover:text-white !text-gray-400">{t('footer.company.privacy')}</a></li>
               </ul>
             </div>
           </div>
@@ -833,6 +989,83 @@ export default function WeddingLanding() {
           </div>
         </div>
       </footer>
-    </div>
+
+    {/* Vendor Profile Modal */}
+    {showProfile && selectedVendor && (
+      <VendorProfileModal
+        vendor={selectedVendor}
+        currentSlide={currentSlide}
+        setCurrentSlide={setCurrentSlide}
+        onClose={() => setShowProfile(false)}
+        onRequestQuote={handleRequestQuote}
+        onAddReview={handleAddReview}
+        getPriceRangeColor={getPriceRangeColor}
+        getPriceRangeLabel={getPriceRangeLabel}
+      />
+    )}
+
+    {/* Inspiration Gallery Lightbox Modal */}
+    {showInspirationModal && (
+      <>
+        <div 
+          className="fixed inset-0 bg-black/90 z-50"
+          onClick={() => setShowInspirationModal(false)}
+        />
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          {/* Close button */}
+          <button 
+            onClick={() => setShowInspirationModal(false)}
+            className="absolute top-4 right-4 w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition-colors z-10"
+          >
+            <X className="w-6 h-6 text-white" />
+          </button>
+
+          {/* Previous button */}
+          <button 
+            onClick={prevInspirationSlide}
+            className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition-colors"
+          >
+            <ChevronLeft className="w-6 h-6 text-white" />
+          </button>
+
+          {/* Image */}
+          <img 
+            src={inspirationImages[currentInspirationSlide]}
+            alt={`Inspiration ${currentInspirationSlide + 1}`}
+            className="max-w-[90vw] max-h-[90vh] object-contain"
+            onClick={(e) => e.stopPropagation()}
+          />
+
+          {/* Next button */}
+          <button 
+            onClick={nextInspirationSlide}
+            className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition-colors"
+          >
+            <ChevronRight className="w-6 h-6 text-white" />
+          </button>
+
+          {/* Slide indicators */}
+          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
+            {inspirationImages.map((_, idx) => (
+              <button
+                key={idx}
+                onClick={() => setCurrentInspirationSlide(idx)}
+                className={`transition-all duration-300 ${
+                  idx === currentInspirationSlide 
+                    ? 'w-8 h-2 bg-white rounded-full' 
+                    : 'w-2 h-2 bg-white/50 rounded-full hover:bg-white'
+                }`}
+              />
+            ))}
+          </div>
+
+          {/* Image counter */}
+          <div className="absolute top-4 left-4 px-3 py-1 bg-white/10 backdrop-blur-sm text-white text-sm rounded-full">
+            {currentInspirationSlide + 1} / {inspirationImages.length}
+          </div>
+        </div>
+      </>
+    )}
+  </div>
   );
 }
