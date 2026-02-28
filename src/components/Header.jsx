@@ -61,15 +61,17 @@ const Header = () => {
         
           {user?.role!="admin" && <div className="hidden lg:flex gap-6 xl:gap-8 text-gray-600">
          
-         
-       {user && <>
 
-          <button 
+           <button 
             onClick={() => navigate('/')} 
             className={`transition-colors font-medium ${location.pathname === '/' ? 'text-[#9CAA8E] font-bold' : 'hover:text-[#9CAA8E]'}`}
           >
           Painel
           </button>
+         
+       {user?.role=="couple" && <>
+
+        
 
           <button 
             onClick={() => navigate('/checklist')} 

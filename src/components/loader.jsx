@@ -27,7 +27,7 @@ export default function FullPageLoader({ message = "Loading…", tip, notFull, t
             className="absolute inset-0 rounded-full border-4 border-transparent animate-spin"
             style={{
               borderTopColor: "#276a83",
-              borderRightColor: "#9CAA8E",
+              borderRightColor: "#f9fafb",
             }}
           />
         </div>
