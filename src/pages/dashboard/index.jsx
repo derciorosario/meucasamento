@@ -581,7 +581,7 @@ export default function WeddingDashboard() {
               )}
               
               <Link 
-                to="/vendors"
+                to="/profile?tab=quotes"
                 className="mt-4 inline-flex items-center gap-1 text-sm text-primary-600 hover:text-primary-700 transition-colors"
               >
                 <span>Ver todos os pedidos</span>
