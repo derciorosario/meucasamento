@@ -25,6 +25,7 @@ const PublicGallery = () => {
   const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 });
   const [lightboxGallery, setLightboxGallery] = useState(null);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [galleryIndexes, setGalleryIndexes] = useState({}); // Track index per gallery
   const [viewMode, setViewMode] = useState('slides'); // 'slides' or 'grid'
 
   useEffect(() => {
@@ -74,6 +75,12 @@ const PublicGallery = () => {
     if (lightboxIndex > 0) {
       setLightboxIndex(lightboxIndex - 1);
     }
+  };
+
+  const getGalleryIndex = (galleryId) => galleryIndexes[galleryId] || 0;
+
+  const setGalleryIndex = (galleryId, index) => {
+    setGalleryIndexes(prev => ({ ...prev, [galleryId]: index }));
   };
 
   const handlePageChange = (newPage) => {
@@ -201,13 +208,13 @@ const PublicGallery = () => {
                   {gallery.photos && gallery.photos.length > 0 ? (
                     <>
                       <AnimatePresence mode='wait'>
-                        <motion.img
-                          key={`${gallery._id}-${lightboxIndex}`}
-                          initial={{ opacity: 0 }}
-                          animate={{ opacity: 1 }}
-                          exit={{ opacity: 0 }}
-                          transition={{ duration: 0.3 }}
-                          src={getImageUrl(gallery.photos[lightboxIndex]?.url || gallery.coverPhoto)}
+                          <motion.img
+                            key={`${gallery._id}-${getGalleryIndex(gallery._id)}`}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            transition={{ duration: 0.3 }}
+                            src={getImageUrl(gallery.photos[getGalleryIndex(gallery._id)]?.url || gallery.coverPhoto)}
                           alt={gallery.name}
                           className="w-full h-full object-contain"
                           onClick={() => openLightbox(gallery)}
@@ -219,22 +226,24 @@ const PublicGallery = () => {
                         <>
                           <button
                             onClick={() => {
-                              if (lightboxIndex > 0) {
-                                setLightboxIndex(lightboxIndex - 1);
+                              const currentIdx = getGalleryIndex(gallery._id);
+                              if (currentIdx > 0) {
+                                setGalleryIndex(gallery._id, currentIdx - 1);
                               }
                             }}
-                            disabled={lightboxIndex === 0}
+                            disabled={getGalleryIndex(gallery._id) === 0}
                             className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/90 hover:bg-white rounded-full flex items-center justify-center shadow-lg transition-all disabled:opacity-50"
                           >
                             <ChevronLeft className="w-6 h-6 text-gray-800" />
                           </button>
                           <button
                             onClick={() => {
-                              if (lightboxIndex < gallery.photos.length - 1) {
-                                setLightboxIndex(lightboxIndex + 1);
+                              const currentIdx = getGalleryIndex(gallery._id);
+                              if (currentIdx < gallery.photos.length - 1) {
+                                setGalleryIndex(gallery._id, currentIdx + 1);
                               }
                             }}
-                            disabled={lightboxIndex >= gallery.photos.length - 1}
+                            disabled={getGalleryIndex(gallery._id) >= gallery.photos.length - 1}
                             className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/90 hover:bg-white rounded-full flex items-center justify-center shadow-lg transition-all disabled:opacity-50"
                           >
                             <ChevronRight className="w-6 h-6 text-gray-800" />
@@ -245,9 +254,9 @@ const PublicGallery = () => {
                             {Array.from({ length: gallery.photos.length }, (_, i) => (
                               <button
                                 key={i}
-                                onClick={() => setLightboxIndex(i)}
+                                onClick={() => setGalleryIndex(gallery._id, i)}
                                 className={`w-2 h-2 rounded-full transition-all ${
-                                  lightboxIndex === i 
+                                  getGalleryIndex(gallery._id) === i 
                                     ? 'w-6 bg-white' 
                                     : 'bg-white/50 hover:bg-white/80'
                                 }`}
@@ -259,7 +268,7 @@ const PublicGallery = () => {
 
                       {/* Photo Counter */}
                       <div className="absolute top-4 right-4 px-3 py-1 bg-black/50 backdrop-blur-sm text-white text-sm rounded-full">
-                        {lightboxIndex + 1} / {gallery.photos.length}
+                        {getGalleryIndex(gallery._id) + 1} / {gallery.photos.length}
                       </div>
 
                       {/* View All Button */}

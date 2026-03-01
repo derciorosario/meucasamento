@@ -9,6 +9,7 @@ import {
 import { useAuth } from '../../contexts/AuthContext';
 import { API_URL, getTasks, getGuests, getGuestStats, getBudget, getCategories, updateBudget, getVendorQuoteRequests, getVendors, toggleTaskCompletion, getMyQuoteRequests, getVendor } from '../../api/client';
 import VendorProfileModal from '../../components/VendorProfileModal';
+import WelcomeDialog from '../../components/WelcomeDialog';
 import { toast } from 'react-hot-toast';
 
 export default function WeddingDashboard() {
@@ -33,6 +34,9 @@ export default function WeddingDashboard() {
   const [showProfile, setShowProfile] = useState(false);
   const [selectedVendor, setSelectedVendor] = useState(null);
   const [currentSlide, setCurrentSlide] = useState(0);
+
+  // Welcome Dialog state
+  const [showWelcomeDialog, setShowWelcomeDialog] = useState(false);
 
   const isVendor = user?.role === 'vendor';
   const isCouple = user?.role === 'couple' || user?.role === undefined;
@@ -153,6 +157,18 @@ export default function WeddingDashboard() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Show welcome dialog on first load (after data is loaded)
+  useEffect(() => {
+    if (!loading && user) {
+      // Check if user has logged in recently (you can customize this logic)
+      const hasSeenWelcome = localStorage.getItem('hasSeenWelcomeDialog');
+      if (!hasSeenWelcome) {
+        setShowWelcomeDialog(true);
+        localStorage.setItem('hasSeenWelcomeDialog', 'true');
+      }
+    }
+  }, [loading, user]);
 
   const handleLogout = async () => {
     setShowLogoutModal(false);
@@ -991,6 +1007,13 @@ export default function WeddingDashboard() {
           getPriceRangeLabel={getPriceRangeLabel}
         />
       )}
+
+      {/* Welcome Dialog */}
+      <WelcomeDialog 
+        isOpen={showWelcomeDialog} 
+        onClose={() => setShowWelcomeDialog(false)}
+        isVendor={isVendor}
+      />
     </div>
   );
 }

@@ -66,7 +66,7 @@ const Header = () => {
             onClick={() => navigate('/')} 
             className={`transition-colors font-medium ${location.pathname === '/' ? 'text-[#9CAA8E] font-bold' : 'hover:text-[#9CAA8E]'}`}
           >
-          Painel
+           {user ? 'Painel':'Inicio'}
           </button>
          
        {user?.role=="couple" && <>

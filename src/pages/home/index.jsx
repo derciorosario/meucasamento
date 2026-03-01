@@ -466,42 +466,50 @@ export default function WeddingLanding() {
           <h2 className="text-3xl md:text-4xl font-serif text-center mb-12 text-black">{t('features.title')}</h2>
           
           <div className="grid grid-cols-2 md:grid-cols-5 gap-6 md:gap-8 mb-8">
-            <div className="text-center">
-              <div className="w-14 h-14 md:w-16 md:h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
+            <button onClick={() => navigate('/checklist')} className="text-center cursor-pointer">
+              <div className="text-center">
+              <div className="w-14 h-14 md:w-16 md:h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3 hover:bg-primary-100 transition-colors">
                 <CheckSquare className="w-7 h-7 md:w-8 md:h-8 text-[#9CAA8E]" />
               </div>
               <h3 className="font-semibold text-sm md:text-base mb-1 text-black">{t('features.checklist.title')}</h3>
               <p className="text-xs md:text-sm text-gray-600">{t('features.checklist.description')}</p>
-            </div>
+              </div>
+            </button>
             
-            <div className="text-center">
-              <div className="w-14 h-14 md:w-16 md:h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
+            <button onClick={() => navigate('/budget')} className="text-center cursor-pointer">
+              <div className="text-center">
+              <div className="w-14 h-14 md:w-16 md:h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3 hover:bg-primary-100 transition-colors">
                 <DollarSign className="w-7 h-7 md:w-8 md:h-8 text-[#9CAA8E]" />
               </div>
               <h3 className="font-semibold text-sm md:text-base mb-1 text-black">{t('features.budget.title')}</h3>
               <p className="text-xs md:text-sm text-gray-600">{t('features.budget.description')}</p>
-            </div>
+              </div>
+            </button>
             
-            <div className="text-center">
-              <div className="w-14 h-14 md:w-16 md:h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
+            <button onClick={() => navigate('/vendors')} className="text-center cursor-pointer">
+              <div className="text-center">
+              <div className="w-14 h-14 md:w-16 md:h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3 hover:bg-primary-100 transition-colors">
                 <Users className="w-7 h-7 md:w-8 md:h-8 text-[#9CAA8E]" />
               </div>
               <h3 className="font-semibold text-sm md:text-base mb-1 text-black">{t('features.vendors.title')}</h3>
               <p className="text-xs md:text-sm text-gray-600">{t('features.vendors.description')}</p>
-            </div>
+              </div>
+            </button>
             
-            <div className="text-center">
-              <div className="w-14 h-14 md:w-16 md:h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
+            <button onClick={() => navigate('/guests')} className="text-center cursor-pointer">
+              <div className="text-center">
+              <div className="w-14 h-14 md:w-16 md:h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3 hover:bg-primary-100 transition-colors">
                 <Mail className="w-7 h-7 md:w-8 md:h-8 text-[#9CAA8E]" />
               </div>
               <h3 className="font-semibold text-sm md:text-base mb-1 text-black">{t('features.invitations.title')}</h3>
               <p className="text-xs md:text-sm text-gray-600">{t('features.invitations.description')}</p>
-            </div>
+              </div>
+            </button>
             
-            <div className="text-center">
-               <div className="w-14 h-14 md:w-16 md:h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3">
-          <Camera className="w-8 h-8 text-[#9CAA8E]" />
-        </div>
+            <div onClick={() => navigate('/public-gallery')} className="text-center cursor-pointer">
+             <div className="w-14 h-14 md:w-16 md:h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3 hover:bg-primary-100 transition-colors">
+              <Camera className="w-8 h-8 text-[#9CAA8E]" />
+            </div>
         <h3 className="font-semibold mb-2 text-black">Galeria de Fotos</h3>
         <p className="text-sm text-gray-600">Partilhe fotos com os convidados</p>
             </div>

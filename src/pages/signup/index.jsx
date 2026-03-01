@@ -113,7 +113,7 @@ export default function WeddingSignUp() {
     email: '',
     password: '',
     phone: '',
-    country: '',
+    country: 'Moçambique',
     city: '',
     weddingDate: '',
     userType: 'bride',
@@ -381,9 +381,22 @@ export default function WeddingSignUp() {
         <div className="w-full h-[100vh]  overflow-y-auto lg:w-2/5 bg-[#f8f6f3] px-6 py-12 lg:px-16 lg:py-20 ">
           <div className="max-w-md mx-auto h- w-full">
             {/* Title */}
+
+             <div className="mb-12">
+              <div onClick={()=>navigate('/')} className="flex items-center gap-3 mb-4 cursor-pointer">
+                <div className="w-12 h-12 rounded-full bg-[#9CAF88] flex items-center justify-center">
+                  <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <h1 className="text-3xl font-bold text-[#3a3a3a] tracking-tight">Meu casamento</h1>
+              </div>
+              <p className="text-[#6b6b6b] text-sm">Planeje o casamento dos seus sonhos</p>
+            </div>
+            
             <div className="mb-10">
               
-              <h2 className="text-3xl font-bold text-[#2a2a2a] mb-3 tracking-tight">Criar Conta</h2>
+              <h2 className="text-2xl font-bold text-[#2a2a2a] mb-3 tracking-tight">Criar Conta</h2>
               <p className="text-[#6b6b6b] text-sm">Comece a planejar seu casamento dos sonhos</p>
             </div>
 
