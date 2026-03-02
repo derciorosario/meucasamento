@@ -19,7 +19,7 @@ const Footer = () => {
                 <span className="text-xl font-semibold text-white">Meu casamento</span>
               </div>
               <p className="text-gray-400 text-sm">
-                Planeje o casamento perfeito do início ao fim
+                Planeie o casamento perfeito do início ao fim
               </p>
             </div>
             

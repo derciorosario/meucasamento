@@ -833,7 +833,7 @@ const Calendar = ({ userId, vendorId }) => {
                             setShareEventId(editingEvent._id);
                             setShowShareModal(true);
                           }}
-                          className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                          className="flex hidden items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
                         >
                           <Share2 className="w-4 h-4" />
                           Partilhar
@@ -989,7 +989,7 @@ const Calendar = ({ userId, vendorId }) => {
                       setShowEventDetails(false);
                       setShowShareModal(true);
                     }}
-                    className="flex items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
+                    className="flex hidden items-center gap-2 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
                   >
                     <Share2 className="w-4 h-4" />
                     Partilhar
@@ -1067,7 +1067,7 @@ const Calendar = ({ userId, vendorId }) => {
                   </button>
                   <button
                     type="submit"
-                    className="flex-1 px-4 py-2 bg-[#9CAA8E] text-white rounded-lg hover:bg-[#8A9A7E]"
+                    className="flex-1 hidden px-4 py-2 bg-[#9CAA8E] text-white rounded-lg hover:bg-[#8A9A7E]"
                   >
                     Partilhar
                   </button>

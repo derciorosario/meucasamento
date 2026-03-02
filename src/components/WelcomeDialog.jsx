@@ -29,7 +29,7 @@ export default function WelcomeDialog({ isOpen, onClose, isVendor = false }) {
   const coupleTips = [
     {
       icon: Calendar,
-      title: 'Planeje com Antecedência',
+      title: 'Planeie com Antecedência',
       description: 'Comece pela definição da data e do orçamento. Isso ajuda a guiar todas as outras decisões.',
       color: 'bg-blue-100 text-blue-600'
     },

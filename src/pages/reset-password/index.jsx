@@ -76,7 +76,7 @@ export default function ResetPassword() {
               </div>
               <h1 className="text-3xl font-bold text-[#3a3a3a] tracking-tight">Meu casamento</h1>
             </div>
-            <p className="text-[#6b6b6b] text-sm">Planeje o casamento dos seus sonhos</p>
+            <p className="text-[#6b6b6b] text-sm">Planeie o casamento dos seus sonhos</p>
           </div>
 
           {/* Title */}

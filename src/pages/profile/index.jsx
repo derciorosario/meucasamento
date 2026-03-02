@@ -166,7 +166,7 @@ const ProfilePage = () => {
   useEffect(() => {
     // Check for tab parameter in URL
     const tabParam = searchParams.get('tab');
-    const validTabs = ['personal', 'wedding', 'gallery', 'vendor', 'quotes', 'reviews', 'myquotes', 'calendar'];
+    const validTabs = ['personal', 'wedding', 'gallery', 'vendor', 'quotes', 'reviews', 'myquotes'];
     if (tabParam && validTabs.includes(tabParam)) {
       setActiveTab(tabParam);
     }
@@ -823,19 +823,7 @@ const ProfilePage = () => {
                 </span>}
             </button>
           )}
-          {(formData.userType === 'vendor' || formData.userType === 'wedding_planner') && (
-            <button
-              onClick={() => setActiveTab('calendar')}
-              className={`px-6 py-3 rounded-full font-medium transition-all whitespace-nowrap ${
-                activeTab === 'calendar' 
-                  ? 'bg-[#9CAA8E] text-white shadow-lg' 
-                  : 'bg-white text-gray-600 hover:bg-gray-100 shadow-md'
-              }`}
-            >
-              <Calendar className="w-4 h-4 inline-block mr-1" />
-              Calendário
-            </button>
-          )}
+        
         </div>
 
         {/* Tabs - Mobile Optimized with Horizontal Scroll */}

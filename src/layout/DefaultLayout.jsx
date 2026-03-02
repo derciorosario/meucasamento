@@ -9,7 +9,7 @@ const DefaultLayout = ({children, hero={}}) => {
       <Header />
       <Hero
         title={hero.title || "Gestão de Orçamento"} 
-        subtitle={hero.subtitle || "Planeje e acompanhe o orçamento do seu casamento"} 
+        subtitle={hero.subtitle || "Planeie e acompanhe o orçamento do seu casamento"} 
       />
       {children}
       <Footer />

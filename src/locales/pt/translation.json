@@ -10,7 +10,7 @@
     "logout": "Sair"
   },
   "hero": {
-    "title": "Planeje o seu casamento em um só lugar",
+    "title": "Planeie o seu casamento em um só lugar",
     "subtitle": "Ferramentas, inspiração e os melhores fornecedores para o seu grande dia"
   },
   "features": {
@@ -71,7 +71,7 @@
       "description": "Cadastre-se gratuitamente e comece a planear"
     },
     "step2": {
-      "title": "Planeje e organize",
+      "title": "Planeie e organize",
       "description": "Use nossas ferramentas para organizar tudo"
     },
     "step3": {
@@ -117,7 +117,7 @@
   },
   "footer": {
     "brand": "Meu casamento",
-    "brandDescription": "Planeje o casamento perfeito do início ao fim",
+    "brandDescription": "Planeie o casamento perfeito do início ao fim",
     "forCouples": {
       "title": "Para Noivos",
       "checklist": "Checklist",

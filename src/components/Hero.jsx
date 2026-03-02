@@ -1,6 +1,6 @@
 import React from 'react';
 
-const Hero = ({ title = "Gestão de Orçamento", subtitle = "Planeje e acompanhe o orçamento do seu casamento" }) => {
+const Hero = ({ title = "Gestão de Orçamento", subtitle = "Planeie e acompanhe o orçamento do seu casamento" }) => {
   return (
     <div className="relative bg-gradient-to-r from-gray-100 to-gray-200 py-16 overflow-hidden">
       <div className="absolute inset-0 opacity-90">

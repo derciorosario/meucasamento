@@ -424,7 +424,7 @@ export default function WeddingLanding() {
         <div className="grid md:grid-cols-2 gap-12 items-center">
           <div>
             <h1 className="text-5xl md:text-6xl font-serif mb-6 text-black">
-              Planeje o seu <span className="text-[#9CAA8E]">casamento</span><br />
+              Planeie o seu <span className="text-[#9CAA8E]">casamento</span><br />
               em um só lugar
             </h1>
             <p className="text-gray-600 text-lg mb-8">
