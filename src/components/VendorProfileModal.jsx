@@ -21,7 +21,7 @@ import { API_URL } from '../api/client';
 // FAQ predefined questions configuration (must match profile/index.jsx)
 const FAQ_QUESTIONS = [
   // Services category
-  { id: 's1', question: 'Quais serviços estão incluídos no pacote?', type: 'multi-select', allowCustom: true, options: ['Fotografia', 'Vídeo', 'Decoração', 'Música', 'Iluminação', 'Buffet', 'Bolo', 'Convites', 'Flores', 'Outro'], category: 'services' },
+  { id: 's1', question: 'Quais serviços estão incluídos no pacote?', type: 'text', _allowCustom: true, options: ['Fotografia', 'Vídeo', 'Decoração', 'Música', 'Iluminação', 'Buffet', 'Bolo', 'Convites', 'Flores', 'Outro'], category: 'services' },
   { id: 's2', question: 'Quantas horas de serviço estão incluídas?', type: 'text', category: 'services', placeholder: 'Ex: 8 horas, dia inteiro, etc.' },
   { id: 's3', question: 'É possível contratar serviços adicionais?', type: 'boolean', category: 'services' },
   { id: 's4', question: 'Quais são as opções de personalização disponíveis?', type: 'multi-select', options: ['Cores', 'Tema', 'Decoração', 'Música', 'Menu', 'Outro'], category: 'services' },

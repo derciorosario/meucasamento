@@ -8,12 +8,13 @@ import Header from '../../components/Header';
 import Gallery from '../../components/Gallery';
 import Loader from '../../components/loader';
 import { motion, AnimatePresence } from 'framer-motion';
-import CalendarComponent from '../../components/Calendar';
+
+
 
 // FAQ predefined questions configuration
 const FAQ_QUESTIONS = [
   // Services category
-  { id: 's1', question: 'Quais serviços estão incluídos no pacote?', type: 'multi-select', allowCustom: true, options: ['Fotografia', 'Vídeo', 'Decoração', 'Música', 'Iluminação', 'Buffet', 'Bolo', 'Convites', 'Flores', 'Outro'], category: 'services' },
+  { id: 's1', question: 'Quais serviços estão incluídos no pacote?', type: 'text', _allowCustom: true, options: ['Fotografia', 'Vídeo', 'Decoração', 'Música', 'Iluminação', 'Buffet', 'Bolo', 'Convites', 'Flores', 'Outro'], category: 'services',placeholder:'Fotografia e Vídeo (8 horas), Decoração completa, Iluminação básica e Bolo personalizado.' },
   { id: 's2', question: 'Quantas horas de serviço estão incluídas?', type: 'text', category: 'services', placeholder: 'Ex: 8 horas' },
   { id: 's3', question: 'É possível contratar serviços adicionais?', type: 'boolean', category: 'services' },
   { id: 's4', question: 'Quais são as opções de personalização disponíveis?', type: 'multi-select', options: ['Cores', 'Tema', 'Decoração', 'Música', 'Menu', 'Outro'], category: 'services' },
