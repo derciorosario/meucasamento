@@ -282,7 +282,7 @@ export default function WeddingLogin() {
             {/* Welcome Back */}
             <div className="mb-10">
               <h2 className="text-4xl font-bold text-[#2a2a2a] mb-3 tracking-tight">Bem-vindo de volta</h2>
-              <p className="text-[#6b6b6b] text-sm">Entre na sua conta para continuar o planejamento</p>
+              <p className="text-[#6b6b6b] text-sm">Entre na sua conta para continuar o planeamento</p>
             </div>
 
             {/* Form */}
@@ -490,7 +490,7 @@ export default function WeddingLogin() {
 
     <div className="space-y-3">
       {[
-        'Planejamento passo a passo',
+        'Planeamento passo a passo',
         'Marketplace de fornecedores',
         'Gestão de orçamento e convidados'
       ].map((feature, index) => (

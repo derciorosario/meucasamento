@@ -48,7 +48,7 @@ export default function WelcomeDialog({ isOpen, onClose, isVendor = false }) {
     {
       icon: CheckCircle,
       title: 'Use a Checklist',
-      description: 'Nossa checklist inteligente orienta cada etapa do planejamento.',
+      description: 'Nossa checklist inteligente orienta cada etapa do planeamento.',
       color: 'bg-purple-100 text-purple-600'
     }
   ];

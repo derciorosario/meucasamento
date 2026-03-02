@@ -1,8 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import DefaultLayout from '../../layout/DefaultLayout';
-import { ChevronDown, Check, Heart, Lightbulb, Loader2, Edit2, Trash2, X, Plus, Filter, ChevronLeft, ChevronRight, MoreVertical } from 'lucide-react';
+import DatePicker from 'react-datepicker';
+import 'react-datepicker/dist/react-datepicker.css';
+import { ChevronDown, Check, Heart, Lightbulb, Loader2, Edit2, Trash2, X, Plus, Filter, ChevronLeft, ChevronRight, MoreVertical, Calendar } from 'lucide-react';
 import { getTasksByTimeline, getTasksByCategory, updateTask, createTask, deleteTask, toggleTaskCompletion, initDefaultTasks } from '../../api/client';
 import { toast } from '../../lib/toast';
+import { useAuth } from '../../contexts/AuthContext';
 
 // Category labels mapping
 const categoryLabels = {
@@ -46,10 +49,27 @@ const timelineOrder = [
   'after_wedding',
 ];
 
+// Helper function to get current week boundaries (Monday to Sunday)
+const getCurrentWeekBounds = () => {
+  const now = new Date();
+  const dayOfWeek = now.getDay();
+  const mondayOffset = dayOfWeek === 0 ? -6 : 1 - dayOfWeek; // Adjust for Sunday
+  
+  const monday = new Date(now);
+  monday.setDate(now.getDate() + mondayOffset);
+  monday.setHours(0, 0, 0, 0);
+  
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  sunday.setHours(23, 59, 59, 999);
+  
+  return { monday, sunday };
+};
+
 const ChecklistPage = () => {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [activeView, setActiveView] = useState('timeline');
+  const [activeView, setActiveView] = useState('category');
   const [showCompleted, setShowCompleted] = useState(() => {
     const saved = localStorage.getItem('checklist_showCompleted');
     return saved === 'true';
@@ -57,7 +77,10 @@ const ChecklistPage = () => {
   const [filterType, setFilterType] = useState('Todas');
   const [statusFilter, setStatusFilter] = useState('Pendentes');
   const [showMobileFilters, setShowMobileFilters] = useState(false);
+
+  const {profile} = useAuth()
   
+ 
   // Tasks data
   const [tasksByTimeline, setTasksByTimeline] = useState({});
   const [tasksByCategory, setTasksByCategory] = useState({});
@@ -65,6 +88,7 @@ const ChecklistPage = () => {
   // Expanded sections
   const [expandedTimelineSections, setExpandedTimelineSections] = useState({});
   const [expandedCategorySections, setExpandedCategorySections] = useState({});
+  const [expandedThisWeekSection, setExpandedThisWeekSection] = useState(true);
   
   // Form state for new task
   const [newTask, setNewTask] = useState({
@@ -72,6 +96,7 @@ const ChecklistPage = () => {
     categoryType: 'other',
     timelinePeriod: '12_months_before',
     priority: 'medium',
+    dueDate: null,
   });
 
   // Edit task state
@@ -205,6 +230,31 @@ const ChecklistPage = () => {
     }));
   };
 
+  // Toggle this week section
+  const toggleThisWeekSection = () => {
+    setExpandedThisWeekSection(prev => !prev);
+  };
+
+  // Get tasks for this week
+  const getThisWeekTasks = useCallback(() => {
+    const { monday, sunday } = getCurrentWeekBounds();
+    const allTasks = Object.values(tasksByTimeline).flat();
+    
+    return allTasks.filter(task => {
+      // Task has dueDate within current week
+      if (task.dueDate) {
+        const dueDate = new Date(task.dueDate);
+        return dueDate >= monday && dueDate <= sunday;
+      }
+     
+    });
+  }, [tasksByTimeline]);
+
+  // Get IDs of tasks that should be shown in This Week view (to filter them from other views)
+  const getThisWeekTaskIds = useCallback(() => {
+    return new Set(getThisWeekTasks().map(t => t._id));
+  }, [getThisWeekTasks]);
+
   // Handle task completion toggle
   const handleToggleTask = async (taskId) => {
     try {
@@ -246,6 +296,7 @@ const ChecklistPage = () => {
       categoryType: task.categoryType,
       timelinePeriod: task.timelinePeriod,
       priority: task.priority,
+      dueDate: task.dueDate ? new Date(task.dueDate) : null,
     });
     setMobileActionMenu(null); // Close mobile menu if open
   };
@@ -253,7 +304,13 @@ const ChecklistPage = () => {
   // Save edited task
   const handleSaveEdit = async (taskId) => {
     try {
-      await updateTask(taskId, editForm);
+      // Prepare edit data with dueDate formatted for backend
+      const editData = {
+        ...editForm,
+        dueDate: editForm.dueDate ? editForm.dueDate.toISOString() : null,
+      };
+      
+      await updateTask(taskId, editData);
       toast.success('Tarefa atualizada!');
       
       // Update state locally instead of reloading
@@ -366,7 +423,13 @@ const ChecklistPage = () => {
   const handleSaveTask = async (e) => {
     e.preventDefault();
     try {
-      const response = await createTask(newTask);
+      // Prepare task data with dueDate formatted for backend
+      const taskData = {
+        ...newTask,
+        dueDate: newTask.dueDate ? newTask.dueDate.toISOString() : null,
+      };
+      
+      const response = await createTask(taskData);
       toast.success('Tarefa criada com sucesso!');
       
       // Update state locally instead of reloading
@@ -400,6 +463,7 @@ const ChecklistPage = () => {
         categoryType: 'other',
         timelinePeriod: '12_months_before',
         priority: 'medium',
+        dueDate: null,
       });
     } catch (error) {
       console.error('Error creating task:', error);
@@ -463,16 +527,7 @@ const ChecklistPage = () => {
               {/* Mobile View Toggle with Swipe Hint */}
               <div className="lg:hidden mb-4">
                 <div className="flex items-center justify-between mb-2">
-                  <button
-                    onClick={() => setActiveView('timeline')}
-                    className={`flex-1 py-3 px-4 rounded-lg font-medium transition-colors text-center ${
-                      activeView === 'timeline'
-                        ? 'bg-primary-500 text-white shadow-md'
-                        : 'bg-gray-100 text-gray-600'
-                    }`}
-                  >
-                    Por Tempo
-                  </button>
+                  
                   <button
                     onClick={() => setActiveView('category')}
                     className={`flex-1 py-3 px-4 rounded-lg font-medium transition-colors text-center ${
@@ -483,12 +538,36 @@ const ChecklistPage = () => {
                   >
                     Por Categoria
                   </button>
+
+                  <button
+                    onClick={() => setActiveView('timeline')}
+                    className={`flex-1 py-3 px-4 rounded-lg font-medium transition-colors text-center ${
+                      activeView === 'timeline'
+                        ? 'bg-primary-500 text-white shadow-md'
+                        : 'bg-gray-100 text-gray-600'
+                    }`}
+                  >
+                    Por Tempo
+                  </button>
+                
                 </div>
                 
               </div>
 
               {/* Desktop Toggle Buttons */}
               <div className="hidden lg:flex gap-2 mb-6">
+
+                 <button
+                  onClick={() => setActiveView('category')}
+                  className={`px-6 py-3 rounded-lg font-medium transition-colors ${
+                    activeView === 'category'
+                      ? 'bg-primary-500 text-white shadow-md'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  Por Categoria
+                </button>
+
                 <button
                   onClick={() => setActiveView('timeline')}
                   className={`px-6 py-3 rounded-lg font-medium transition-colors ${
@@ -499,16 +578,7 @@ const ChecklistPage = () => {
                 >
                   Por Tempo
                 </button>
-                <button
-                  onClick={() => setActiveView('category')}
-                  className={`px-6 py-3 rounded-lg font-medium transition-colors ${
-                    activeView === 'category'
-                      ? 'bg-primary-500 text-white shadow-md'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  Por Categoria
-                </button>
+               
               </div>
 
               {/* Progress Section */}
@@ -604,6 +674,239 @@ const ChecklistPage = () => {
                 {/* Timeline View Content */}
                 {activeView === 'timeline' && (
                   <div className="space-y-4 transition-opacity duration-300">
+                    {/* Esta Semana Section - Shown at the top */}
+                    {(() => {
+                      const weekTasks = getThisWeekTasks();
+                      const filteredTasks = filterTasks(weekTasks);
+                      const completedCount = filteredTasks.filter(t => t.status === 'completed').length;
+                      
+                      if (filteredTasks.length > 0) {
+                        return (
+                          <div className="border border-gray-200 rounded-xl overflow-hidden mb-4">
+                            <button
+                              onClick={toggleThisWeekSection}
+                              className="w-full p-4 sm:p-6 flex items-center justify-between hover:bg-gray-50 transition-colors bg-gradient-to-r from-blue-50 to-purple-50"
+                            >
+                              <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                  <span className="text-blue-600 text-xl">📅</span>
+                                </div>
+                                <div className="text-left">
+                                  <h3 className="text-base sm:text-lg font-semibold text-gray-800">
+                                    Esta Semana
+                                  </h3>
+                                  <span className="text-xs sm:text-sm text-gray-500">
+                                    {completedCount} de {filteredTasks.length} concluídas
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-4">
+                                <span className="text-xs sm:text-sm text-blue-600 font-medium">
+                                  {filteredTasks.length} tarefas
+                                </span>
+                                <ChevronDown 
+                                  className={`w-5 h-5 text-gray-400 transition-transform flex-shrink-0 ${
+                                    expandedThisWeekSection ? 'rotate-180' : ''
+                                  }`} 
+                                />
+                              </div>
+                            </button>
+
+                            {expandedThisWeekSection && (
+                              <div className="px-4 sm:px-6 pb-4 sm:pb-6 space-y-3 bg-white border-t border-gray-200">
+                                {filteredTasks.map((task) => (
+                                  <div key={task._id} className="flex items-start sm:items-center justify-between py-3 border-b border-gray-100 last:border-0 hover:bg-gray-50 group">
+                                    <div className="flex items-start gap-3 flex-1 min-w-0">
+                                      <button
+                                        onClick={() => handleToggleTask(task._id)}
+                                        className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                                          task.status === 'completed'
+                                            ? 'bg-primary-500 border-primary-500'
+                                            : 'bg-white border-gray-300 hover:border-primary-500'
+                                        }`}
+                                        aria-label={task.status === 'completed' ? 'Marcar como pendente' : 'Marcar como concluída'}
+                                      >
+                                        {task.status === 'completed' && (
+                                          <Check className="w-4 h-4 text-white" />
+                                        )}
+                                      </button>
+                                      
+                                      <div className="flex-1 min-w-0">
+                                        {editingTask === task._id ? (
+                                          <div className="space-y-2">
+                                            <input
+                                              type="text"
+                                              value={editForm.title}
+                                              onChange={(e) => setEditForm({...editForm, title: e.target.value})}
+                                              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                              autoFocus
+                                            />
+                                            <div className="flex flex-col sm:flex-row gap-2">
+                                              <div className="flex-1">
+                                                <label className="block text-xs text-gray-500 mb-1">Prioridade</label>
+                                                <select
+                                                  value={editForm.priority}
+                                                  onChange={(e) => setEditForm({...editForm, priority: e.target.value})}
+                                                  className="w-full text-[15px] px-2 py-1.5 border border-gray-300 rounded text-black focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white"
+                                                  style={{ height: '40px', boxSizing: 'border-box' }}
+                                                >
+                                                  <option value="low">Baixa</option>
+                                                  <option value="medium">Média</option>
+                                                  <option value="high">Alta</option>
+                                                  <option value="urgent">Urgente</option>
+                                                </select>
+                                              </div>
+                                              <div className="flex-1">
+                                                <label className="block text-xs text-gray-500 mb-1">Data</label>
+                                                <DatePicker
+                                                  selected={editForm.dueDate}
+                                                  onChange={(date) => setEditForm({...editForm, dueDate: date})}
+                                                  minDate={new Date()}
+                                                  dateFormat="dd/MM/yyyy"
+                                                  placeholderText="Selecione"
+                                                  className="w-full text-xs px-2 py-1.5 border border-gray-300 rounded text-black focus:outline-none focus:ring-1 focus:ring-primary-500"
+                                                  style={{ height: '30px', boxSizing: 'border-box' }}
+                                                  showPopperArrow={false}
+                                                  popperPlacement="bottom-start"
+                                                />
+                                              </div>
+                                            </div>
+                                          </div>
+                                        ) : (
+                                          <div className="flex items-center gap-2 flex-wrap">
+                                            <span className={`text-sm sm:text-base text-gray-700 break-words ${task.status === 'completed' ? 'line-through text-gray-400' : ''}`}>
+                                              {task.title}
+                                            </span>
+                                            {task.isEssential && (
+                                              <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full whitespace-nowrap">Essencial</span>
+                                            )}
+                                            {task.dueDate && (
+                                              <span className="text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full whitespace-nowrap">
+                                                📅 {new Date(task.dueDate).toLocaleDateString('pt-BR')}
+                                              </span>
+                                            )}
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-2 ml-2">
+                                      {editingTask === task._id ? (
+                                        <>
+                                          <button
+                                            onClick={() => handleSaveEdit(task._id)}
+                                            className="p-2 text-green-600 hover:text-green-700 hover:bg-green-50 rounded-lg transition-colors"
+                                            title="Salvar"
+                                          >
+                                            <Check className="w-5 h-5" />
+                                          </button>
+                                          <button
+                                            onClick={handleCancelEdit}
+                                            className="p-2 text-gray-600 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                                            title="Cancelar"
+                                          >
+                                            <X className="w-5 h-5" />
+                                          </button>
+                                        </>
+                                      ) : (
+                                        <>
+                                          <span className={`hidden sm:inline-block text-xs px-3 py-1 rounded-full font-medium whitespace-nowrap ${
+                                            task.priority === 'high' || task.priority === 'urgent'
+                                              ? 'bg-red-100 text-red-700'
+                                              : task.priority === 'medium'
+                                              ? 'bg-yellow-100 text-yellow-700'
+                                              : 'bg-gray-100 text-gray-700'
+                                          }`}>
+                                            {task.priority === 'high' ? 'Alta' : 
+                                             task.priority === 'urgent' ? 'Urgente' : 
+                                             task.priority === 'medium' ? 'Média' : 'Baixa'}
+                                          </span>
+
+                                          <div className="hidden sm:flex items-center gap-1">
+                                            <button
+                                              onClick={() => handleEditTask(task)}
+                                              className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+                                              title="Editar tarefa"
+                                            >
+                                              <Edit2 className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                              onClick={() => setDeleteConfirm(task._id)}
+                                              className="p-2 text-gray-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                                              title="Excluir tarefa"
+                                            >
+                                              <Trash2 className="w-4 h-4" />
+                                            </button>
+                                          </div>
+
+                                          <div className="sm:hidden relative">
+                                            <button
+                                              onClick={() => setMobileActionMenu(mobileActionMenu === task._id ? null : task._id)}
+                                              className="p-2 text-gray-600 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                                              aria-label="Opções da tarefa"
+                                            >
+                                              <MoreVertical className="w-5 h-5" />
+                                            </button>
+                                            
+                                            {mobileActionMenu === task._id && (
+                                              <>
+                                                <div 
+                                                  className="fixed inset-0 z-40"
+                                                  onClick={() => setMobileActionMenu(null)}
+                                                />
+                                                <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-50 overflow-hidden">
+                                                  <button
+                                                    onClick={() => {
+                                                      handleEditTask(task);
+                                                      setMobileActionMenu(null);
+                                                    }}
+                                                    className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors border-b border-gray-100"
+                                                  >
+                                                    <Edit2 className="w-5 h-5 text-blue-600" />
+                                                    <span className="text-sm font-medium text-gray-700">Editar tarefa</span>
+                                                  </button>
+                                                  <button
+                                                    onClick={() => {
+                                                      setDeleteConfirm(task._id);
+                                                      setMobileActionMenu(null);
+                                                    }}
+                                                    className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+                                                  >
+                                                    <Trash2 className="w-5 h-5 text-gray-600" />
+                                                    <span className="text-sm font-medium text-gray-700">Excluir tarefa</span>
+                                                  </button>
+                                                </div>
+                                              </>
+                                            )}
+                                          </div>
+
+                                          {mobileActionMenu !== task._id && (
+                                            <span className={`sm:hidden text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap ${
+                                              task.priority === 'high' || task.priority === 'urgent'
+                                                ? 'bg-red-100 text-red-700'
+                                                : task.priority === 'medium'
+                                                ? 'bg-yellow-100 text-yellow-700'
+                                                : 'bg-gray-100 text-gray-700'
+                                            }`}>
+                                              {task.priority === 'high' ? 'Alta' : 
+                                               task.priority === 'urgent' ? 'Urgente' : 
+                                               task.priority === 'medium' ? 'Média' : 'Baixa'}
+                                            </span>
+                                          )}
+                                        </>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
+
+                    {/* Timeline Periods */}
                     {timelineOrder.map((period) => {
                       const tasks = filterTasks(tasksByTimeline[period]);
                       if (!tasks || tasks.length === 0) return null;
@@ -654,13 +957,45 @@ const ChecklistPage = () => {
                                     
                                     <div className="flex-1 min-w-0">
                                       {editingTask === task._id ? (
-                                        <input
-                                          type="text"
-                                          value={editForm.title}
-                                          onChange={(e) => setEditForm({...editForm, title: e.target.value})}
-                                          className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                                          autoFocus
-                                        />
+                                        <div className="space-y-2">
+                                          <input
+                                            type="text"
+                                            value={editForm.title}
+                                            onChange={(e) => setEditForm({...editForm, title: e.target.value})}
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                            autoFocus
+                                          />
+                                          <div className="flex flex-col sm:flex-row gap-2">
+                                            <div className="flex-1">
+                                              <label className="block text-xs text-gray-500 mb-1">Prioridade</label>
+                                              <select
+                                                value={editForm.priority}
+                                                onChange={(e) => setEditForm({...editForm, priority: e.target.value})}
+                                                className="w-full text-[15px] px-2 py-1.5 border border-gray-300 rounded text-black focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white"
+                                                style={{ height: '40px', boxSizing: 'border-box' }}
+                                              >
+                                                <option value="low">Baixa</option>
+                                                <option value="medium">Média</option>
+                                                <option value="high">Alta</option>
+                                                <option value="urgent">Urgente</option>
+                                              </select>
+                                            </div>
+                                            <div className="flex-1">
+                                              <label className="block text-xs text-gray-500 mb-1">Data</label>
+                                              <DatePicker
+                                                selected={editForm.dueDate}
+                                                onChange={(date) => setEditForm({...editForm, dueDate: date})}
+                                                minDate={new Date()}
+                                                dateFormat="dd/MM/yyyy"
+                                                placeholderText="Selecione"
+                                                className="w-full text-xs px-2 py-1.5 border border-gray-300 rounded text-black focus:outline-none focus:ring-1 focus:ring-primary-500"
+                                                style={{ height: '30px', boxSizing: 'border-box' }}
+                                                showPopperArrow={false}
+                                                popperPlacement="bottom-start"
+                                              />
+                                            </div>
+                                          </div>
+                                        </div>
                                       ) : (
                                         <div className="flex items-center gap-2 flex-wrap">
                                           <span className={`text-sm sm:text-base text-gray-700 break-words ${task.status === 'completed' ? 'line-through text-gray-400' : ''}`}>
@@ -668,6 +1003,11 @@ const ChecklistPage = () => {
                                           </span>
                                           {task.isEssential && (
                                             <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full whitespace-nowrap">Essencial</span>
+                                          )}
+                                          {task.dueDate && (
+                                            <span className="text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full whitespace-nowrap">
+                                              📅 {new Date(task.dueDate).toLocaleDateString('pt-BR')}
+                                            </span>
                                           )}
                                         </div>
                                       )}
@@ -802,6 +1142,236 @@ const ChecklistPage = () => {
                 {/* Category View Content */}
                 {activeView === 'category' && (
                   <div className="space-y-4 transition-opacity duration-300">
+                    {/* Esta Semana Section - Shown at the top */}
+                    {(() => {
+                      const weekTasks = getThisWeekTasks();
+                      const filteredTasks = filterTasks(weekTasks);
+                      const completedCount = filteredTasks.filter(t => t.status === 'completed').length;
+                      
+                      if (filteredTasks.length > 0) {
+                        return (
+                          <div className="border border-gray-200 rounded-xl overflow-hidden mb-4">
+                            <button
+                              onClick={toggleThisWeekSection}
+                              className="w-full p-4 sm:p-6 flex items-center justify-between hover:bg-gray-50 transition-colors bg-gradient-to-r from-blue-50 to-purple-50"
+                            >
+                              <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                  <span className="text-blue-600 text-xl">📅</span>
+                                </div>
+                                <div className="text-left">
+                                  <h3 className="text-base sm:text-lg font-semibold text-gray-800">
+                                    Esta Semana
+                                  </h3>
+                                  <span className="text-xs sm:text-sm text-gray-500">
+                                    {completedCount} de {filteredTasks.length} concluídas
+                                  </span>
+                                </div>
+                              </div>
+                              <div className="flex items-center gap-4">
+                                <span className="text-xs sm:text-sm text-blue-600 font-medium">
+                                  {filteredTasks.length} tarefas
+                                </span>
+                                <ChevronDown 
+                                  className={`w-5 h-5 text-gray-400 transition-transform flex-shrink-0 ${
+                                    expandedThisWeekSection ? 'rotate-180' : ''
+                                  }`} 
+                                />
+                              </div>
+                            </button>
+
+                            {expandedThisWeekSection && (
+                              <div className="px-4 sm:px-6 pb-4 sm:pb-6 space-y-3 bg-white border-t border-gray-200">
+                                {filteredTasks.map((task) => (
+                                  <div key={task._id} className="flex items-start sm:items-center justify-between py-3 border-b border-gray-100 last:border-0 hover:bg-gray-50 group">
+                                    <div className="flex items-start gap-3 flex-1 min-w-0">
+                                      <button
+                                        onClick={() => handleToggleTask(task._id)}
+                                        className={`w-6 h-6 rounded-full border-2 flex items-center justify-center flex-shrink-0 mt-0.5 ${
+                                          task.status === 'completed'
+                                            ? 'bg-primary-500 border-primary-500'
+                                            : 'bg-white border-gray-300 hover:border-primary-500'
+                                        }`}
+                                        aria-label={task.status === 'completed' ? 'Marcar como pendente' : 'Marcar como concluída'}
+                                      >
+                                        {task.status === 'completed' && (
+                                          <Check className="w-4 h-4 text-white" />
+                                        )}
+                                      </button>
+                                      
+                                      <div className="flex-1 min-w-0">
+                                        {editingTask === task._id ? (
+                                          <div className="space-y-2">
+                                            <input
+                                              type="text"
+                                              value={editForm.title}
+                                              onChange={(e) => setEditForm({...editForm, title: e.target.value})}
+                                              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                              autoFocus
+                                            />
+                                            <div className="flex flex-col sm:flex-row gap-2">
+                                              <div className="flex-1">
+                                                <label className="block text-xs text-gray-500 mb-1">Prioridade</label>
+                                                <select
+                                                  value={editForm.priority}
+                                                  onChange={(e) => setEditForm({...editForm, priority: e.target.value})}
+                                                  className="w-full text-xs px-2 py-1.5 border border-gray-300 rounded text-black focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white"
+                                                  style={{ height: '40px', boxSizing: 'border-box' }}
+                                                >
+                                                  <option value="low">Baixa</option>
+                                                  <option value="medium">Média</option>
+                                                  <option value="high">Alta</option>
+                                                  <option value="urgent">Urgente</option>
+                                                </select>
+                                              </div>
+                                              <div className="flex-1">
+                                                <label className="block text-xs text-gray-500 mb-1">Data</label>
+                                                <DatePicker
+                                                  selected={editForm.dueDate}
+                                                  onChange={(date) => setEditForm({...editForm, dueDate: date})}
+                                                  minDate={new Date()}
+                                                  dateFormat="dd/MM/yyyy"
+                                                  placeholderText="Selecione"
+                                                  className="w-full text-xs px-2 py-1.5 border border-gray-300 rounded text-black focus:outline-none focus:ring-1 focus:ring-primary-500"
+                                                  style={{ height: '30px', boxSizing: 'border-box' }}
+                                                  showPopperArrow={false}
+                                                  popperPlacement="bottom-start"
+                                                />
+                                              </div>
+                                            </div>
+                                          </div>
+                                        ) : (
+                                          <div className="flex items-center gap-2 flex-wrap">
+                                            <span className={`text-sm sm:text-base text-gray-700 break-words ${task.status === 'completed' ? 'line-through text-gray-400' : ''}`}>
+                                              {task.title}
+                                            </span>
+                                            {task.dueDate && (
+                                              <span className="text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full whitespace-nowrap">
+                                                📅 {new Date(task.dueDate).toLocaleDateString('pt-BR')}
+                                              </span>
+                                            )}
+                                          </div>
+                                        )}
+                                      </div>
+                                    </div>
+
+                                    <div className="flex items-center gap-2 ml-2">
+                                      {editingTask === task._id ? (
+                                        <>
+                                          <button
+                                            onClick={() => handleSaveEdit(task._id)}
+                                            className="p-2 text-green-600 hover:text-green-700 hover:bg-green-50 rounded-lg transition-colors"
+                                            title="Salvar"
+                                          >
+                                            <Check className="w-5 h-5" />
+                                          </button>
+                                          <button
+                                            onClick={handleCancelEdit}
+                                            className="p-2 text-gray-600 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                                            title="Cancelar"
+                                          >
+                                            <X className="w-5 h-5" />
+                                          </button>
+                                        </>
+                                      ) : (
+                                        <>
+                                          {task.status === 'completed' && (
+                                            <span className="hidden sm:inline-block text-xs bg-green-100 text-green-700 px-3 py-1 rounded-full font-medium whitespace-nowrap">
+                                              Concluída
+                                            </span>
+                                          )}
+                                          {task.status === 'in_progress' && (
+                                            <span className="hidden sm:inline-block text-xs bg-blue-100 text-blue-700 px-3 py-1 rounded-full font-medium whitespace-nowrap">
+                                              Em andamento
+                                            </span>
+                                          )}
+
+                                          <div className="hidden sm:flex items-center gap-1">
+                                            <button
+                                              onClick={() => handleEditTask(task)}
+                                              className="p-2 text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+                                              title="Editar tarefa"
+                                            >
+                                              <Edit2 className="w-4 h-4" />
+                                            </button>
+                                            <button
+                                              onClick={() => setDeleteConfirm(task._id)}
+                                              className="p-2 text-gray-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                                              title="Excluir tarefa"
+                                            >
+                                              <Trash2 className="w-4 h-4" />
+                                            </button>
+                                          </div>
+
+                                          <div className="sm:hidden relative">
+                                            <button
+                                              onClick={() => setMobileActionMenu(mobileActionMenu === task._id ? null : task._id)}
+                                              className="p-2 text-gray-600 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                                              aria-label="Opções da tarefa"
+                                            >
+                                              <MoreVertical className="w-5 h-5" />
+                                            </button>
+                                            
+                                            {mobileActionMenu === task._id && (
+                                              <>
+                                                <div 
+                                                  className="fixed inset-0 z-40"
+                                                  onClick={() => setMobileActionMenu(null)}
+                                                />
+                                                <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-50 overflow-hidden">
+                                                  <button
+                                                    onClick={() => {
+                                                      handleEditTask(task);
+                                                      setMobileActionMenu(null);
+                                                    }}
+                                                    className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors border-b border-gray-100"
+                                                  >
+                                                    <Edit2 className="w-5 h-5 text-blue-600" />
+                                                    <span className="text-sm font-medium text-gray-700">Editar tarefa</span>
+                                                  </button>
+                                                  <button
+                                                    onClick={() => {
+                                                      setDeleteConfirm(task._id);
+                                                      setMobileActionMenu(null);
+                                                    }}
+                                                    className="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors"
+                                                  >
+                                                    <Trash2 className="w-5 h-5 text-red-600" />
+                                                    <span className="text-sm font-medium text-gray-700">Excluir tarefa</span>
+                                                  </button>
+                                                </div>
+                                              </>
+                                            )}
+                                          </div>
+
+                                          {mobileActionMenu !== task._id && (
+                                            <>
+                                              {task.status === 'completed' && (
+                                                <span className="sm:hidden text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full font-medium whitespace-nowrap">
+                                                  ✓
+                                                </span>
+                                              )}
+                                              {task.status === 'in_progress' && (
+                                                <span className="sm:hidden text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full font-medium whitespace-nowrap">
+                                                  ⋯
+                                                </span>
+                                              )}
+                                            </>
+                                          )}
+                                        </>
+                                      )}
+                                    </div>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      }
+                      return null;
+                    })()}
+
+                    {/* Categories */}
                     {Object.keys(tasksByCategory).map((categoryType) => {
                       const tasks = filterTasks(tasksByCategory[categoryType]);
                       if (!tasks || tasks.length === 0) return null;
@@ -852,17 +1422,56 @@ const ChecklistPage = () => {
                                       
                                       <div className="flex-1 min-w-0">
                                         {editingTask === task._id ? (
-                                          <input
-                                            type="text"
-                                            value={editForm.title}
-                                            onChange={(e) => setEditForm({...editForm, title: e.target.value})}
-                                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                                            autoFocus
-                                          />
+                                          <div className="space-y-2">
+                                            <input
+                                              type="text"
+                                              value={editForm.title}
+                                              onChange={(e) => setEditForm({...editForm, title: e.target.value})}
+                                              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-black text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                                              autoFocus
+                                            />
+                                            <div className="flex flex-col sm:flex-row gap-2">
+                                              <div className="flex-1">
+                                                <label className="block text-xs text-gray-500 mb-1">Prioridade</label>
+                                                <select
+                                                  value={editForm.priority}
+                                                  onChange={(e) => setEditForm({...editForm, priority: e.target.value})}
+                                                  className="w-full text-xs px-2 py-1.5 border border-gray-300 rounded text-black focus:outline-none focus:ring-1 focus:ring-primary-500 bg-white"
+                                                  style={{ height: '40px', boxSizing: 'border-box' }}
+                                                >
+                                                  <option value="low">Baixa</option>
+                                                  <option value="medium">Média</option>
+                                                  <option value="high">Alta</option>
+                                                  <option value="urgent">Urgente</option>
+                                                </select>
+                                              </div>
+                                              <div className="flex-1">
+                                                <label className="block text-xs text-gray-500 mb-1">Data</label>
+                                                <DatePicker
+                                                  selected={editForm.dueDate}
+                                                  onChange={(date) => setEditForm({...editForm, dueDate: date})}
+                                                  minDate={new Date()}
+                                                  dateFormat="dd/MM/yyyy"
+                                                  placeholderText="Selecione"
+                                                  className="w-full text-xs px-2 py-1.5 border border-gray-300 rounded text-black focus:outline-none focus:ring-1 focus:ring-primary-500"
+                                                  style={{ height: '30px', boxSizing: 'border-box' }}
+                                                  showPopperArrow={false}
+                                                  popperPlacement="bottom-start"
+                                                />
+                                              </div>
+                                            </div>
+                                          </div>
                                         ) : (
-                                          <span className={`text-sm sm:text-base text-gray-700 break-words ${task.status === 'completed' ? 'line-through text-gray-400' : ''}`}>
-                                            {task.title}
-                                          </span>
+                                          <div className="flex items-center gap-2 flex-wrap">
+                                            <span className={`text-sm sm:text-base text-gray-700 break-words ${task.status === 'completed' ? 'line-through text-gray-400' : ''}`}>
+                                              {task.title}
+                                            </span>
+                                            {task.dueDate && (
+                                              <span className="text-xs bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full whitespace-nowrap">
+                                                📅 {new Date(task.dueDate).toLocaleDateString('pt-BR')}
+                                              </span>
+                                            )}
+                                          </div>
                                         )}
                                       </div>
                                     </div>
@@ -1113,6 +1722,21 @@ const ChecklistPage = () => {
                       <option key={key} value={key}>{label}</option>
                     ))}
                   </select>
+                </div>
+                <div className="mb-4">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Data de vencimento</label>
+                  <div className="relative w-full">
+                    <DatePicker
+                      selected={newTask.dueDate}
+                      onChange={(date) => setNewTask({...newTask, dueDate: date})}
+                      minDate={new Date()}
+                      dateFormat="dd/MM/yyyy"
+                      placeholderText="Selecione uma data"
+                      popperPlacement="bottom-start"
+                      showPopperArrow={false}
+                    />
+                    <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                  </div>
                 </div>
                 <div className="mb-6">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Prioridade</label>

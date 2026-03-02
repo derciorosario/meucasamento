@@ -199,6 +199,7 @@ export default function WeddingDashboard() {
   // Vendor tabs
   const vendorTabs = [
     { id: 'resumo', label: 'Painel', path: '/' },
+    { id: 'calendar', label: 'Calendário', path: '/calendar' },
     { id: 'pedidos', label: 'Pedidos de Orçamento', path: '/profile?tab=quotes' },
     { id: 'perfil', label: 'Meu Perfil', path: '/profile' },
   ];

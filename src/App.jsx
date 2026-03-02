@@ -30,6 +30,7 @@ import PublicGallery from './pages/public-gallery';
 import Settings from './pages/settings';
 import Gallery from './pages/gallery';
 import GuestConfirm from './pages/guest-confirm';
+import CalendarPage from './pages/calendar';
 
 function App() {
   return (
@@ -63,6 +64,7 @@ function App() {
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/gallery" element={<Gallery />} />
+        <Route path="/calendar" element={<CalendarPage />} />
 
         
         {/* Admin Routes - Require admin role */}

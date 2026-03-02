@@ -1,15 +1,17 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import DefaultLayout from "../../layout/DefaultLayout";
+import * as XLSX from 'xlsx';
 import { 
   Edit2, Trash2, X, MoreVertical, Filter, ChevronDown, Users, 
   Check, Clock, AlertCircle, Plus, Search, Mail, UserPlus, 
   UsersRound, Utensils, Table2, Menu, ChevronRight, Home,
-  Settings, Bell, Calendar, MessageSquare
+  Settings, Bell, Calendar, MessageSquare, Upload, Download, FileSpreadsheet
 } from 'lucide-react';
 import {
   getGuests,
   getGuestStats,
   createGuest,
+  importGuests,
   updateGuest,
   deleteGuest,
   getGroups,
@@ -117,6 +119,13 @@ export default function GuestsPage() {
   const [showGroupModal, setShowGroupModal] = useState(false);
   const [showTableModal, setShowTableModal] = useState(false);
   const [showMenuModal, setShowMenuModal] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [importedGuests, setImportedGuests] = useState([]);
+  const [importStep, setImportStep] = useState(1); // 1: upload, 2: review/edit
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [importResult, setImportResult] = useState(null); // Store import result for popup
+  const [showImportResultModal, setShowImportResultModal] = useState(false);
+  const fileInputRef = useRef(null);
   const [editingGuest, setEditingGuest] = useState(null);
   const [editingGroup, setEditingGroup] = useState(null);
   const [editingTable, setEditingTable] = useState(null);
@@ -126,6 +135,7 @@ export default function GuestsPage() {
   const [selectedGuests, setSelectedGuests] = useState([]);
   const [sendingInvites, setSendingInvites] = useState(false);
   const [showInviteConfirm, setShowInviteConfirm] = useState(false);
+  const [invitationMessage, setInvitationMessage] = useState('');
 
   // Form states
   const [guestForm, setGuestForm] = useState({
@@ -520,13 +530,15 @@ export default function GuestsPage() {
     }
 
     try {
-      const response = await sendInvitationEmails(guestIds);
+      // Strip HTML tags for plain text, or send HTML
+      const response = await sendInvitationEmails(guestIds, invitationMessage);
       toast.success(`${response.data.sentCount} convite(s) enviado(s) com sucesso!`);
       if (response.data.withoutEmail > 0) {
         toast.error(`${response.data.withoutEmail} convidado(s) sem email`);
       }
       await loadGuests();
       setSelectedGuests([]);
+      setInvitationMessage('');
     } catch (error) {
       console.error("Error sending invitation emails:", error);
       toast.error("Erro ao enviar convites por email");
@@ -549,6 +561,206 @@ export default function GuestsPage() {
     } else {
       setSelectedGuests(guests.map((g) => g._id));
     }
+  };
+
+  // Excel Import Functions
+  const downloadTemplate = () => {
+    // Create data for template
+    const data = [
+      ['nome completo', 'email', 'telefone', 'numero de adultos', 'numero de criancas', 'Nome do grupo'],
+      ['João Silva', 'joao@exemplo.com', '+258840000000', '1', '0', 'Família'],
+    ];
+    
+    // Create workbook and worksheet
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.aoa_to_sheet(data);
+    
+    // Set column widths
+    ws['!cols'] = [
+      { wch: 20 }, // nome completo
+      { wch: 25 }, // email
+      { wch: 15 }, // telefone
+      { wch: 18 }, // numero de adultos
+      { wch: 18 }, // numero de criancas
+      { wch: 20 }, // Nome do grupo
+    ];
+    
+    XLSX.utils.book_append_sheet(wb, ws, 'Modelo');
+    
+    // Download as xlsx
+    XLSX.writeFile(wb, 'modelo_convidados.xlsx');
+  };
+
+  // Proper CSV parser that handles quoted fields
+  const parseCSVLine = (line) => {
+    const result = [];
+    let current = '';
+    let inQuotes = false;
+    
+    for (let i = 0; i < line.length; i++) {
+      const char = line[i];
+      const nextChar = line[i + 1];
+      
+      if (inQuotes) {
+        if (char === '"' && nextChar === '"') {
+          current += '"';
+          i++; // Skip next quote
+        } else if (char === '"') {
+          inQuotes = false;
+        } else {
+          current += char;
+        }
+      } else {
+        if (char === '"') {
+          inQuotes = true;
+        } else if (char === ',') {
+          result.push(current.trim());
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+    }
+    result.push(current.trim());
+    return result;
+  };
+
+  const parseExcelFile = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          
+          // Get first sheet
+          const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+          const jsonData = XLSX.utils.sheet_to_json(firstSheet, { header: 1 });
+          
+          if (jsonData.length === 0) {
+            resolve([]);
+            return;
+          }
+          
+          const headers = jsonData[0].map(h => String(h).toLowerCase().trim());
+          
+          // Map headers to expected fields
+          const headerMap = {};
+          headers.forEach((header, index) => {
+            if (header.includes('nome completo') || header === 'nome') headerMap.name = index;
+            else if (header === 'email') headerMap.email = index;
+            else if (header.includes('telefone') || header.includes('phone') || header === 'telemovel') headerMap.phone = index;
+            else if (header.includes('adultos')) headerMap.adults = index;
+            else if (header.includes('crian')) headerMap.children = index;
+            else if (header.includes('grupo') || header.includes('group')) headerMap.groupName = index;
+          });
+          
+          const guests = [];
+          for (let i = 1; i < jsonData.length; i++) {
+            const row = jsonData[i];
+            if (!row || row.length === 0) continue;
+            
+            const guest = {
+              id: i,
+              name: headerMap.name !== undefined ? String(row[headerMap.name] || '') : '',
+              email: headerMap.email !== undefined ? String(row[headerMap.email] || '') : '',
+              phone: headerMap.phone !== undefined ? String(row[headerMap.phone] || '') : '',
+              adults: headerMap.adults !== undefined ? parseInt(row[headerMap.adults]) || 1 : 1,
+              children: headerMap.children !== undefined ? parseInt(row[headerMap.children]) || 0 : 0,
+              groupName: headerMap.groupName !== undefined ? String(row[headerMap.groupName] || '') : '',
+              status: 'pending',
+            };
+            
+            if (guest.name) {
+              guests.push(guest);
+            }
+          }
+          
+          resolve(guests);
+        } catch (error) {
+          reject(error);
+        }
+      };
+      reader.onerror = () => reject(new Error('Erro ao ler arquivo'));
+      reader.readAsArrayBuffer(file);
+    });
+  };
+
+  const handleFileUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    setIsProcessing(true);
+    try {
+      const parsedGuests = await parseExcelFile(file);
+      setImportedGuests(parsedGuests);
+      setImportStep(2);
+      toast.success(`${parsedGuests.length} convidado(s) carregado(s)`);
+    } catch (error) {
+      console.error('Error parsing file:', error);
+      toast.error('Erro ao processar arquivo. Verifique o formato.');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  const handleUpdateImportedGuest = (id, field, value) => {
+    setImportedGuests(prev => prev.map(g => 
+      g.id === id ? { ...g, [field]: value } : g
+    ));
+  };
+
+  const handleRemoveImportedGuest = (id) => {
+    setImportedGuests(prev => prev.filter(g => g.id !== id));
+  };
+
+  const handleConfirmImport = async () => {
+    setIsProcessing(true);
+    try {
+      // Prepare guests data for import
+      const guestsData = importedGuests.map(g => ({
+        name: g.name,
+        email: g.email || '',
+        phone: g.phone || '',
+        adults: g.adults || 1,
+        children: g.children || 0,
+        babies: 0,
+        groupName: g.groupName || '',
+      }));
+
+      // Use batch import API
+      const response = await importGuests(guestsData);
+      
+      // Store result and show popup
+      setImportResult({
+        successCount: response.data.successCount || 0,
+        errorCount: response.data.errorCount || 0,
+        duplicateCount: response.data.duplicateCount || 0,
+        errors: response.data.errors || [],
+        duplicates: response.data.duplicates || [],
+      });
+      setShowImportResultModal(true);
+      setShowImportModal(false);
+      
+      if (response.data.successCount > 0) {
+        await loadGuests();
+        await loadStats();
+      }
+
+      setImportedGuests([]);
+      setImportStep(1);
+    } catch (error) {
+      console.error('Error importing guests:', error);
+      toast.error('Erro ao importar convidados');
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
+  // Simple email validation
+  const isValidEmail = (email) => {
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    return emailRegex.test(email);
   };
 
   const getInitials = (name) => {
@@ -586,7 +798,9 @@ export default function GuestsPage() {
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Meus Convidados</h1>
             </div>
-            <button
+           
+           <div className="flex gap-2 items-center">
+             <button
               onClick={() => {
                 resetGuestForm();
                 setShowGuestModal(true);
@@ -596,6 +810,18 @@ export default function GuestsPage() {
               <span className="text-lg leading-none">+</span>
               <span>Adicionar Convidado</span>
             </button>
+            <button
+              onClick={() => {
+                setImportStep(1);
+                setImportedGuests([]);
+                setShowImportModal(true);
+              }}
+              className="bg-green-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-600 transition flex items-center space-x-2"
+            >
+              <Upload className="w-4 h-4" />
+              <span>Importar</span>
+            </button>
+           </div>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -1217,7 +1443,16 @@ export default function GuestsPage() {
                 >
                   <Mail className="w-5 h-5" />
                 </button>
-              
+                <button 
+                  onClick={() => {
+                    setImportStep(1);
+                    setImportedGuests([]);
+                    setShowImportModal(true);
+                  }}
+                  className="p-2 text-gray-600 hover:bg-gray-100 rounded-full"
+                >
+                  <Upload className="w-5 h-5" />
+                </button>
               </div>
             </div>
 
@@ -2328,7 +2563,7 @@ export default function GuestsPage() {
         {/* Send Invitation Confirmation Modal */}
         {showInviteConfirm && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-t-3xl sm:rounded-2xl p-6 w-full max-w-sm mx-4">
+            <div className="bg-white rounded-t-3xl sm:rounded-2xl p-6 w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-center w-16 h-16 mx-auto bg-green-100 rounded-full mb-4">
                 <Mail className="w-8 h-8 text-green-500" />
               </div>
@@ -2338,9 +2573,27 @@ export default function GuestsPage() {
                   ? `Tem certeza que deseja enviar convites para ${selectedGuests.length} convidado(s) selecionado(s)?`
                   : "Tem certeza que deseja enviar convites para todos os convidados com email?"}
               </p>
+              
+              {/* Custom Message Editor */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-900 mb-2">
+                  Mensagem personalizada (opcional)
+                </label>
+                <textarea
+                  value={invitationMessage}
+                  onChange={(e) => setInvitationMessage(e.target.value)}
+                  placeholder="Escreva uma mensagem personalizada para os seus convidados..."
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 text-black"
+                  rows={4}
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Esta mensagem será incluída no convite de email enviado aos convidados.
+                </p>
+              </div>
+              
               <div className="flex gap-3">
                 <button
-                  onClick={() => setShowInviteConfirm(false)}
+                  onClick={() => { setShowInviteConfirm(false); setInvitationMessage(''); }}
                   className="flex-1 text-gray-500 px-4 py-3 border border-gray-300 rounded-xl hover:bg-gray-50 font-medium"
                 >
                   Cancelar
@@ -2353,6 +2606,277 @@ export default function GuestsPage() {
                   {sendingInvites ? 'Enviando...' : 'Enviar'}
                 </button>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* Import Guests Modal */}
+        {showImportModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-t-3xl sm:rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold text-black">
+                  {importStep === 1 ? 'Importar Convidados' : 'Revisar Convidados'}
+                </h2>
+                <button 
+                  onClick={() => { setShowImportModal(false); setImportStep(1); setImportedGuests([]); }}
+                  className="p-2 hover:bg-gray-100 rounded-full"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+
+              {importStep === 1 ? (
+                /* Step 1: Download Template and Upload */
+                <div className="space-y-6">
+                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+                    <div className="flex items-start gap-3">
+                      <FileSpreadsheet className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="font-medium text-gray-900 mb-1">Modelo de Importação</p>
+                        <p className="text-sm text-gray-600 mb-3">
+                          Baixe o modelo Excel e preencha com os dados dos convidados. O ficheiro deve conter as colunas: nome completo, email, telefone, numero de adultos, numero de criancas, Nome do grupo.
+                        </p>
+                        <button
+                          onClick={downloadTemplate}
+                          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
+                        >
+                          <Download className="w-4 h-4" />
+                          Baixar Modelo Excel
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center">
+                    <input
+                      type="file"
+                      ref={fileInputRef}
+                      accept=".xlsx,.xls"
+                      onChange={handleFileUpload}
+                      className="hidden"
+                    />
+                    <Upload className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                    <p className="text-gray-700 font-medium mb-2">
+                      Arraste o ficheiro aqui ou
+                    </p>
+                    <button
+                      onClick={() => fileInputRef.current?.click()}
+                      className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 text-sm"
+                    >
+                      Selecionar Ficheiro
+                    </button>
+                    <p className="text-xs text-gray-500 mt-3">
+                      Formatos aceitos: XLSX, XLS
+                    </p>
+                  </div>
+
+                  {isProcessing && (
+                    <div className="flex items-center justify-center gap-2 py-4">
+                      <div className="w-5 h-5 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+                      <span className="text-gray-600">A processar...</span>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                /* Step 2: Review and Edit */
+                <div className="flex-1 overflow-hidden flex flex-col">
+                  <p className="text-sm text-gray-600 mb-3">
+                    Revise os dados antes de importar. Apenas o <strong>nome</strong> é obrigatório. 
+                    Pode editar os campos diretamente na tabela abaixo.
+                  </p>
+
+                  <div className="flex-1 overflow-y-auto border border-gray-200 rounded-xl">
+                    <table className="w-full text-sm">
+                      <thead className="bg-gray-50 sticky top-0">
+                        <tr>
+                          <th className="px-3 py-2 text-left font-medium text-gray-600">Nome *</th>
+                          <th className="px-3 py-2 text-left font-medium text-gray-600">Email</th>
+                          <th className="px-3 py-2 text-left font-medium text-gray-600">Telefone</th>
+                          <th className="px-3 py-2 text-center font-medium text-gray-600">Adultos</th>
+                          <th className="px-3 py-2 text-center font-medium text-gray-600">Crianças</th>
+                          <th className="px-3 py-2 text-left font-medium text-gray-600">Grupo</th>
+                          <th className="px-2 py-2"></th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {importedGuests.map((guest) => (
+                          <tr key={guest.id} className="hover:bg-gray-50">
+                            <td className="px-2 py-2">
+                              <input
+                                type="text"
+                                value={guest.name || ''}
+                                onChange={(e) => handleUpdateImportedGuest(guest.id, 'name', e.target.value)}
+                                className="w-full px-2 py-1 border border-gray-300 rounded text-black text-sm"
+                                placeholder="Nome obrigatório"
+                              />
+                            </td>
+                            <td className="px-2 py-2">
+                              <input
+                                type="email"
+                                value={guest.email || ''}
+                                onChange={(e) => handleUpdateImportedGuest(guest.id, 'email', e.target.value)}
+                                className={`w-full px-2 py-1 border rounded text-black text-sm ${guest.email && !isValidEmail(guest.email) ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
+                                placeholder={guest.email && !isValidEmail(guest.email) ? 'Email inválido' : ''}
+                              />
+                            </td>
+                            <td className="px-2 py-2">
+                              <input
+                                type="tel"
+                                value={guest.phone || ''}
+                                onChange={(e) => handleUpdateImportedGuest(guest.id, 'phone', e.target.value)}
+                                className="w-full px-2 py-1 border border-gray-300 rounded text-black text-sm"
+                              />
+                            </td>
+                            <td className="px-2 py-2">
+                              <input
+                                type="number"
+                                min="1"
+                                value={guest.adults || 1}
+                                onChange={(e) => handleUpdateImportedGuest(guest.id, 'adults', parseInt(e.target.value) || 1)}
+                                className="w-16 px-2 py-1 border border-gray-300 rounded text-black text-sm text-center"
+                              />
+                            </td>
+                            <td className="px-2 py-2">
+                              <input
+                                type="number"
+                                min="0"
+                                value={guest.children || 0}
+                                onChange={(e) => handleUpdateImportedGuest(guest.id, 'children', parseInt(e.target.value) || 0)}
+                                className="w-16 px-2 py-1 border border-gray-300 rounded text-black text-sm text-center"
+                              />
+                            </td>
+                            <td className="px-2 py-2">
+                              <select
+                                value={guest.groupName || ''}
+                                onChange={(e) => handleUpdateImportedGuest(guest.id, 'groupName', e.target.value)}
+                                className="w-full px-2 py-1 border border-gray-300 rounded text-black text-sm bg-white"
+                              >
+                                <option value="">Sem grupo</option>
+                                {groups.map((g) => (
+                                  <option key={g._id} value={g.name}>{g.name}</option>
+                                ))}
+                              </select>
+                            </td>
+                            <td className="px-2 py-2">
+                              <button
+                                onClick={() => handleRemoveImportedGuest(guest.id)}
+                                className="p-1 text-red-500 hover:bg-red-50 rounded"
+                                title="Remover"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
+                    <p className="text-sm text-gray-600">
+                      Total: <strong>{importedGuests.length}</strong> convidado(s)
+                    </p>
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => setImportStep(1)}
+                        className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 text-sm"
+                      >
+                        Voltar
+                      </button>
+                      <button
+                        onClick={handleConfirmImport}
+                        disabled={isProcessing || importedGuests.length === 0}
+                        className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 text-sm disabled:opacity-50"
+                      >
+                        {isProcessing ? 'A importar...' : `Importar ${importedGuests.length} convidado(s)`}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+        {/* Import Result Modal */}
+        {showImportResultModal && importResult && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-t-3xl sm:rounded-2xl p-6 w-full max-w-md">
+              <div className="flex items-center justify-center w-16 h-16 mx-auto bg-green-100 rounded-full mb-4">
+                <Check className="w-8 h-8 text-green-500" />
+              </div>
+              <h3 className="text-lg font-semibold text-gray-900 text-center mb-4">Resultado da Importação</h3>
+              
+              <div className="space-y-3 mb-6">
+                {/* Success Count */}
+                <div className="flex items-center justify-between p-3 bg-emerald-50 rounded-xl">
+                  <div className="flex items-center gap-3">
+                    <Check className="w-5 h-5 text-emerald-600" />
+                    <span className="text-gray-700">Importados com sucesso</span>
+                  </div>
+                  <span className="font-bold text-emerald-600 text-lg">{importResult.successCount}</span>
+                </div>
+                
+                {/* Duplicate Count */}
+                {importResult.duplicateCount > 0 && (
+                  <div className="flex items-center justify-between p-3 bg-amber-50 rounded-xl">
+                    <div className="flex items-center gap-3">
+                      <Users className="w-5 h-5 text-amber-600" />
+                      <span className="text-gray-700">Duplicados (já existem)</span>
+                    </div>
+                    <span className="font-bold text-amber-600 text-lg">{importResult.duplicateCount}</span>
+                  </div>
+                )}
+                
+                {/* Error Count */}
+                {importResult.errorCount > 0 && (
+                  <div className="flex items-center justify-between p-3 bg-red-50 rounded-xl">
+                    <div className="flex items-center gap-3">
+                      <AlertCircle className="w-5 h-5 text-red-600" />
+                      <span className="text-gray-700">Erros</span>
+                    </div>
+                    <span className="font-bold text-red-600 text-lg">{importResult.errorCount}</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Show details if there are errors or duplicates */}
+              {(importResult.errors.length > 0 || importResult.duplicates.length > 0) && (
+                <div className="mb-4 max-h-40 overflow-y-auto">
+                  {importResult.duplicates.length > 0 && (
+                    <div className="mb-2">
+                      <p className="text-sm font-medium text-amber-700 mb-1">Duplicados:</p>
+                      {importResult.duplicates.slice(0, 5).map((d, idx) => (
+                        <p key={idx} className="text-xs text-amber-600">• {d.name} - {d.error}</p>
+                      ))}
+                      {importResult.duplicates.length > 5 && (
+                        <p className="text-xs text-amber-600">...e mais {importResult.duplicates.length - 5}</p>
+                      )}
+                    </div>
+                  )}
+                  {importResult.errors.length > 0 && (
+                    <div>
+                      <p className="text-sm font-medium text-red-700 mb-1">Erros:</p>
+                      {importResult.errors.slice(0, 5).map((e, idx) => (
+                        <p key={idx} className="text-xs text-red-600">• {e.name} - {e.error}</p>
+                      ))}
+                      {importResult.errors.length > 5 && (
+                        <p className="text-xs text-red-600">...e mais {importResult.errors.length - 5}</p>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              <button
+                onClick={() => {
+                  setShowImportResultModal(false);
+                  setImportResult(null);
+                }}
+                className="w-full px-4 py-3 bg-primary-500 text-white rounded-xl hover:bg-primary-600 font-medium"
+              >
+                OK
+              </button>
             </div>
           </div>
         )}

@@ -295,6 +295,9 @@ export const getGuestStats = () => client.get('/guests/stats');
 // Create a new guest
 export const createGuest = (data) => client.post('/guests', data);
 
+// Import multiple guests
+export const importGuests = (guests) => client.post('/guests/import', { guests });
+
 // Update a guest
 export const updateGuest = (id, data) => client.put(`/guests/${id}`, data);
 
@@ -311,7 +314,7 @@ export const sendGuestReminder = (id) => client.post(`/guests/${id}/remind`);
 export const sendBulkInvitations = (guestIds) => client.post('/guests/bulk-invite', { guestIds });
 
 // Send invitation emails with confirmation links
-export const sendInvitationEmails = (guestIds) => client.post('/guests/send-invitations', { guestIds });
+export const sendInvitationEmails = (guestIds, customMessage) => client.post('/guests/send-invitations', { guestIds, customMessage });
 
 // Confirm/decline invitation (public)
 export const confirmInvitation = (token, response) => client.post('/guests/confirm', { token, response });
@@ -520,3 +523,31 @@ export const getVendorsByIds = (ids, params) => client.get('/vendors/by-ids', { 
 
 // Submit contact form
 export const submitContactForm = (data) => client.post('/contact', data);
+
+// ==================== CALENDAR API ====================
+
+// Get all calendar events
+export const getCalendarEvents = (params) => client.get('/calendar/events', { params });
+
+// Get upcoming calendar events
+export const getUpcomingCalendarEvents = () => client.get('/calendar/events/upcoming');
+
+// Get single calendar event
+export const getCalendarEvent = (id) => client.get(`/calendar/events/${id}`);
+
+// Create new calendar event
+export const createCalendarEvent = (data) => client.post('/calendar/events', data);
+
+// Update calendar event
+export const updateCalendarEvent = (id, data) => client.put(`/calendar/events/${id}`, data);
+
+// Delete calendar event
+export const deleteCalendarEvent = (id) => client.delete(`/calendar/events/${id}`);
+
+// Share calendar event
+export const shareCalendarEvent = (id, email, permission) => 
+  client.post(`/calendar/events/${id}/share`, { email, permission });
+
+// Remove share from calendar event
+export const removeCalendarShare = (id, userId) => 
+  client.delete(`/calendar/events/${id}/share/${userId}`);

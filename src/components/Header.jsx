@@ -66,7 +66,14 @@ const Header = () => {
           >
             {user ? 'Painel' : 'Inicio'}
           </button>
-          
+
+          {user?.role == "vendor" &&  <button 
+            onClick={() => navigate('/calendar')} 
+            className={`transition-colors font-medium ${location.pathname === '/calendar' ? 'text-[#9CAA8E] font-bold' : 'hover:text-[#9CAA8E]'}`}
+          >
+            Calendário
+          </button>
+          }
           {user?.role === "couple" && (
             <>
               <button 
@@ -264,6 +271,14 @@ const Header = () => {
               >
                 {user ? 'Painel' : 'Início'}
               </button>
+
+              {user?.role === "vendor" && <button 
+                onClick={() => { navigate('/calendar'); setIsMenuOpen(false); }} 
+                className={`py-2 border-b border-gray-100 text-left font-medium ${location.pathname === '/calendar' ? 'text-[#9CAA8E]' : 'text-gray-600 hover:text-[#9CAA8E]'}`}
+              >
+                Calendário
+              </button>}
+
 
               {user?.role === "couple" && (
                 <>

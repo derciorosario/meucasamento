@@ -15,7 +15,7 @@ export default function About() {
 
   const values = [
     { icon: Heart, title: 'Paixão', description: 'Acreditamos que cada casamento é único e merece ser celebrado de forma especial' },
-    { icon: Target, title: 'Missão', description: 'Simplificar o planejamento de casamentos para que os casais possam aproveitar cada momento' },
+    { icon: Target, title: 'Missão', description: 'Simplificar o planeamento de casamentos para que os casais possam aproveitar cada momento' },
     { icon: Lightbulb, title: 'Inovação', description: 'Constantemente buscamos novas formas de tornar a experiência ainda melhor' },
     { icon: Sparkles, title: 'Qualidade', description: 'Trabalhamos apenas com fornecedores verificados e de confiança' }
   ];
@@ -28,7 +28,7 @@ export default function About() {
   ];
 
   const timeline = [
-    { year: '2020', title: 'O Início', description: 'Tudo começou com uma ideia de facilitar o planejamento de casamentos em Moçambique' },
+    { year: '2020', title: 'O Início', description: 'Tudo começou com uma ideia de facilitar o planeamento de casamentos em Moçambique' },
     { year: '2021', title: 'Crescimento', description: 'Alcançamos 1.000 casais atendidos e expandimos para todo o país' },
     { year: '2022', title: 'Expansão', description: 'Lançamos o programa de fornecedores parceiros e atingimos 500 fornecedores' },
     { year: '2023', title: 'Liderança', description: 'Tornamo-nos a plataforma líder de casamentos em Moçambique' },
@@ -48,7 +48,7 @@ export default function About() {
             Nossa História
           </h1>
           <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-            O MeuCasamento foi criado com o objetivo de tornar o planejamento de casamentos mais simples, acessível e memorável para casais Moçambicanos.
+            O MeuCasamento foi criado com o objetivo de tornar o planeamento de casamentos mais simples, acessível e memorável para casais Moçambicanos.
           </p>
         </div>
 
@@ -67,13 +67,13 @@ export default function About() {
           <div className="bg-white rounded-2xl p-8 shadow-lg">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">Nossa Missão</h2>
             <p className="text-gray-600">
-              Democratizar o acesso a ferramentas de planejamento de casamentos de qualidade, conectando casais a fornecedores confiáveis e simplificando cada etapa do processo.
+              Democratizar o acesso a ferramentas de planeamento de casamentos de qualidade, conectando casais a fornecedores confiáveis e simplificando cada etapa do processo.
             </p>
           </div>
           <div className="bg-white rounded-2xl p-8 shadow-lg">
             <h2 className="text-2xl font-bold text-gray-900 mb-4">Nossa Visão</h2>
             <p className="text-gray-600">
-              Ser a plataforma referência em planejamento de casamentos em África, reconhecida pela qualidade dos serviços e pela felicidade dos casais atendidos.
+              Ser a plataforma referência em planeamento de casamentos em África, reconhecida pela qualidade dos serviços e pela felicidade dos casais atendidos.
             </p>
           </div>
         </div>

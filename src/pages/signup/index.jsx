@@ -397,7 +397,7 @@ export default function WeddingSignUp() {
             <div className="mb-10">
               
               <h2 className="text-2xl font-bold text-[#2a2a2a] mb-3 tracking-tight">Criar Conta</h2>
-              <p className="text-[#6b6b6b] text-sm">Comece a planejar seu casamento dos sonhos</p>
+              <p className="text-[#6b6b6b] text-sm">Comece a planear seu casamento dos sonhos</p>
             </div>
 
             {/* Form */}

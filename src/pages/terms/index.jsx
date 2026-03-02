@@ -15,7 +15,7 @@ export default function Terms() {
     {
       icon: FileText,
       title: 'Descrição do Serviço',
-      content: `O MeuCasamento é uma plataforma online que permite aos usuários planejar e organizar casamentos, encontrar fornecedores de serviços para casamento, criar listas de convidados, gerenciar orçamentos e compartilhar fotos e memórias. Oferecemos tanto serviços gratuitos quanto premium.`
+      content: `O MeuCasamento é uma plataforma online que permite aos usuários planear e organizar casamentos, encontrar fornecedores de serviços para casamento, criar listas de convidados, gerenciar orçamentos e compartilhar fotos e memórias. Oferecemos tanto serviços gratuitos quanto premium.`
     },
     {
       icon: Users,
@@ -53,7 +53,7 @@ export default function Terms() {
     { type: 'Noivos', description: 'Usuários que estão planejando seu casamento' },
     { type: 'Fornecedores', description: 'Profissionais e empresas que oferecem serviços para casamentos' },
     { type: 'Convidados', description: 'Pessoas convidadas para participar do casamento' },
-    { type: 'Planejadores', description: 'Profissionais de planejamento de casamentos' }
+    { type: 'Planejadores', description: 'Profissionais de planeamento de casamentos' }
   ];
 
   return (

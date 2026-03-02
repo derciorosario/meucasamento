@@ -11,10 +11,56 @@ import {
   Send,
   MessageCircle,
   Maximize2,
-  ZoomIn
+  ZoomIn,
+  CheckCircle,
+  Users
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { API_URL } from '../api/client';
+
+// FAQ predefined questions configuration (must match profile/index.jsx)
+const FAQ_QUESTIONS = [
+  // Services category
+  { id: 's1', question: 'Quais serviços estão incluídos no pacote?', type: 'multi-select', allowCustom: true, options: ['Fotografia', 'Vídeo', 'Decoração', 'Música', 'Iluminação', 'Buffet', 'Bolo', 'Convites', 'Flores', 'Outro'], category: 'services' },
+  { id: 's2', question: 'Quantas horas de serviço estão incluídas?', type: 'text', category: 'services', placeholder: 'Ex: 8 horas, dia inteiro, etc.' },
+  { id: 's3', question: 'É possível contratar serviços adicionais?', type: 'boolean', category: 'services' },
+  { id: 's4', question: 'Quais são as opções de personalização disponíveis?', type: 'multi-select', options: ['Cores', 'Tema', 'Decoração', 'Música', 'Menu', 'Outro'], category: 'services' },
+  
+  // Pricing category
+  { id: 'p1', question: 'Qual é o custo por convidado adicional?', type: 'text', category: 'pricing', placeholder: 'Ex: 250 MT por convidado' },
+  { id: 'p2', question: 'Quais formas de pagamento são aceites?', type: 'multi-select', options: ['Dinheiro', 'Transferência bancária', 'Multicaixa', 'PayPal', 'Cartão de crédito', 'Parcelamento'], category: 'pricing' },
+  { id: 'p3', question: 'É necessário pagar uma caução?', type: 'boolean', category: 'pricing' },
+  { id: 'p4', question: 'Qual é a política de reembolso?', type: 'text', category: 'pricing', placeholder: 'Ex: Reembolso total até 30 dias antes' },
+  
+  // Availability category
+  { id: 'a2', question: 'Com antecedência preciso contratar?', type: 'text', category: 'availability', placeholder: 'Ex: Com pelo menos 2 meses de antecedência' },
+  { id: 'a3', question: 'Trabalha em quais dias da semana?', type: 'multi-select', options: ['Segunda-feira', 'Terça-feira', 'Quarta-feira', 'Quinta-feira', 'Sexta-feira', 'Sábado', 'Domingo', 'Feriados'], category: 'availability' },
+  { id: 'a4', question: 'Aceita eventos em diferentes locais?', type: 'boolean', category: 'availability' },
+  
+  // Logistics category
+  { id: 'l1', question: 'Inclui transporte e logística?', type: 'boolean', category: 'logistics' },
+  { id: 'l2', question: 'Qual é o raio de atuação?', type: 'text', category: 'logistics', placeholder: 'Ex: Até 50km de Maputo' },
+  { id: 'l3', question: 'Há custos adicionais para deslocação?', type: 'text', category: 'logistics', placeholder: 'Ex: 5 MT por km acima de 20km' },
+  { id: 'l4', question: 'Quais equipamentos são fornecidos?', type: 'multi-select', options: ['Som', 'Iluminação', 'Projétor', 'Decoração', 'Mobiliário', 'Pratos e talheres', 'Copos', 'Outro'], category: 'logistics' },
+  
+  // Style category
+  { id: 'st1', question: 'Qual é o estilo principal do serviço?', type: 'multi-select', options: ['Clássico', 'Rústico', 'Moderno', 'Minimalista', 'Boho', 'Vintage', 'Romântico', 'Luxo'], category: 'style' },
+  { id: 'st2', question: 'É possível ver trabalhos anteriores?', type: 'boolean', category: 'style' },
+  { id: 'st3', question: 'Oferece serviços em diferentes idiomas?', type: 'multi-select', options: ['Português', 'Inglês', 'Espanhol', 'Francês', 'Outro'], category: 'style' },
+  { id: 'st4', question: 'Pode criar um design exclusivo?', type: 'boolean', category: 'style' },
+];
+
+// Get category label
+const getCategoryLabel = (category) => {
+  const labels = {
+    services: 'Serviços',
+    pricing: 'Preços',
+    availability: 'Disponibilidade',
+    logistics: 'Logística',
+    style: 'Estilo',
+  };
+  return labels[category] || category;
+};
 
 const VendorProfileModal = ({ 
   vendor, 
@@ -28,6 +74,7 @@ const VendorProfileModal = ({
 }) => {
   const [showLightbox, setShowLightbox] = useState(false);
   const [lightboxIndex, setLightboxIndex] = useState(0);
+  const [showAllFaqs, setShowAllFaqs] = useState(false); // Toggle to show all FAQs
   // Get all images: vendor images + gallery images from albums
   const getAllImages = () => {
     const images = [...(vendor.images || [])];
@@ -217,6 +264,12 @@ const VendorProfileModal = ({
                   {getPriceRangeLabel(vendor.priceRange)}
                 </span>
               )}
+              {vendor.maxCapacity && (
+                <div className="flex items-center gap-2 mt-3 text-sm text-gray-600">
+                  <Users className="w-4 h-4" />
+                  <span>Capacidade máxima: <span className="font-medium">{vendor.maxCapacity} convidados</span></span>
+                </div>
+              )}
             </div>
             
             {/* Contact Info */}
@@ -243,6 +296,104 @@ const VendorProfileModal = ({
                 )}
               </div>
             </div>
+            
+            {/* FAQ Section - Public Display */}
+            {vendor.faqs && vendor.faqs.length > 0 && (
+              <div className="mb-6">
+                <h3 className="text-sm font-medium text-gray-500 mb-3 flex items-center gap-2">
+                  <MessageCircle className="w-4 h-4" />
+                  Perguntas Frequentes
+                </h3>
+                
+                {/* Group FAQs by category */}
+                {['services', 'pricing', 'availability', 'logistics', 'style'].map(category => {
+                  const categoryFaqs = vendor.faqs.filter(faq => {
+                    const question = FAQ_QUESTIONS.find(q => q.id === faq.questionId);
+                    return question && question.category === category && faq.answer !== undefined && faq.answer !== null && faq.answer !== '' && 
+                      (Array.isArray(faq.answer) ? faq.answer.length > 0 : true);
+                  });
+                  
+                  if (categoryFaqs.length === 0) return null;
+                  
+                  // Limit to first 3 FAQs unless showAllFaqs is true
+                  const displayedFaqs = showAllFaqs ? categoryFaqs : categoryFaqs.slice(0, 3);
+                  const hasMoreFaqs = !showAllFaqs && categoryFaqs.length > 3;
+                  
+                  return (
+                    <div key={category} className="mb-4">
+                      <h4 className="text-xs font-medium text-[#9CAA8E] mb-2 uppercase tracking-wide">
+                        {getCategoryLabel(category)}
+                      </h4>
+                      <div className="space-y-3">
+                        {displayedFaqs.map((faq, idx) => {
+                          const question = FAQ_QUESTIONS.find(q => q.id === faq.questionId);
+                          if (!question) return null;
+                          
+                          return (
+                            <div key={idx} className="bg-gray-50 rounded-lg p-3">
+                              <p className="text-sm font-medium text-gray-800 mb-1">{question.question}</p>
+                              
+                              {/* Render answer based on type */}
+                              {question.type === 'text' && (
+                                <p className="text-sm text-gray-600">{faq.answer}</p>
+                              )}
+                              
+                              {question.type === 'boolean' && (
+                                <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-medium ${
+                                  faq.answer === true 
+                                    ? 'bg-green-100 text-green-700' 
+                                    : 'bg-gray-200 text-gray-600'
+                                }`}>
+                                  {faq.answer === true ? (
+                                    <><CheckCircle className="w-3 h-3" /> Sim</>
+                                  ) : (
+                                    'Não'
+                                  )}
+                                </span>
+                              )}
+                              
+                              {question.type === 'multi-select' && Array.isArray(faq.answer) && (
+                                <div className="flex flex-wrap gap-1 mt-1">
+                                  {faq.answer.map((option, optIdx) => (
+                                    <span 
+                                      key={optIdx} 
+                                      className="inline-flex items-center gap-1 px-2 py-1 bg-[#9CAA8E]/10 text-[#9CAA8E] rounded-full text-xs"
+                                    >
+                                      <CheckCircle className="w-3 h-3" />
+                                      {option}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                        
+                        {/* Ver mais button */}
+                        {hasMoreFaqs && (
+                          <button
+                            onClick={() => setShowAllFaqs(true)}
+                            className="text-sm text-[#9CAA8E] hover:text-[#8A9A7E] font-medium flex items-center gap-1"
+                          >
+                            Ver mais ({categoryFaqs.length - 3} restantes)
+                          </button>
+                        )}
+                        
+                        {/* Ver menos button when showing all */}
+                        {showAllFaqs && categoryFaqs.length > 3 && (
+                          <button
+                            onClick={() => setShowAllFaqs(false)}
+                            className="text-sm text-gray-500 hover:text-gray-700 font-medium flex items-center gap-1"
+                          >
+                            Ver menos
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
             
             {/* Reviews */}
             {vendor.reviews && vendor.reviews.length > 0 && (
@@ -327,7 +478,7 @@ const VendorProfileModal = ({
                 }}
                 className="flex-1 border-2 border-gray-200 text-gray-700 py-3 rounded-xl font-medium hover:border-primary-300 hover:bg-gray-50 transition-all flex items-center justify-center gap-2"
               >
-                <MessageCircle className="w-4 h-4" />
+                <Star className="w-4 h-4" />
                 Avaliar
               </motion.button>
             </div>

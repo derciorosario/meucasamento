@@ -1,5 +1,35 @@
 @import "tailwindcss";
 
+/* Custom styles for react-datepicker */
+.react-datepicker-wrapper {
+  width: 100%;
+}
+
+.react-datepicker__input-container {
+  width: 100%;
+}
+
+.react-datepicker__input-container input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 0.5rem;
+  font-size: 1rem;
+  color: #000;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+}
+
+.react-datepicker__input-container input:focus {
+  border-color: #9CAA8E;
+  box-shadow: 0 0 0 2px rgba(156, 170, 142, 0.2);
+}
+
+.react-datepicker__input-container input::placeholder {
+  color: #9ca3af;
+}
+
 @theme {
   /* Primary color palette */
   --color-primary-50: #f4f7f2;

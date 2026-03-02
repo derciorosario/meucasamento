@@ -132,7 +132,7 @@ const WeddingBudgetManager = () => {
       };
       const response = await updateCategory(subcategoryId, dataToSend);
       if (response.data.success) {
-        toast.success('Subcategoria atualizada com sucesso!');
+        toast.success('Item atualizado com sucesso!');
         // Update state locally instead of reloading
         setCategories(prevCategories => {
           return prevCategories.map(cat => {
@@ -152,7 +152,7 @@ const WeddingBudgetManager = () => {
       }
     } catch (error) {
       console.error('Error updating subcategory:', error);
-      toast.error('Erro ao atualizar subcategoria');
+      toast.error('Erro ao atualizar item');
     }
   };
 
@@ -172,7 +172,7 @@ const WeddingBudgetManager = () => {
       };
       const response = await createCategory(dataToSend);
       if (response.data.success) {
-        toast.success('Subcategoria criada com sucesso!');
+        toast.success('Item criado com sucesso!');
         // Update state locally instead of reloading
         const newSubcategory = response.data.data;
         setCategories(prevCategories => {
@@ -191,7 +191,7 @@ const WeddingBudgetManager = () => {
       }
     } catch (error) {
       console.error('Error creating subcategory:', error);
-      toast.error(error.response?.data?.message || 'Erro ao criar subcategoria');
+      toast.error(error.response?.data?.message || 'Erro ao criar item');
     }
   };
 
@@ -236,7 +236,7 @@ const WeddingBudgetManager = () => {
     try {
       const response = await deleteCategory(deleteConfirm);
       if (response.data.success) {
-        toast.success('Subcategoria excluída com sucesso!');
+        toast.success('Item excluído com sucesso!');
         // Update state locally instead of reloading
         setCategories(prevCategories => {
           return prevCategories.map(cat => {
@@ -251,8 +251,10 @@ const WeddingBudgetManager = () => {
         });
       }
     } catch (error) {
+
       console.error('Error deleting subcategory:', error);
-      toast.error(error.response?.data?.message || 'Erro ao excluir subcategoria');
+      toast.error(error.response?.data?.message || 'Erro ao excluir item');
+
     } finally {
       setDeleteConfirm(null);
     }
@@ -573,7 +575,7 @@ const WeddingBudgetManager = () => {
                                 <table className="w-full">
                                   <thead>
                                     <tr className="border-b border-gray-100 bg-gray-25">
-                                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Subcategoria</th>
+                                      <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Item</th>
                                       <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700">Previsto (MT)</th>
                                       <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700">Real (MT)</th>
                                       <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700">Diferença</th>
@@ -699,7 +701,7 @@ const WeddingBudgetManager = () => {
                             </div>
                           ) : (
                             <div className="p-6 text-center text-gray-500">
-                              Nenhuma subcategoria encontrada
+                              Nenhuma item encontrado
                             </div>
                           )}
 
@@ -783,7 +785,7 @@ const WeddingBudgetManager = () => {
                               className="flex items-center space-x-2 text-sm text-primary-500 hover:text-primary-600 w-full lg:w-auto justify-center lg:justify-start"
                             >
                               <Plus className="w-4 h-4" />
-                              <span>Adicionar subcategoria</span>
+                              <span>Adicionar item</span>
                             </button>
                           </div>
                         </div>
@@ -799,7 +801,7 @@ const WeddingBudgetManager = () => {
                 className="hidden lg:flex mt-4 items-center space-x-2 text-primary-500 hover:text-primary-600"
               >
                 <Plus className="w-5 h-5" />
-                <span>Adicionar subcategoria</span>
+                <span>Adicionar item</span>
               </button>
 
               {/* Tip */}
@@ -845,7 +847,7 @@ const WeddingBudgetManager = () => {
                 </div>
               </div>
 
-              <div className="border-t border-gray-200 pt-6 mb-6">
+              <div className="border-t border-gray-200 pt-6 mb-6 hidden">
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Resumo</h3>
                 <div className="space-y-3">
                   <div className="flex justify-between">
@@ -863,6 +865,105 @@ const WeddingBudgetManager = () => {
                   <div className="flex justify-between pt-2 border-t border-gray-100">
                     <span className="text-gray-600">Orçamento:</span>
                     <span className="font-semibold text-gray-900">{formatCurrency(totalBudget)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Comparison Cards */}
+              <div className="border-t border-gray-200 pt-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Comparações</h3>
+                <div className="space-y-3">
+                  {/* Previsto vs Orçamento */}
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm text-gray-600">Previsto ● Orçamento</span>
+                      <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+                        totalBudgeted <= totalBudget ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                      }`}>
+                        {totalBudgeted <= totalBudget ? 'Dentro' : 'Excedido'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-primary-500 rounded-full"
+                          style={{ width: `${totalBudget > 0 ? Math.min((totalBudgeted / totalBudget) * 100, 100) : 0}%` }}
+                        />
+                      </div>
+                      <span className={`text-sm font-semibold ${
+                        totalBudgeted <= totalBudget ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        {totalBudget > 0 ? ((totalBudgeted / totalBudget) * 100).toFixed(0) : 0}%
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-xs text-gray-500 mt-1">
+                      <span>Previsto: {formatCurrency(totalBudgeted)}</span>
+                      <span>Orçamento: {formatCurrency(totalBudget)}</span>
+                    </div>
+                  </div>
+
+                  {/* Previsto vs Real */}
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm text-gray-600">Previsto ● Real</span>
+                      <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+                        totalActual <= totalBudgeted ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                      }`}>
+                        {totalActual <= totalBudgeted ? 'Dentro' : 'Excedido'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full rounded-full ${totalActual <= totalBudgeted ? 'bg-green-500' : 'bg-red-500'}`}
+                          style={{ width: `${totalBudgeted > 0 ? Math.min((totalActual / totalBudgeted) * 100, 100) : 0}%` }}
+                        />
+                      </div>
+                      <span className={`text-sm font-semibold ${
+                        totalActual <= totalBudgeted ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        {totalBudgeted > 0 ? ((totalActual / totalBudgeted) * 100).toFixed(0) : 0}%
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-xs text-gray-500 mt-1">
+                      <span>Previsto: {formatCurrency(totalBudgeted)}</span>
+                      <span>Real: {formatCurrency(totalActual)}</span>
+                    </div>
+                    <div className={`text-xs font-medium mt-1 ${totalActual - totalBudgeted > 0 ? 'text-red-600' : totalActual - totalBudgeted < 0 ? 'text-green-600' : 'text-gray-500'}`}>
+                      Diferença: {totalActual - totalBudgeted >= 0 ? '+' : ''}{formatCurrency(totalActual - totalBudgeted)}
+                    </div>
+                  </div>
+
+                  {/* Real vs Orçamento */}
+                  <div className="bg-gray-50 rounded-lg p-3">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-sm text-gray-600">Real ● Orçamento</span>
+                      <span className={`text-xs font-medium px-2 py-1 rounded-full ${
+                        totalActual <= totalBudget ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                      }`}>
+                        {totalActual <= totalBudget ? 'Dentro' : 'Excedido'}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+                        <div 
+                          className={`h-full rounded-full ${totalActual <= totalBudget ? 'bg-green-500' : 'bg-red-500'}`}
+                          style={{ width: `${totalBudget > 0 ? Math.min((totalActual / totalBudget) * 100, 100) : 0}%` }}
+                        />
+                      </div>
+                      <span className={`text-sm font-semibold ${
+                        totalActual <= totalBudget ? 'text-green-600' : 'text-red-600'
+                      }`}>
+                        {totalBudget > 0 ? ((totalActual / totalBudget) * 100).toFixed(0) : 0}%
+                      </span>
+                    </div>
+                    <div className="flex justify-between text-xs text-gray-500 mt-1">
+                      <span>Real: {formatCurrency(totalActual)}</span>
+                      <span>Orçamento: {formatCurrency(totalBudget)}</span>
+                    </div>
+                    <div className={`text-xs font-medium mt-1 ${totalBudget - totalActual > 0 ? 'text-green-600' : totalBudget - totalActual < 0 ? 'text-red-600' : 'text-gray-500'}`}>
+                      Restante: {totalBudget - totalActual >= 0 ? '' : '+'}{formatCurrency(Math.abs(totalBudget - totalActual))}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -892,7 +993,7 @@ const WeddingBudgetManager = () => {
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between mb-4 top-0 bg-white">
-                <h3 className="text-lg font-semibold text-gray-800">Adicionar Subcategoria</h3>
+                <h3 className="text-lg font-semibold text-gray-800">Adicionar item</h3>
                 <button 
                   onClick={() => setShowAddModal(false)}
                   className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
@@ -998,7 +1099,7 @@ const WeddingBudgetManager = () => {
               </div>
               <h3 className="text-lg font-semibold text-gray-900 text-center mb-2">Confirmar exclusão</h3>
               <p className="text-gray-600 text-center mb-6">
-                Tem certeza que deseja excluir esta subcategoria? Esta ação não pode ser desfeita.
+                Tem certeza que deseja excluir este item? Esta ação não pode ser desfeita.
               </p>
               <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
                 <button

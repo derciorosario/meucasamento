@@ -90,7 +90,7 @@ export default function Support() {
   return (
     <DefaultLayout hero={{ 
       title: 'Centro de Suporte', 
-      subtitle: 'Estamos aqui para ajudar você a planejar o casamento perfeito',
+      subtitle: 'Estamos aqui para ajudar você a planear o casamento perfeito',
       image: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?w=1200&h=400&fit=crop'
     }}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12">

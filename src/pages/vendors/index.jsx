@@ -55,6 +55,7 @@ const VendorsPage = () => {
   const [filters, setFilters] = useState({
     search: '',
     sort: 'rating',
+    page: 1
   });
   
   // Dropdown visibility states
@@ -63,6 +64,7 @@ const VendorsPage = () => {
   const [showPriceDropdown, setShowPriceDropdown] = useState(false);
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [isFilterCollapsed, setIsFilterCollapsed] = useState(false);
 
   const [selectedVendor, setSelectedVendor] = useState(null);
   const [showProfile, setShowProfile] = useState(false);
@@ -412,6 +414,8 @@ const VendorsPage = () => {
     return labels[range] || range;
   };
 
+  const activeFilterCount = selectedCategories.length + selectedCities.length + selectedPriceRanges.length;
+
   if (loading && vendors.length === 0) {
     return (
       <DefaultLayout hero={{ title: "Fornecedores", subtitle: "Encontre os melhores fornecedores para o seu casamento" }}>
@@ -454,7 +458,7 @@ const VendorsPage = () => {
               {user && (
                 <button 
                   onClick={() => setShowFavoritesOnly(!showFavoritesOnly)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+                  className={`flex hidden items-center gap-2 px-4 py-2 rounded-lg transition-all ${
                     showFavoritesOnly 
                       ? 'bg-red-500 text-white' 
                       : 'bg-white text-gray-700 hover:bg-gray-100'
@@ -470,181 +474,664 @@ const VendorsPage = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-8">
-        {/* Mobile Filter Button */}
-        <button
-          onClick={() => setShowMobileFilters(true)}
-          className="lg:hidden w-full mb-6 px-4 py-3 bg-white border-2 border-gray-200 rounded-xl flex items-center justify-between"
-        >
-          <div className="flex items-center gap-2">
-            <Filter className="w-5 h-5 text-gray-600" />
-            <span className="font-medium text-gray-900">Filtros</span>
-          </div>
-          <div className="flex items-center gap-2">
-            {(selectedCategories.length > 0 || selectedCities.length > 0 || selectedPriceRanges.length > 0) && (
-              <span className="px-2 py-1 bg-primary-100 text-primary-600 text-xs rounded-full">
-                {selectedCategories.length + selectedCities.length + selectedPriceRanges.length}
-              </span>
-            )}
-            <ChevronRight className="w-4 h-4 text-gray-400" />
-          </div>
-        </button>
+        {/* Main Content with Sidebar Layout */}
+        <div className="flex flex-col lg:flex-row gap-8">
+          {/* Left Sidebar - Filters */}
+          <div className="hidden lg:block lg:w-80 flex-shrink-0">
+            <div className="sticky top-4">
+              <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                {/* Filter Header */}
+                <div 
+                  className="p-5 flex items-center justify-between cursor-pointer hover:bg-gray-50 transition-colors border-b border-gray-200"
+                  onClick={() => setIsFilterCollapsed(!isFilterCollapsed)}
+                >
+                  <div className="flex items-center gap-2">
+                    <SlidersHorizontal className="w-5 h-5 text-gray-600" />
+                    <h3 className="font-semibold text-gray-900">Filtros</h3>
+                    {activeFilterCount > 0 && (
+                      <span className="px-2 py-0.5 bg-primary-100 text-primary-600 text-xs font-medium rounded-full">
+                        {activeFilterCount}
+                      </span>
+                    )}
+                  </div>
+                  <ChevronRight 
+                    className={`w-5 h-5 text-gray-400 transition-transform duration-200 ${
+                      isFilterCollapsed ? '' : 'rotate-90'
+                    }`} 
+                  />
+                </div>
 
-        {/* Filters Section - Original Layout */}
-        <div className="hidden lg:block bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 mb-4">
-            {/* Category Multi-Select */}
-            <div className="relative multi-select">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Categoria</label>
-              <div 
-                className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl text-sm bg-white cursor-pointer flex items-center justify-between text-gray-900 hover:border-primary-300 transition-all"
-                onClick={() => { setShowCategoryDropdown(!showCategoryDropdown); setShowCityDropdown(false); setShowPriceDropdown(false); }}
-              >
-                <span className={selectedCategories.length > 0 ? 'text-gray-900 font-medium' : 'text-gray-500'}>
-                  {selectedCategories.length === 0 
-                    ? 'Todas as categorias' 
-                    : `${selectedCategories.length} selecionada(s)`}
-                </span>
-                <ChevronRight className={`w-4 h-4 text-gray-400 transition-transform ${showCategoryDropdown ? 'rotate-90' : ''}`} />
-              </div>
-              <AnimatePresence>
-                {showCategoryDropdown && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ duration: 0.2 }}
-                    className="absolute z-10 w-full mt-1 bg-white border-2 border-gray-100 rounded-xl shadow-lg max-h-60 overflow-y-auto"
-                  >
-                    {selectedCategories.length > 0 && (
-                      <div className="px-4 py-2 border-b border-gray-100 bg-gray-50">
+                {/* Scrollable Filter Content */}
+                <div className={isFilterCollapsed ? 'hidden' : 'block'}>
+                  <div className="max-h-[calc(100vh-300px)] overflow-y-auto scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                    {/* Search Input */}
+                    <div className="p-5 border-b border-gray-100">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Pesquisar
+                      </label>
+                      <div className="relative">
+                        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                        <input 
+                          type="text"
+                          placeholder="Nome do fornecedor..."
+                          className="w-full pl-10 pr-4 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition-all text-gray-900"
+                          value={filters.search}
+                          onChange={(e) => setFilters({ ...filters, search: e.target.value, page: 1 })}
+                        />
+                      </div>
+                    </div>
+
+                    {/* Favorites Filter - After Search */}
+                    {user && (
+                      <div className="p-5 border-b border-gray-100">
                         <button
-                          onClick={() => { setSelectedCategories([]); setFilters({ ...filters, page: 1 }); }}
-                          className="text-sm text-red-500 hover:text-red-700 flex items-center gap-1"
+                          onClick={() => {
+                            setShowFavoritesOnly(!showFavoritesOnly);
+                            setFilters({ ...filters, page: 1 });
+                          }}
+                          className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 transition-all ${
+                            showFavoritesOnly
+                              ? 'border-red-500 bg-red-50 text-red-700'
+                              : 'border-gray-200 hover:border-red-200 text-gray-700'
+                          }`}
                         >
-                          <X className="w-3 h-3" /> Limpar seleção
+                          <Heart className={`w-5 h-5 ${showFavoritesOnly ? 'fill-red-500 text-red-500' : ''}`} />
+                          <span className="font-medium">Ver favoritos</span>
+                          {showFavoritesOnly && (
+                            <Check className="w-5 h-5 ml-auto text-red-500" />
+                          )}
                         </button>
                       </div>
                     )}
-                    {categories.map((cat) => {
-                      const IconComponent = categoryIcons[cat.icon] || categoryIcons.default;
-                      return (
-                        <div
-                          key={cat._id}
-                          className={`px-4 py-2 cursor-pointer flex items-center gap-2 hover:bg-gray-100 ${selectedCategories.includes(cat._id) ? 'bg-primary-50' : ''}`}
-                          onClick={() => toggleCategory(cat._id)}
-                        >
-                          <div className={`w-4 h-4 border-2 rounded flex items-center justify-center ${selectedCategories.includes(cat._id) ? 'bg-primary-600 border-primary-600' : 'border-gray-300'}`}>
-                            {selectedCategories.includes(cat._id) && <Check className="w-3 h-3 text-white" />}
+
+                    {/* Category Filter */}
+                    <div className="p-5 border-b border-gray-100">
+                      <label className="block text-sm font-medium text-gray-700 mb-3">
+                        Categoria
+                      </label>
+                      <div className="space-y-2 max-h-60 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                        {categories.map((cat) => {
+                          const IconComponent = categoryIcons[cat.icon] || categoryIcons.default;
+                          return (
+                            <div
+                              key={cat._id}
+                              className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${
+                                selectedCategories.includes(cat._id) ? 'bg-primary-50' : ''
+                              }`}
+                              onClick={() => toggleCategory(cat._id)}
+                            >
+                              <div className={`w-4 h-4 border-2 rounded flex items-center justify-center ${
+                                selectedCategories.includes(cat._id) 
+                                  ? 'bg-primary-600 border-primary-600' 
+                                  : 'border-gray-300'
+                              }`}>
+                                {selectedCategories.includes(cat._id) && (
+                                  <Check className="w-3 h-3 text-white" />
+                                )}
+                              </div>
+                              <IconComponent className={`w-4 h-4 ${
+                                selectedCategories.includes(cat._id) 
+                                  ? 'text-primary-600' 
+                                  : 'text-gray-400'
+                              }`} />
+                              <span className={`text-sm ${
+                                selectedCategories.includes(cat._id) 
+                                  ? 'text-primary-900 font-medium' 
+                                  : 'text-gray-700'
+                              }`}>
+                                {cat.name}
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Location Filter */}
+                    <div className="p-5 border-b border-gray-100">
+                      <label className="block text-sm font-medium text-gray-700 mb-3">
+                        Localização
+                      </label>
+                      <div className="space-y-2 max-h-60 overflow-y-auto pr-2 scrollbar-thin scrollbar-thumb-gray-300 scrollbar-track-gray-100">
+                        {locations.cities.map((city) => (
+                          <div
+                            key={city}
+                            className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${
+                              selectedCities.includes(city) ? 'bg-primary-50' : ''
+                            }`}
+                            onClick={() => toggleCity(city)}
+                          >
+                            <div className={`w-4 h-4 border-2 rounded flex items-center justify-center ${
+                              selectedCities.includes(city) 
+                                ? 'bg-primary-600 border-primary-600' 
+                                : 'border-gray-300'
+                            }`}>
+                              {selectedCities.includes(city) && (
+                                <Check className="w-3 h-3 text-white" />
+                              )}
+                            </div>
+                            <MapPin className={`w-4 h-4 ${
+                              selectedCities.includes(city) 
+                                ? 'text-primary-600' 
+                                : 'text-gray-400'
+                            }`} />
+                            <span className={`text-sm ${
+                              selectedCities.includes(city) 
+                                ? 'text-primary-900 font-medium' 
+                                : 'text-gray-700'
+                            }`}>
+                              {city}
+                            </span>
                           </div>
-                          <IconComponent className={`w-4 h-4 ${selectedCategories.includes(cat._id) ? 'text-primary-600' : 'text-gray-400'}`} />
-                          <span className={`text-sm ${selectedCategories.includes(cat._id) ? 'text-primary-900 font-medium' : 'text-gray-700'}`}>{cat.name}</span>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Price Range Filter */}
+                    <div className="p-5 border-b border-gray-100">
+                      <label className="block text-sm font-medium text-gray-700 mb-3">
+                        Orçamento
+                      </label>
+                      <div className="space-y-2">
+                        {[
+                          { value: 'budget', label: 'Económico', icon: '💰' },
+                          { value: 'medium', label: 'Médio', icon: '💎' },
+                          { value: 'high', label: 'Alto', icon: '👑' },
+                          { value: 'luxury', label: 'Luxo', icon: '✨' }
+                        ].map((range) => (
+                          <div
+                            key={range.value}
+                            className={`flex items-center gap-2 p-2 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${
+                              selectedPriceRanges.includes(range.value) ? 'bg-primary-50' : ''
+                            }`}
+                            onClick={() => togglePriceRange(range.value)}
+                          >
+                            <div className={`w-4 h-4 border-2 rounded flex items-center justify-center ${
+                              selectedPriceRanges.includes(range.value) 
+                                ? 'bg-primary-600 border-primary-600' 
+                                : 'border-gray-300'
+                            }`}>
+                              {selectedPriceRanges.includes(range.value) && (
+                                <Check className="w-3 h-3 text-white" />
+                              )}
+                            </div>
+                            <span className="text-lg">{range.icon}</span>
+                            <span className={`text-sm ${
+                              selectedPriceRanges.includes(range.value) 
+                                ? 'text-primary-900 font-medium' 
+                                : 'text-gray-700'
+                            }`}>
+                              {range.label}
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Sort Options */}
+                    <div className="p-5 border-b border-gray-100">
+                      <label className="block text-sm font-medium text-gray-700 mb-3">
+                        Ordenar por
+                      </label>
+                      <select 
+                        className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition-all text-gray-900 appearance-none cursor-pointer"
+                        value={filters.sort}
+                        onChange={(e) => setFilters({ ...filters, sort: e.target.value, page: 1 })}
+                      >
+                        <option value="rating">Melhor avaliação</option>
+                        <option value="price_low">Menor preço</option>
+                        <option value="price_high">Maior preço</option>
+                        <option value="name">Nome A-Z</option>
+                      </select>
+                    </div>
+
+                    {/* Filter Actions */}
+                    <div className="p-5 bg-gray-50">
+                      <button 
+                        onClick={clearFilters}
+                        className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl text-sm font-medium text-gray-700 hover:bg-white hover:border-gray-300 transition-all flex items-center justify-center gap-2"
+                      >
+                        <X className="w-4 h-4" />
+                        Limpar todos os filtros
+                      </button>
+                    </div>
+
+                    {/* Results Summary */}
+                    <div className="p-5 bg-primary-50 border-t border-primary-100">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm text-gray-600">Resultados</span>
+                        <span className="text-2xl font-bold text-primary-600">{pagination.total}</span>
+                      </div>
+                      <div className="text-xs text-gray-500 space-y-1">
+                        <p>{selectedCategories.length} categorias selecionadas</p>
+                        <p>{selectedCities.length} cidades selecionadas</p>
+                        <p>{selectedPriceRanges.length} faixas de preço selecionadas</p>
+                      </div>
+                      {activeFilterCount > 0 && (
+                        <div className="mt-3 pt-3 border-t border-primary-200">
+                          <p className="text-xs text-primary-600 font-medium">
+                            {activeFilterCount} filtro(s) ativo(s)
+                          </p>
                         </div>
-                      );
-                    })}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-            
-            {/* City Multi-Select */}
-            <div className="relative multi-select">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Localização</label>
-              <div 
-                className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl text-sm bg-white cursor-pointer flex items-center justify-between text-gray-900 hover:border-primary-300 transition-all"
-                onClick={() => { setShowCityDropdown(!showCityDropdown); setShowCategoryDropdown(false); setShowPriceDropdown(false); }}
-              >
-                <span className={selectedCities.length > 0 ? 'text-gray-900 font-medium' : 'text-gray-500'}>
-                  {selectedCities.length === 0 
-                    ? 'Todas as cidades' 
-                    : `${selectedCities.length} selecionada(s)`}
-                </span>
-                <ChevronRight className={`w-4 h-4 text-gray-400 transition-transform ${showCityDropdown ? 'rotate-90' : ''}`} />
+                      )}
+                    </div>
+                  </div>
+                </div>
               </div>
-              <AnimatePresence>
-                {showCityDropdown && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ duration: 0.2 }}
-                    className="absolute z-10 w-full mt-1 bg-white border-2 border-gray-100 rounded-xl shadow-lg max-h-60 overflow-y-auto"
-                  >
-                    {selectedCities.length > 0 && (
-                      <div className="px-4 py-2 border-b border-gray-100 bg-gray-50">
-                        <button
-                          onClick={() => { setSelectedCities([]); setFilters({ ...filters, page: 1 }); }}
-                          className="text-sm text-red-500 hover:text-red-700 flex items-center gap-1"
-                        >
-                          <X className="w-3 h-3" /> Limpar seleção
-                        </button>
+            </div>
+          </div>
+
+          {/* Right Content - Main Content */}
+          <div className="flex-1">
+            {/* Mobile Filter Button */}
+            <button
+              onClick={() => setShowMobileFilters(true)}
+              className="lg:hidden w-full mb-6 px-4 py-3 bg-white border-2 border-gray-200 rounded-xl flex items-center justify-between"
+            >
+              <div className="flex items-center gap-2">
+                <Filter className="w-5 h-5 text-gray-600" />
+                <span className="font-medium text-gray-900">Filtros</span>
+              </div>
+              <div className="flex items-center gap-2">
+                {activeFilterCount > 0 && (
+                  <span className="px-2 py-1 bg-primary-100 text-primary-600 text-xs rounded-full">
+                    {activeFilterCount}
+                  </span>
+                )}
+                <ChevronRight className="w-4 h-4 text-gray-400" />
+              </div>
+            </button>
+
+            {/* Results Header */}
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h2 className="text-xl font-semibold text-gray-900">
+                  {showFavoritesOnly 
+                    ? `${pagination.total} fornecedores nos favoritos` 
+                    : `${pagination.total} fornecedores encontrados`}
+                </h2>
+                <p className="text-sm text-gray-500 mt-1">
+                  {activeFilterCount} filtro(s) aplicado(s)
+                </p>
+              </div>
+              <div className="hidden lg:block text-sm text-gray-500">
+                Página {pagination.page} de {pagination.pages}
+              </div>
+            </div>
+
+            {/* Vendors Grid */}
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.5 }}
+              className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 mb-8"
+            >
+              {vendors.map((vendor, index) => (
+                <motion.div
+                  key={vendor._id}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.3, delay: index * 0.05 }}
+                  whileHover={{ y: -4 }}
+                  onClick={() => handleViewProfile(vendor)}
+                  className="group bg-white rounded-2xl shadow-sm hover:shadow-xl border border-gray-100 overflow-hidden transition-all duration-300 cursor-pointer"
+                >
+                  {/* Image Slideshow */}
+                  <div className="relative h-48 overflow-hidden">
+                    {(() => {
+                      const allImages = getAllVendorImages(vendor);
+                      return allImages.length > 0 ? (
+                        <>
+                          <motion.img 
+                            key={vendorSlides[vendor._id] || 0}
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ duration: 0.3 }}
+                            src={getImageUrl(allImages[vendorSlides[vendor._id] || 0])}
+                            alt={`${vendor.name} - ${(vendorSlides[vendor._id] || 0) + 1}`}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
+                          />
+                          {allImages.length > 1 && (
+                            <>
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); prevVendorSlide(vendor._id, allImages.length); }}
+                                className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/90 backdrop-blur-sm hover:bg-white text-gray-800 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-lg"
+                              >
+                                <ChevronLeft className="w-4 h-4" />
+                              </button>
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); nextVendorSlide(vendor._id, allImages.length); }}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/90 backdrop-blur-sm hover:bg-white text-gray-800 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-lg"
+                              >
+                                <ChevronRight className="w-4 h-4" />
+                              </button>
+                              <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
+                                {allImages.map((_, idx) => (
+                                  <button
+                                    key={idx}
+                                    onClick={(e) => { e.stopPropagation(); setVendorSlides(prev => ({ ...prev, [vendor._id]: idx })); }}
+                                    className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
+                                      idx === (vendorSlides[vendor._id] || 0) 
+                                        ? 'w-4 bg-white' 
+                                        : 'bg-white/60 hover:bg-white'
+                                    }`}
+                                  />
+                                ))}
+                              </div>
+                            </>
+                          )}
+                        </>
+                      ) : (
+                        <img 
+                          src="https://www.acadiate.com/images/Placeholder.png"
+                          alt={vendor.name}
+                          className="w-full h-full object-cover"
+                        />
+                      );
+                    })()}
+                    
+                    {/* Favorite Button */}
+                    <button
+                      onClick={(e) => { e.stopPropagation(); toggleFavorite(vendor._id); }}
+                      className="absolute top-3 right-3 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-all duration-300 shadow-lg"
+                    >
+                      <Heart 
+                        className={`w-4 h-4 transition-colors ${
+                          favorites.includes(vendor._id) 
+                            ? 'fill-red-500 text-red-500' 
+                            : 'text-gray-600'
+                        }`} 
+                      />
+                    </button>
+
+                    {/* Featured Badge */}
+                    {vendor.isFeatured && (
+                      <div className="absolute top-3 left-3 px-2 py-1 bg-gradient-to-r from-yellow-400 to-amber-500 text-white text-xs font-medium rounded-full shadow-lg flex items-center gap-1">
+                        <Award className="w-3 h-3" />
+                        Destaque
                       </div>
                     )}
+                  </div>
+                  
+                  {/* Content */}
+                  <div className="p-4">
+                    <div className="flex items-start justify-between mb-2">
+                      <div>
+                        <h3 className="text-base font-semibold text-gray-900 group-hover:text-primary-600 transition-colors line-clamp-1">
+                          {vendor.name}
+                        </h3>
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-xl">{vendor.category?.icon}</span>
+                          <span className="text-xs px-2 py-0.5 bg-gray-100 text-gray-600 rounded-full">
+                            {vendor.category?.name}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 bg-yellow-50 px-2 py-1 rounded-full">
+                        <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
+                        <span className="text-xs font-semibold text-yellow-700">{vendor.averageRating?.toFixed(1) || '0.0'}</span>
+                        <span className="text-xs text-yellow-600">({vendor.totalReviews})</span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-2 text-xs text-gray-500 mb-3">
+                      {vendor.city && (
+                        <span className="flex items-center gap-1">
+                          <MapPin className="w-3 h-3" />
+                          {vendor.city}
+                        </span>
+                      )}
+                      {vendor.maxCapacity && (
+                        <>
+                          <span>•</span>
+                          <span className="flex items-center gap-1">
+                            <Users className="w-3 h-3" />
+                            Até {vendor.maxCapacity}
+                          </span>
+                        </>
+                      )}
+                      {vendor.priceRange && (
+                        <>
+                          <span>•</span>
+                          <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getPriceRangeColor(vendor.priceRange)}`}>
+                            {getPriceRangeLabel(vendor.priceRange)}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                    
+                    <p className="text-xs text-gray-600 mb-3 line-clamp-2">
+                      {vendor.description}
+                    </p>
+                    
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <span className="text-xs text-gray-500">A partir de</span>
+                        <p className="text-base font-bold text-gray-900">
+                          {vendor.startingPrice 
+                            ? `${vendor.startingPrice.toLocaleString('pt-MZ')} MT` 
+                            : 'Sob consulta'}
+                        </p>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center gap-2">
+                      <button 
+                        onClick={() => handleViewProfile(vendor)}
+                        className="flex-1 bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 text-white py-2 rounded-xl text-xs font-medium transition-all duration-300 shadow-md hover:shadow-lg"
+                      >
+                        Ver detalhes
+                      </button>
+                      <button 
+                        onClick={() => handleRequestQuote(vendor)}
+                        className="w-8 h-8 border-2 border-primary-200 text-primary-600 rounded-xl hover:bg-primary-50 transition-all duration-300 flex items-center justify-center group"
+                        title="Pedir orçamento"
+                      >
+                        <Send className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              ))}
+              
+              {(vendors.length === 0) && (
+                <motion.div 
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="col-span-full text-center py-16"
+                >
+                  <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <Search className="w-10 h-10 text-gray-400" />
+                  </div>
+                  <p className="text-gray-600 text-lg mb-2">
+                    {showFavoritesOnly 
+                      ? 'Nenhum fornecedor nos favoritos' 
+                      : 'Nenhum fornecedor encontrado'}
+                  </p>
+                  <button 
+                    onClick={clearFilters}
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors"
+                  >
+                    <Filter className="w-4 h-4" />
+                    Limpar filtros
+                  </button>
+                </motion.div>
+              )}
+            </motion.div>
+
+            {/* Pagination */}
+            {pagination.pages > 1 && (
+              <div className="flex items-center justify-center gap-2">
+                <motion.button 
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => handlePageChange(pagination.page - 1)}
+                  disabled={pagination.page === 1}
+                  className="w-10 h-10 border-2 border-gray-200 rounded-xl hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                >
+                  <ChevronLeft className="w-5 h-5 text-gray-600" />
+                </motion.button>
+                
+                {Array.from({ length: pagination.pages }, (_, i) => i + 1)
+                  .filter(page => {
+                    return page === 1 || page === pagination.pages || 
+                      (page >= pagination.page - 2 && page <= pagination.page + 2);
+                  })
+                  .map((page, idx, arr) => (
+                    <React.Fragment key={page}>
+                      {idx > 0 && arr[idx - 1] !== page - 1 && (
+                        <span className="px-2 text-gray-400">...</span>
+                      )}
+                      <motion.button 
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
+                        onClick={() => handlePageChange(page)}
+                        className={`w-10 h-10 rounded-xl font-medium text-sm transition-all ${
+                          pagination.page === page 
+                            ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-md' 
+                            : 'border-2 border-gray-200 hover:border-primary-300 text-gray-600'
+                        }`}
+                      >
+                        {page}
+                      </motion.button>
+                    </React.Fragment>
+                  ))
+                }
+                
+                <motion.button 
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => handlePageChange(pagination.page + 1)}
+                  disabled={pagination.page === pagination.pages}
+                  className="w-10 h-10 border-2 border-gray-200 rounded-xl hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                >
+                  <ChevronRight className="w-5 h-5 text-gray-600" />
+                </motion.button>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Filters Drawer */}
+      <AnimatePresence>
+        {showMobileFilters && (
+          <>
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 0.5 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setShowMobileFilters(false)}
+              className="fixed inset-0 bg-black z-40 lg:hidden"
+            />
+            <motion.div
+              initial={{ x: '100%' }}
+              animate={{ x: 0 }}
+              exit={{ x: '100%' }}
+              transition={{ type: 'tween' }}
+              className="fixed right-0 top-0 h-full w-full max-w-sm bg-white z-50 lg:hidden overflow-y-auto"
+            >
+              <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
+                <h2 className="text-lg font-semibold text-gray-900">Filtros</h2>
+                <button
+                  onClick={() => setShowMobileFilters(false)}
+                  className="p-2 hover:bg-gray-100 rounded-lg"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+              
+              <div className="p-6 space-y-6">
+                {/* Mobile Search Input */}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Pesquisar
+                  </label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                    <input 
+                      type="text"
+                      placeholder="Nome do fornecedor..."
+                      className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition-all text-gray-900"
+                      value={filters.search}
+                      onChange={(e) => setFilters({ ...filters, search: e.target.value, page: 1 })}
+                    />
+                  </div>
+                </div>
+
+                {/* Mobile Favorites Filter - After Search */}
+                {user && (
+                  <div>
+                    <button
+                      onClick={() => {
+                        setShowFavoritesOnly(!showFavoritesOnly);
+                        setFilters({ ...filters, page: 1 });
+                      }}
+                      className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 transition-all ${
+                        showFavoritesOnly
+                          ? 'border-red-500 bg-red-50 text-red-700'
+                          : 'border-gray-200 hover:border-red-200 text-gray-700'
+                      }`}
+                    >
+                      <Heart className={`w-5 h-5 ${showFavoritesOnly ? 'fill-red-500 text-red-500' : ''}`} />
+                      <span className="font-medium">Ver favoritos</span>
+                      {showFavoritesOnly && (
+                        <Check className="w-5 h-5 ml-auto text-red-500" />
+                      )}
+                    </button>
+                  </div>
+                )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Categoria</label>
+                  <div className="space-y-2">
+                    {categories.map((cat) => (
+                      <div
+                        key={cat._id}
+                        className={`px-4 py-3 rounded-xl cursor-pointer flex items-center gap-3 border-2 transition-all ${
+                          selectedCategories.includes(cat._id)
+                            ? 'border-primary-500 bg-primary-50'
+                            : 'border-gray-200 hover:border-primary-200'
+                        }`}
+                        onClick={() => toggleCategory(cat._id)}
+                      >
+                        <span className="text-xl">{cat.icon}</span>
+                        <span className="flex-1 text-gray-900">{cat.name}</span>
+                        {selectedCategories.includes(cat._id) && (
+                          <Check className="w-5 h-5 text-primary-500" />
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Localização</label>
+                  <div className="space-y-2">
                     {locations.cities.map((city) => (
                       <div
                         key={city}
-                        className={`px-4 py-2 cursor-pointer flex items-center gap-2 hover:bg-gray-100 ${selectedCities.includes(city) ? 'bg-primary-50' : ''}`}
+                        className={`px-4 py-3 rounded-xl cursor-pointer flex items-center gap-3 border-2 transition-all ${
+                          selectedCities.includes(city)
+                            ? 'border-primary-500 bg-primary-50'
+                            : 'border-gray-200 hover:border-primary-200'
+                        }`}
                         onClick={() => toggleCity(city)}
                       >
-                        <div className={`w-4 h-4 border-2 rounded flex items-center justify-center ${selectedCities.includes(city) ? 'bg-primary-600 border-primary-600' : 'border-gray-300'}`}>
-                          {selectedCities.includes(city) && <Check className="w-3 h-3 text-white" />}
-                        </div>
-                        <MapPin className={`w-4 h-4 ${selectedCities.includes(city) ? 'text-primary-600' : 'text-gray-400'}`} />
-                        <span className={`text-sm ${selectedCities.includes(city) ? 'text-primary-900 font-medium' : 'text-gray-700'}`}>{city}</span>
+                        <MapPin className={`w-5 h-5 ${
+                          selectedCities.includes(city) ? 'text-primary-500' : 'text-gray-400'
+                        }`} />
+                        <span className="flex-1 text-gray-900">{city}</span>
+                        {selectedCities.includes(city) && (
+                          <Check className="w-5 h-5 text-primary-500" />
+                        )}
                       </div>
                     ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
+                  </div>
+                </div>
 
-            {/* Search Input */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Pesquisar</label>
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input 
-                  type="text"
-                  placeholder="Nome do fornecedor..."
-                  className="w-full pl-10 pr-4 py-2 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition-all text-gray-900"
-                  value={filters.search}
-                  onChange={(e) => setFilters({ ...filters, search: e.target.value, page: 1 })}
-                />
-              </div>
-            </div>
-            
-            {/* Price Range Multi-Select */}
-            <div className="relative multi-select">
-              <label className="block text-sm font-medium text-gray-700 mb-2">Orçamento</label>
-              <div 
-                className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl text-sm bg-white cursor-pointer flex items-center justify-between text-gray-900 hover:border-primary-300 transition-all"
-                onClick={() => { setShowPriceDropdown(!showPriceDropdown); setShowCategoryDropdown(false); setShowCityDropdown(false); }}
-              >
-                <span className={selectedPriceRanges.length > 0 ? 'text-gray-900 font-medium' : 'text-gray-500'}>
-                  {selectedPriceRanges.length === 0 
-                    ? 'Qualquer valor' 
-                    : `${selectedPriceRanges.length} selecionado(s)`}
-                </span>
-                <ChevronRight className={`w-4 h-4 text-gray-400 transition-transform ${showPriceDropdown ? 'rotate-90' : ''}`} />
-              </div>
-              <AnimatePresence>
-                {showPriceDropdown && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ duration: 0.2 }}
-                    className="absolute z-10 w-full mt-1 bg-white border-2 border-gray-100 rounded-xl shadow-lg"
-                  >
-                    {selectedPriceRanges.length > 0 && (
-                      <div className="px-4 py-2 border-b border-gray-100 bg-gray-50">
-                        <button
-                          onClick={() => { setSelectedPriceRanges([]); setFilters({ ...filters, page: 1 }); }}
-                          className="text-sm text-red-500 hover:text-red-700 flex items-center gap-1"
-                        >
-                          <X className="w-3 h-3" /> Limpar seleção
-                        </button>
-                      </div>
-                    )}
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Orçamento</label>
+                  <div className="space-y-2">
                     {[
                       { value: 'budget', label: 'Económico', icon: '💰' },
                       { value: 'medium', label: 'Médio', icon: '💎' },
@@ -653,440 +1140,56 @@ const VendorsPage = () => {
                     ].map((range) => (
                       <div
                         key={range.value}
-                        className={`px-4 py-2 cursor-pointer flex items-center gap-2 hover:bg-gray-100 ${selectedPriceRanges.includes(range.value) ? 'bg-primary-50' : ''}`}
+                        className={`px-4 py-3 rounded-xl cursor-pointer flex items-center gap-3 border-2 transition-all ${
+                          selectedPriceRanges.includes(range.value)
+                            ? 'border-primary-500 bg-primary-50'
+                            : 'border-gray-200 hover:border-primary-200'
+                        }`}
                         onClick={() => togglePriceRange(range.value)}
                       >
-                        <div className={`w-4 h-4 border-2 rounded flex items-center justify-center ${selectedPriceRanges.includes(range.value) ? 'bg-primary-600 border-primary-600' : 'border-gray-300'}`}>
-                          {selectedPriceRanges.includes(range.value) && <Check className="w-3 h-3 text-white" />}
-                        </div>
-                        <span className="text-lg">{range.icon}</span>
-                        <span className={`text-sm ${selectedPriceRanges.includes(range.value) ? 'text-primary-900 font-medium' : 'text-gray-700'}`}>{range.label}</span>
+                        <span className="text-xl">{range.icon}</span>
+                        <span className="flex-1 text-gray-900">{range.label}</span>
+                        {selectedPriceRanges.includes(range.value) && (
+                          <Check className="w-5 h-5 text-primary-500" />
+                        )}
                       </div>
                     ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-            
-            {/* Sort Select */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Ordenar por</label>
-              <select 
-                className="w-full px-4 py-2 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition-all text-gray-900 appearance-none cursor-pointer"
-                value={filters.sort}
-                onChange={(e) => setFilters({ ...filters, sort: e.target.value, page: 1 })}
-              >
-                <option value="rating">Melhor avaliação</option>
-                <option value="price_low">Menor preço</option>
-                <option value="price_high">Maior preço</option>
-                <option value="name">Nome A-Z</option>
-              </select>
-            </div>
-          </div>
-          
-          <div className="flex items-center justify-between pt-4 border-t border-gray-200">
-            <button 
-              onClick={clearFilters}
-              className="text-sm text-gray-600 hover:text-gray-800 flex items-center gap-1 transition-colors"
-            >
-              <X className="w-3 h-3" />
-              Limpar filtros
-            </button>
-            <span className="text-sm text-gray-600">
-              {pagination.total} fornecedores encontrados
-              {(selectedCategories.length > 0 || selectedCities.length > 0 || selectedPriceRanges.length > 0) && (
-                <span className="ml-2 text-primary-600 font-medium">
-                  ({selectedCategories.length + selectedCities.length + selectedPriceRanges.length} filtro(s) ativo(s))
-                </span>
-              )}
-            </span>
-          </div>
-        </div>
+                  </div>
+                </div>
 
-        {/* Mobile Filters Drawer - Keeping the same */}
-        <AnimatePresence>
-          {showMobileFilters && (
-            <>
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 0.5 }}
-                exit={{ opacity: 0 }}
-                onClick={() => setShowMobileFilters(false)}
-                className="fixed inset-0 bg-black z-40 lg:hidden"
-              />
-              <motion.div
-                initial={{ x: '100%' }}
-                animate={{ x: 0 }}
-                exit={{ x: '100%' }}
-                transition={{ type: 'tween' }}
-                className="fixed right-0 top-0 h-full w-full max-w-sm bg-white z-50 lg:hidden overflow-y-auto"
-              >
-                <div className="sticky top-0 bg-white border-b border-gray-200 px-6 py-4 flex items-center justify-between">
-                  <h2 className="text-lg font-semibold text-gray-900">Filtros</h2>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Ordenar por</label>
+                  <select 
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl text-sm focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition-all text-gray-900"
+                    value={filters.sort}
+                    onChange={(e) => setFilters({ ...filters, sort: e.target.value, page: 1 })}
+                  >
+                    <option value="rating">Melhor avaliação</option>
+                    <option value="price_low">Menor preço</option>
+                    <option value="price_high">Maior preço</option>
+                    <option value="name">Nome A-Z</option>
+                  </select>
+                </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button
+                    onClick={clearFilters}
+                    className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+                  >
+                    Limpar
+                  </button>
                   <button
                     onClick={() => setShowMobileFilters(false)}
-                    className="p-2 hover:bg-gray-100 rounded-lg"
+                    className="flex-1 px-4 py-3 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition-colors"
                   >
-                    <X className="w-5 h-5 text-gray-500" />
-                  </button>
-                </div>
-                
-                <div className="p-6 space-y-6">
-                  {/* Mobile filters content */}
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Categoria</label>
-                    <div className="space-y-2">
-                      {categories.map((cat) => (
-                        <div
-                          key={cat._id}
-                          className={`px-4 py-3 rounded-xl cursor-pointer flex items-center gap-3 border-2 transition-all ${
-                            selectedCategories.includes(cat._id)
-                              ? 'border-primary-500 bg-primary-50'
-                              : 'border-gray-200 hover:border-primary-200'
-                          }`}
-                          onClick={() => toggleCategory(cat._id)}
-                        >
-                          <span className="text-xl">{cat.icon}</span>
-                          <span className="flex-1 text-gray-900">{cat.name}</span>
-                          {selectedCategories.includes(cat._id) && (
-                            <Check className="w-5 h-5 text-primary-500" />
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Localização</label>
-                    <div className="space-y-2">
-                      {locations.cities.map((city) => (
-                        <div
-                          key={city}
-                          className={`px-4 py-3 rounded-xl cursor-pointer flex items-center gap-3 border-2 transition-all ${
-                            selectedCities.includes(city)
-                              ? 'border-primary-500 bg-primary-50'
-                              : 'border-gray-200 hover:border-primary-200'
-                          }`}
-                          onClick={() => toggleCity(city)}
-                        >
-                          <MapPin className={`w-5 h-5 ${
-                            selectedCities.includes(city) ? 'text-primary-500' : 'text-gray-400'
-                          }`} />
-                          <span className="flex-1 text-gray-900">{city}</span>
-                          {selectedCities.includes(city) && (
-                            <Check className="w-5 h-5 text-primary-500" />
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Orçamento</label>
-                    <div className="space-y-2">
-                      {[
-                        { value: 'budget', label: 'Económico', icon: '💰' },
-                        { value: 'medium', label: 'Médio', icon: '💎' },
-                        { value: 'high', label: 'Alto', icon: '👑' },
-                        { value: 'luxury', label: 'Luxo', icon: '✨' }
-                      ].map((range) => (
-                        <div
-                          key={range.value}
-                          className={`px-4 py-3 rounded-xl cursor-pointer flex items-center gap-3 border-2 transition-all ${
-                            selectedPriceRanges.includes(range.value)
-                              ? 'border-primary-500 bg-primary-50'
-                              : 'border-gray-200 hover:border-primary-200'
-                          }`}
-                          onClick={() => togglePriceRange(range.value)}
-                        >
-                          <span className="text-xl">{range.icon}</span>
-                          <span className="flex-1 text-gray-900">{range.label}</span>
-                          {selectedPriceRanges.includes(range.value) && (
-                            <Check className="w-5 h-5 text-primary-500" />
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className="flex gap-3 pt-4">
-                    <button
-                      onClick={clearFilters}
-                      className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-colors"
-                    >
-                      Limpar
-                    </button>
-                    <button
-                      onClick={() => setShowMobileFilters(false)}
-                      className="flex-1 px-4 py-3 bg-primary-600 text-white rounded-xl font-medium hover:bg-primary-700 transition-colors"
-                    >
-                      Aplicar
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
-            </>
-          )}
-        </AnimatePresence>
-
-        {/* Results Header */}
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-xl font-semibold text-gray-900">
-              {showFavoritesOnly 
-                ? `${pagination.total} fornecedores nos favoritos` 
-                : `${pagination.total} fornecedores encontrados`}
-            </h2>
-            <p className="text-sm text-gray-500 mt-1">
-              {selectedCategories.length + selectedCities.length + selectedPriceRanges.length} filtro(s) aplicado(s)
-            </p>
-          </div>
-          <div className="hidden lg:block text-sm text-gray-500">
-            Página {pagination.page} de {pagination.pages}
-          </div>
-        </div>
-
-        {/* Vendors Grid - Keeping all the beautiful card design */}
-        <motion.div 
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.5 }}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8"
-        >
-          {vendors.map((vendor, index) => (
-            <motion.div
-              key={vendor._id}
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.3, delay: index * 0.05 }}
-              whileHover={{ y: -4 }}
-              className="group bg-white rounded-2xl shadow-sm hover:shadow-xl border border-gray-100 overflow-hidden transition-all duration-300"
-            >
-              {/* Image Slideshow */}
-              <div className="relative h-56 overflow-hidden">
-                {(() => {
-                  const allImages = getAllVendorImages(vendor);
-                  return allImages.length > 0 ? (
-                    <>
-                      <motion.img 
-                        key={vendorSlides[vendor._id] || 0}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ duration: 0.3 }}
-                        src={getImageUrl(allImages[vendorSlides[vendor._id] || 0])}
-                        alt={`${vendor.name} - ${(vendorSlides[vendor._id] || 0) + 1}`}
-                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                      />
-                      {allImages.length > 1 && (
-                        <>
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); prevVendorSlide(vendor._id, allImages.length); }}
-                            className="absolute left-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/90 backdrop-blur-sm hover:bg-white text-gray-800 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-lg"
-                          >
-                            <ChevronLeft className="w-4 h-4" />
-                          </button>
-                          <button 
-                            onClick={(e) => { e.stopPropagation(); nextVendorSlide(vendor._id, allImages.length); }}
-                            className="absolute right-2 top-1/2 -translate-y-1/2 w-8 h-8 bg-white/90 backdrop-blur-sm hover:bg-white text-gray-800 rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-300 shadow-lg"
-                          >
-                            <ChevronRight className="w-4 h-4" />
-                          </button>
-                          <div className="absolute bottom-2 left-1/2 -translate-x-1/2 flex gap-1">
-                            {allImages.map((_, idx) => (
-                              <button
-                                key={idx}
-                                onClick={(e) => { e.stopPropagation(); setVendorSlides(prev => ({ ...prev, [vendor._id]: idx })); }}
-                                className={`w-1.5 h-1.5 rounded-full transition-all duration-300 ${
-                                  idx === (vendorSlides[vendor._id] || 0) 
-                                    ? 'w-4 bg-white' 
-                                    : 'bg-white/60 hover:bg-white'
-                                }`}
-                              />
-                            ))}
-                          </div>
-                        </>
-                      )}
-                    </>
-                  ) : (
-                    <img 
-                      src="https://www.acadiate.com/images/Placeholder.png"
-                      alt={vendor.name}
-                      className="w-full h-full object-cover"
-                    />
-                  );
-                })()}
-                
-                {/* Favorite Button */}
-                <button
-                  onClick={(e) => { e.stopPropagation(); toggleFavorite(vendor._id); }}
-                  className="absolute top-3 right-3 w-8 h-8 bg-white/90 backdrop-blur-sm rounded-full flex items-center justify-center hover:bg-white transition-all duration-300 shadow-lg"
-                >
-                  <Heart 
-                    className={`w-4 h-4 transition-colors ${
-                      favorites.includes(vendor._id) 
-                        ? 'fill-red-500 text-red-500' 
-                        : 'text-gray-600'
-                    }`} 
-                  />
-                </button>
-
-                {/* Featured Badge */}
-                {vendor.isFeatured && (
-                  <div className="absolute top-3 left-3 px-2 py-1 bg-gradient-to-r from-yellow-400 to-amber-500 text-white text-xs font-medium rounded-full shadow-lg flex items-center gap-1">
-                    <Award className="w-3 h-3" />
-                    Destaque
-                  </div>
-                )}
-              </div>
-              
-              {/* Content */}
-              <div className="p-5">
-                <div className="flex items-start justify-between mb-2">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 group-hover:text-primary-600 transition-colors">
-                      {vendor.name}
-                    </h3>
-                    <div className="flex items-center gap-2 mt-1">
-                      <span className="text-2xl">{vendor.category?.icon}</span>
-                      <span className="text-xs px-2 py-1 bg-gray-100 text-gray-600 rounded-full">
-                        {vendor.category?.name}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-1 bg-yellow-50 px-2 py-1 rounded-full">
-                    <Star className="w-3 h-3 text-yellow-500 fill-yellow-500" />
-                    <span className="text-xs font-semibold text-yellow-700">{vendor.averageRating?.toFixed(1) || '0.0'}</span>
-                    <span className="text-xs text-yellow-600">({vendor.totalReviews})</span>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-2 text-xs text-gray-500 mb-3">
-                  {vendor.city && (
-                    <span className="flex items-center gap-1">
-                      <MapPin className="w-3 h-3" />
-                      {vendor.city}
-                    </span>
-                  )}
-                  {vendor.priceRange && (
-                    <>
-                      <span>•</span>
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getPriceRangeColor(vendor.priceRange)}`}>
-                        {getPriceRangeLabel(vendor.priceRange)}
-                      </span>
-                    </>
-                  )}
-                </div>
-                
-                <p className="text-sm text-gray-600 mb-4 line-clamp-2">
-                  {vendor.description}
-                </p>
-                
-                <div className="flex items-center justify-between mb-4">
-                  <div>
-                    <span className="text-xs text-gray-500">A partir de</span>
-                    <p className="text-lg font-bold text-gray-900">
-                      {vendor.startingPrice 
-                        ? `${vendor.startingPrice.toLocaleString('pt-MZ')} MT` 
-                        : 'Sob consulta'}
-                    </p>
-                  </div>
-                </div>
-                
-                <div className="flex items-center gap-2">
-                  <button 
-                    onClick={() => handleViewProfile(vendor)}
-                    className="flex-1 bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 text-white py-2.5 rounded-xl text-sm font-medium transition-all duration-300 shadow-md hover:shadow-lg"
-                  >
-                    Ver Perfil
-                  </button>
-                  <button 
-                    onClick={() => handleRequestQuote(vendor)}
-                    className="w-10 h-10 border-2 border-primary-200 text-primary-600 rounded-xl hover:bg-primary-50 transition-all duration-300 flex items-center justify-center group"
-                    title="Pedir orçamento"
-                  >
-                    <Send className="w-4 h-4 group-hover:scale-110 transition-transform" />
+                    Aplicar
                   </button>
                 </div>
               </div>
             </motion.div>
-          ))}
-          
-          {(vendors.length === 0) && (
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="col-span-full text-center py-16"
-            >
-              <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                <Search className="w-10 h-10 text-gray-400" />
-              </div>
-              <p className="text-gray-600 text-lg mb-2">
-                {showFavoritesOnly 
-                  ? 'Nenhum fornecedor nos favoritos' 
-                  : 'Nenhum fornecedor encontrado'}
-              </p>
-              <button 
-                onClick={clearFilters}
-                className="inline-flex items-center gap-2 px-6 py-3 bg-primary-600 text-white rounded-xl hover:bg-primary-700 transition-colors"
-              >
-                <Filter className="w-4 h-4" />
-                Limpar filtros
-              </button>
-            </motion.div>
-          )}
-        </motion.div>
-
-        {/* Pagination */}
-        {pagination.pages > 1 && (
-          <div className="flex items-center justify-center gap-2">
-            <motion.button 
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => handlePageChange(pagination.page - 1)}
-              disabled={pagination.page === 1}
-              className="w-10 h-10 border-2 border-gray-200 rounded-xl hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-            >
-              <ChevronLeft className="w-5 h-5 text-gray-600" />
-            </motion.button>
-            
-            {Array.from({ length: pagination.pages }, (_, i) => i + 1)
-              .filter(page => {
-                return page === 1 || page === pagination.pages || 
-                  (page >= pagination.page - 2 && page <= pagination.page + 2);
-              })
-              .map((page, idx, arr) => (
-                <React.Fragment key={page}>
-                  {idx > 0 && arr[idx - 1] !== page - 1 && (
-                    <span className="px-2 text-gray-400">...</span>
-                  )}
-                  <motion.button 
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => handlePageChange(page)}
-                    className={`w-10 h-10 rounded-xl font-medium text-sm transition-all ${
-                      pagination.page === page 
-                        ? 'bg-gradient-to-r from-primary-600 to-primary-500 text-white shadow-md' 
-                        : 'border-2 border-gray-200 hover:border-primary-300 text-gray-600'
-                    }`}
-                  >
-                    {page}
-                  </motion.button>
-                </React.Fragment>
-              ))
-            }
-            
-            <motion.button 
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => handlePageChange(pagination.page + 1)}
-              disabled={pagination.page === pagination.pages}
-              className="w-10 h-10 border-2 border-gray-200 rounded-xl hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-            >
-              <ChevronRight className="w-5 h-5 text-gray-600" />
-            </motion.button>
-          </div>
+          </>
         )}
-      </div>
+      </AnimatePresence>
 
       {/* Vendor Profile Modal */}
       <AnimatePresence>

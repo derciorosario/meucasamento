@@ -42,6 +42,8 @@ const Gallery = ({ userId = null, isOwner = false, isPublicView = false }) => {
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [downloading, setDownloading] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(0);
   const [showNewAlbumModal, setShowNewAlbumModal] = useState(false);
   const [showSettingsModal, setShowSettingsModal] = useState(false);
   const [showQRModal, setShowQRModal] = useState(false);
@@ -266,11 +268,45 @@ const Gallery = ({ userId = null, isOwner = false, isPublicView = false }) => {
     toast.success('Link do perfil copiado para a área de transferência!');
   };
 
-  const downloadPhoto = (photoUrl) => {
-    const link = document.createElement('a');
-    link.href = `${API_URL}${photoUrl}`;
-    link.download = photoUrl.split('/').pop();
-    link.click();
+  const downloadPhoto = (photoUrl, fileName) => {
+    const url = `${API_URL}/download/${fileName}`;
+    
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true);
+    xhr.responseType = 'blob';
+    
+    xhr.onprogress = (event) => {
+      if (event.lengthComputable) {
+        const percentComplete = Math.round((event.loaded * 100) / event.total);
+        setDownloadProgress(percentComplete);
+      }
+    };
+    
+    xhr.onload = function() {
+      setDownloading(false);
+      setDownloadProgress(0);
+      
+      if (this.status === 200) {
+        const blob = this.response;
+        const link = document.createElement('a');
+        link.href = window.URL.createObjectURL(blob);
+        link.download = fileName;
+        link.click();
+        window.URL.revokeObjectURL(link.href);
+      } else {
+        toast.error('Erro ao descargar imagem');
+      }
+    };
+    
+    xhr.onerror = function() {
+      setDownloading(false);
+      setDownloadProgress(0);
+      toast.error('Erro ao descargar imagem');
+    };
+    
+    setDownloading(true);
+    setDownloadProgress(0);
+    xhr.send();
   };
 
   if (loading && albums.length === 0) {
@@ -395,6 +431,26 @@ const Gallery = ({ userId = null, isOwner = false, isPublicView = false }) => {
           {/* Upload button for owner - Desktop */}
           {isOwner && (
             <div className="hidden md:block mb-6">
+              {/* Download Progress */}
+              {downloading && (
+                <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-white rounded-full shadow-lg border border-gray-200 px-6 py-3">
+                  <div className="flex items-center gap-4">
+                    <span className="text-sm font-medium text-gray-700">
+                      A descargar...
+                    </span>
+                    <div className="w-32 bg-gray-200 rounded-full h-2">
+                      <div 
+                        className="bg-[#9CAA8E] h-2 rounded-full transition-all duration-300"
+                        style={{ width: `${downloadProgress}%` }}
+                      ></div>
+                    </div>
+                    <span className="text-sm font-medium text-[#9CAA8E] w-10">
+                      {downloadProgress}%
+                    </span>
+                  </div>
+                </div>
+              )}
+
               {/* Progress Bar */}
               {uploading && (
                 <div className="mb-4 bg-white rounded-lg p-4 shadow">
@@ -439,6 +495,26 @@ const Gallery = ({ userId = null, isOwner = false, isPublicView = false }) => {
 
           {/* Mobile Content */}
           <div className="md:hidden">
+            {/* Download Progress - Mobile */}
+            {downloading && (
+              <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-white rounded-full shadow-lg border border-gray-100 px-4 py-2">
+                <div className="flex items-center gap-3">
+                  <span className="text-sm font-medium text-gray-700">
+                    A descargar...
+                  </span>
+                  <div className="w-20 bg-gray-100 rounded-full h-2">
+                    <div 
+                      className="bg-[#9CAA8E] h-2 rounded-full transition-all duration-300"
+                      style={{ width: `${downloadProgress}%` }}
+                    ></div>
+                  </div>
+                  <span className="text-sm font-medium text-[#9CAA8E]">
+                    {downloadProgress}%
+                  </span>
+                </div>
+              </div>
+            )}
+
             {/* Upload button for owner - Mobile */}
             {isOwner && (
               <div className="mb-4">
@@ -592,70 +668,106 @@ const Gallery = ({ userId = null, isOwner = false, isPublicView = false }) => {
             )}
           </div>
 
-          {/* Desktop Photo Grid */}
-          <div className="hidden md:block">
-            {selectedAlbum.photos && selectedAlbum.photos.length > 0 ? (
-              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {selectedAlbum.photos.map((photo, index) => (
-                  <div 
-                    key={photo._id} 
-                    className="relative group aspect-square rounded-xl overflow-hidden cursor-pointer"
-                    onClick={() => setLightboxIndex(index)}
-                  >
-                    <img 
-                      src={`${API_URL}${photo.url}`} 
-                      alt={photo.caption || 'Photo'}
-                      className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-                    />
-                    
-                    {/* Overlay */}
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-end">
-                      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
-                        {isOwner && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              confirmDelete('photo', photo._id, photo.caption || 'esta foto');
-                            }}
-                            className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        )}
-                        {selectedAlbum.allowDownload && (
-                          <button
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              downloadPhoto(photo.url);
-                            }}
-                            className="p-2 bg-white text-gray-700 rounded-full hover:bg-gray-100"
-                          >
-                            <Download className="w-4 h-4" />
-                          </button>
+          {/* Desktop Photo Grid with QR Panel */}
+          <div className="hidden md:flex gap-6">
+            {/* Photos - Left Side */}
+            <div className="flex-1">
+              {selectedAlbum.photos && selectedAlbum.photos.length > 0 ? (
+                <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
+                  {selectedAlbum.photos.map((photo, index) => (
+                    <div 
+                      key={photo._id} 
+                      className="relative group aspect-square rounded-xl overflow-hidden cursor-pointer"
+                      onClick={() => setLightboxIndex(index)}
+                    >
+                      <img 
+                        src={`${API_URL}${photo.url}`} 
+                        alt={photo.caption || 'Photo'}
+                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                      />
+                      
+                      {/* Overlay */}
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-end">
+                        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+                          {isOwner && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                confirmDelete('photo', photo._id, photo.caption || 'esta foto');
+                              }}
+                              className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          )}
+                          {selectedAlbum.allowDownload && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                const fileName = photo.url.split('/').pop();
+                                downloadPhoto(photo.url, fileName);
+                              }}
+                              className="p-2 bg-white text-gray-700 rounded-full hover:bg-gray-100"
+                            >
+                              <Download className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                        {photo.caption && (
+                          <div className="p-2 w-full">
+                            <p className="text-white text-sm truncate">{photo.caption}</p>
+                          </div>
                         )}
                       </div>
-                      {photo.caption && (
-                        <div className="p-2 w-full">
-                          <p className="text-white text-sm truncate">{photo.caption}</p>
-                        </div>
-                      )}
                     </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-16 bg-white rounded-2xl">
+                  <Image className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                  <p className="text-gray-500">Nenhuma foto neste álbum ainda</p>
+                  {isOwner && (
+                    <label
+                      htmlFor="photo-upload"
+                      className="inline-flex items-center gap-2 mt-4 px-6 py-3 bg-[#9CAA8E] text-white rounded-full cursor-pointer hover:bg-[#8A9A7E] transition-colors"
+                    >
+                      <Upload className="w-5 h-5" />
+                      Adicionar Fotos
+                    </label>
+                  )}
+                </div>
+              )}
+            </div>
+            
+            {/* QR Code Panel - Right Side */}
+            {selectedAlbum.allowShare && selectedAlbum.shareCode && (
+              <div className="w-72 flex-shrink-0">
+                <div className="sticky top-8 bg-white rounded-2xl p-6 shadow-md border border-gray-200">
+                  <h3 className="text-lg font-serif font-bold text-black mb-4">Compartilhar Álbum</h3>
+                  <div className="text-center mb-4">
+                    <img 
+                      src={getQRCodeUrl()} 
+                      alt="QR Code" 
+                      className="w-40 h-40 mx-auto rounded-lg"
+                    />
+                    <p className="text-xs text-gray-500 mt-2">Escaneie para ver o álbum</p>
                   </div>
-                ))}
-              </div>
-            ) : (
-              <div className="text-center py-16 bg-white rounded-2xl">
-                <Image className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-500">Nenhuma foto neste álbum ainda</p>
-                {isOwner && (
-                  <label
-                    htmlFor="photo-upload"
-                    className="inline-flex items-center gap-2 mt-4 px-6 py-3 bg-[#9CAA8E] text-white rounded-full cursor-pointer hover:bg-[#8A9A7E] transition-colors"
-                  >
-                    <Upload className="w-5 h-5" />
-                    Adicionar Fotos
-                  </label>
-                )}
+                  <p className="text-sm text-gray-600 mb-2">Ou use o link:</p>
+                  <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-2">
+                    <input
+                      type="text"
+                      value={`${window.location.origin}/gallery/shared/${selectedAlbum.shareCode}`}
+                      readOnly
+                      className="flex-1 bg-transparent text-xs text-black"
+                    />
+                    <button
+                      onClick={copyShareLink}
+                      className="p-2 bg-[#9CAA8E] text-white rounded-lg hover:bg-[#8A9A7E]"
+                    >
+                      <Copy className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -1217,7 +1329,8 @@ const Gallery = ({ userId = null, isOwner = false, isPublicView = false }) => {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        downloadPhoto(selectedAlbum.photos[lightboxIndex].url);
+                        const fileName = selectedAlbum.photos[lightboxIndex].url.split('/').pop();
+                        downloadPhoto(selectedAlbum.photos[lightboxIndex].url, fileName);
                       }}
                       className="p-3 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white rounded-full z-10"
                     >
@@ -1304,7 +1417,10 @@ const Gallery = ({ userId = null, isOwner = false, isPublicView = false }) => {
                     )}
                     {selectedAlbum.allowDownload && (
                       <button
-                        onClick={() => downloadPhoto(selectedAlbum.photos[lightboxIndex].url)}
+                        onClick={() => {
+                          const fileName = selectedAlbum.photos[lightboxIndex].url.split('/').pop();
+                          downloadPhoto(selectedAlbum.photos[lightboxIndex].url, fileName);
+                        }}
                         className="px-6 py-3 bg-white/20 backdrop-blur-sm text-white rounded-xl font-medium active:bg-white/30 flex items-center gap-2"
                       >
                         <Download className="w-5 h-5" />
@@ -1407,64 +1523,99 @@ const Gallery = ({ userId = null, isOwner = false, isPublicView = false }) => {
           </div>
         </div>
 
-        {/* Desktop Albums Grid */}
-        <div className="hidden md:block">
-          {albums.length > 0 ? (
-            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-              {albums.map((album) => (
-                <div 
-                  key={album._id}
-                  onClick={() => fetchAlbum(album._id)}
-                  className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all cursor-pointer group"
-                >
-                  <div className="aspect-square relative overflow-hidden">
-                    {album.coverPhoto ? (
-                      <img 
-                        src={`${API_URL}${album.coverPhoto}`} 
-                        alt={album.name}
-                        className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
-                      />
-                    ) : (
-                      <div className="w-full h-full bg-gray-100 flex items-center justify-center">
-                        <Image className="w-12 h-12 text-gray-300" />
+        {/* Desktop Albums Grid with QR Panel */}
+        <div className="hidden md:flex gap-6">
+          {/* Albums - Left Side */}
+          <div className="flex-1">
+            {albums.length > 0 ? (
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-3 gap-4">
+                {albums.map((album) => (
+                  <div 
+                    key={album._id}
+                    onClick={() => fetchAlbum(album._id)}
+                    className="bg-white rounded-2xl overflow-hidden shadow-md hover:shadow-xl transition-all cursor-pointer group"
+                  >
+                    <div className="aspect-square relative overflow-hidden">
+                      {album.coverPhoto ? (
+                        <img 
+                          src={`${API_URL}${album.coverPhoto}`} 
+                          alt={album.name}
+                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gray-100 flex items-center justify-center">
+                          <Image className="w-12 h-12 text-gray-300" />
+                        </div>
+                      )}
+                      
+                      {/* Photo count badge */}
+                      <div className="absolute bottom-2 right-2 bg-black/50 text-white px-2 py-1 rounded-full text-sm">
+                        {album.photoCount || 0} fotos
                       </div>
-                    )}
-                    
-                    {/* Photo count badge */}
-                    <div className="absolute bottom-2 right-2 bg-black/50 text-white px-2 py-1 rounded-full text-sm">
-                      {album.photoCount || 0} fotos
+                      
+                      {/* Public badge */}
+                      {album.isPublic && (
+                        <div className="absolute top-2 left-2 bg-[#9CAA8E] text-white px-2 py-1 rounded-full text-xs">
+                          Público
+                        </div>
+                      )}
                     </div>
                     
-                    {/* Public badge */}
-                    {album.isPublic && (
-                      <div className="absolute top-2 left-2 bg-[#9CAA8E] text-white px-2 py-1 rounded-full text-xs">
-                        Público
-                      </div>
-                    )}
+                    <div className="p-4">
+                      <h3 className="font-semibold text-black truncate">{album.name}</h3>
+                      <p className="text-gray-500 text-sm">
+                        {new Date(album.createdAt).toLocaleDateString('pt-BR')}
+                      </p>
+                    </div>
                   </div>
-                  
-                  <div className="p-4">
-                    <h3 className="font-semibold text-black truncate">{album.name}</h3>
-                    <p className="text-gray-500 text-sm">
-                      {new Date(album.createdAt).toLocaleDateString('pt-BR')}
-                    </p>
-                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-16 bg-white rounded-2xl">
+                <Image className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+                <p className="text-gray-500 mb-4">Nenhum álbum criado ainda</p>
+                {isOwner && (
+                  <button
+                    onClick={() => setShowNewAlbumModal(true)}
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-[#9CAA8E] text-white rounded-full hover:bg-[#8A9A7E] transition-colors"
+                  >
+                    <Plus className="w-5 h-5" />
+                    Criar Primeiro Álbum
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+          
+          {/* QR Code Panel - Right Side */}
+          {isOwner && (
+            <div className="w-72 flex-shrink-0">
+              <div className="sticky top-8 bg-white rounded-2xl p-6 shadow-md border border-gray-200">
+                <h3 className="text-lg font-serif font-bold text-black mb-4">Compartilhar Perfil</h3>
+                <div className="text-center mb-4">
+                  <img 
+                    src={getProfileQRCodeUrl()} 
+                    alt="QR Code do Perfil" 
+                    className="w-40 h-40 mx-auto rounded-lg"
+                  />
+                  <p className="text-xs text-gray-500 mt-2">Escaneie para ver sua galeria</p>
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-16 bg-white rounded-2xl">
-              <Image className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-              <p className="text-gray-500 mb-4">Nenhum álbum criado ainda</p>
-              {isOwner && (
-                <button
-                  onClick={() => setShowNewAlbumModal(true)}
-                  className="inline-flex items-center gap-2 px-6 py-3 bg-[#9CAA8E] text-white rounded-full hover:bg-[#8A9A7E] transition-colors"
-                >
-                  <Plus className="w-5 h-5" />
-                  Criar Primeiro Álbum
-                </button>
-              )}
+                <p className="text-sm text-gray-600 mb-2">Ou use o link:</p>
+                <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-2">
+                  <input
+                    type="text"
+                    value={getProfileShareLink()}
+                    readOnly
+                    className="flex-1 bg-transparent text-xs text-black"
+                  />
+                  <button
+                    onClick={copyProfileLink}
+                    className="p-2 bg-[#9CAA8E] text-white rounded-lg hover:bg-[#8A9A7E]"
+                  >
+                    <Copy className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>
