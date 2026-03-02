@@ -1,13 +1,14 @@
 import axios from "axios";
 const env = "pro";
 ///import { Capacitor, CapacitorHttp } from '@capacitor/core';
-
 export const isNative = false/// Capacitor.isNativePlatform();
+
 
 export const API_URL = 
   env == "dev" ? isNative ? "http://10.24.0.78:5000/api" : "http://localhost:5005/api" :
   env == "test" ? "https://kaziwani-server.visum.co.mz/api" :
                   "https://meucasamento-api.runwithbroto.com/api";
+
 
 const client = axios.create({
   baseURL: API_URL,
@@ -423,10 +424,13 @@ export const updateAlbum = (id, data) => client.put(`/gallery/${id}`, data);
 // Delete album
 export const deleteAlbum = (id) => client.delete(`/gallery/${id}`);
 
-// Upload photos
-export const uploadPhotos = (formData) => client.post('/gallery/upload', formData, {
-  headers: { 'Content-Type': 'multipart/form-data' }
-});
+// Upload photos with progress callback
+export const uploadPhotos = (formData, onUploadProgress) => {
+  return client.post('/gallery/upload', formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    onUploadProgress
+  });
+};
 
 // Delete photo
 export const deletePhoto = (albumId, photoId) => client.delete(`/gallery/${albumId}/photos/${photoId}`);

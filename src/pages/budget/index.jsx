@@ -891,7 +891,7 @@ const WeddingBudgetManager = () => {
         {showAddModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
-              <div className="flex items-center justify-between mb-4 sticky top-0 bg-white">
+              <div className="flex items-center justify-between mb-4 top-0 bg-white">
                 <h3 className="text-lg font-semibold text-gray-800">Adicionar Subcategoria</h3>
                 <button 
                   onClick={() => setShowAddModal(false)}

@@ -141,7 +141,7 @@ export default function WelcomeDialog({ isOpen, onClose, isVendor = false }) {
           <p className="text-white/80 mt-2 text-lg">
             {isVendor 
               ? 'Preparei algumas dicas para ajudar a atrair mais clientes'
-              : 'Preparámos alguns consejos para ajudar no seu planeamento'}
+              : 'Preparámos alguns conselhos para ajudar no seu planeamento'}
           </p>
         </div>
 
@@ -214,7 +214,7 @@ export default function WelcomeDialog({ isOpen, onClose, isVendor = false }) {
 
           {/* Progress Overview - only for couples */}
           {!isVendor && profile && (
-            <div className="mb-6 p-4 rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100">
+            <div className="mb-6 p-4 hidden rounded-xl bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100">
               <div className="flex items-center justify-between mb-3">
                 <h3 className="text-sm font-medium text-gray-700">Progresso do seu casamento</h3>
                 <span className="text-xs text-gray-500">

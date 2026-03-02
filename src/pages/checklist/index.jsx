@@ -484,11 +484,7 @@ const ChecklistPage = () => {
                     Por Categoria
                   </button>
                 </div>
-                <p className="text-xs text-gray-500 text-center">
-                  <span className="inline-flex items-center gap-1">
-                    <ChevronLeft className="w-3 h-3" /> Deslize para navegar <ChevronRight className="w-3 h-3" />
-                  </span>
-                </p>
+                
               </div>
 
               {/* Desktop Toggle Buttons */}

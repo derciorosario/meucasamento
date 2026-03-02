@@ -49,94 +49,87 @@ const Header = () => {
     <>
       <nav className="flex items-center justify-between px-4 sm:px-6 lg:px-8 py-4 border-b bg-white">
         {/* Left side: Logo/Brand */}
-        <div onClick={() => navigate('/')} className="flex items-center gap-2">
+        <div onClick={() => navigate('/')} className="flex items-center gap-2 cursor-pointer">
           <div className="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center">
-                  <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
-                  </svg>
+            <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
+            </svg>
           </div>
-          <button  className="text-lg sm:text-xl font-serif font-bold text-black">Meu Casamento</button>
+          <button className="text-lg sm:text-xl font-serif font-bold text-black">Meu Casamento</button>
         </div>
-        {/* Desktop Navigation - Hidden on mobile/tablet */}
         
-          {user?.role!="admin" && <div className="hidden lg:flex gap-6 xl:gap-8 text-gray-600">
-         
-
-           <button 
+        {/* Desktop Navigation - Hidden on mobile/tablet */}
+        <div className="hidden lg:flex gap-6 xl:gap-8 text-gray-600">
+          <button 
             onClick={() => navigate('/')} 
             className={`transition-colors font-medium ${location.pathname === '/' ? 'text-[#9CAA8E] font-bold' : 'hover:text-[#9CAA8E]'}`}
           >
-           {user ? 'Painel':'Inicio'}
+            {user ? 'Painel' : 'Inicio'}
           </button>
-         
-       {user?.role=="couple" && <>
+          
+          {user?.role === "couple" && (
+            <>
+              <button 
+                onClick={() => navigate('/checklist')} 
+                className={`transition-colors font-medium ${location.pathname === '/checklist' ? 'text-[#9CAA8E] font-bold' : 'hover:text-[#9CAA8E]'}`}
+              >
+                Agenda e Tarefas
+              </button>
 
-        
+              <button 
+                onClick={() => navigate('/vendors')} 
+                className={`transition-colors font-medium ${location.pathname === '/vendors' ? 'text-[#9CAA8E] font-bold' : 'hover:text-[#9CAA8E]'}`}
+              >
+                Fornecedores
+              </button>
 
-          <button 
-            onClick={() => navigate('/checklist')} 
-            className={`transition-colors font-medium ${location.pathname === '/checklist' ? 'text-[#9CAA8E] font-bold' : 'hover:text-[#9CAA8E]'}`}
-          >
-            Agenda e Tarefas
-          </button>
+              <button 
+                onClick={() => navigate('/budget')} 
+                className={`transition-colors font-medium ${location.pathname === '/budget' ? 'text-[#9CAA8E] font-bold' : 'hover:text-[#9CAA8E]'}`}
+              >
+                Orçamento
+              </button>
 
-          <button 
-            onClick={() => navigate('/vendors')} 
-            className={`transition-colors font-medium ${location.pathname === '/vendors' ? 'text-[#9CAA8E] font-bold' : 'hover:text-[#9CAA8E]'}`}
-          >
-            Fornecedores
-          </button>
+              <button 
+                onClick={() => navigate('/guests')} 
+                className={`transition-colors font-medium ${location.pathname === '/guests' ? 'text-[#9CAA8E] font-bold' : 'hover:text-[#9CAA8E]'}`}
+              >
+                Convidados
+              </button>
 
-          <button 
-            onClick={() => navigate('/budget')} 
-            className={`transition-colors font-medium ${location.pathname === '/budget' ? 'text-[#9CAA8E] font-bold' : 'hover:text-[#9CAA8E]'}`}
-          >
-            Orçamento
-          </button>
+              <button 
+                onClick={() => navigate('/gallery')} 
+                className={`transition-colors font-medium ${location.pathname === '/gallery' ? 'text-[#9CAA8E] font-bold' : 'hover:text-[#9CAA8E]'}`}
+              >
+                Galeria
+              </button>
+            </>
+          )}
 
-          <button 
-            onClick={() => navigate('/guests')} 
-            className={`transition-colors font-medium ${location.pathname === '/guests' ? 'text-[#9CAA8E] font-bold' : 'hover:text-[#9CAA8E]'}`}
-          >
-            Convidados
-          </button>
+          {!user && (
+            <>
+              <button 
+                onClick={() => navigate('/vendors')} 
+                className={`transition-colors font-medium ${location.pathname === '/vendors' ? 'text-[#9CAA8E] font-bold' : 'hover:text-[#9CAA8E]'}`}
+              >
+                Fornecedores
+              </button>
 
-          <button 
-            onClick={() => navigate('/gallery')} 
-            className={`transition-colors font-medium ${location.pathname === '/gallery' ? 'text-[#9CAA8E] font-bold' : 'hover:text-[#9CAA8E]'}`}
-          >
-            Galeria
-          </button>
+              <button 
+                onClick={() => navigate('/public-gallery')} 
+                className={`transition-colors font-medium ${location.pathname === '/public-gallery' ? 'text-[#9CAA8E] font-bold' : 'hover:text-[#9CAA8E]'}`}
+              >
+                Gallery
+              </button>
 
-          </>}
-
-
-          {!user && <>
-
-          <button 
-            onClick={() => navigate('/vendors')} 
-            className={`transition-colors font-medium ${location.pathname === '/vendors' ? 'text-[#9CAA8E] font-bold' : 'hover:text-[#9CAA8E]'}`}
-          >
-            Fornecedores
-          </button>
-
-          <button 
-            onClick={() => navigate('/public-gallery')} 
-            className={`transition-colors font-medium ${location.pathname === '/public-gallery' ? 'text-[#9CAA8E] font-bold' : 'hover:text-[#9CAA8E]'}`}
-          >
-            Gallery
-          </button>
-
-          <button 
-            onClick={() => navigate('/contact')} 
-            className={`transition-colors font-medium ${location.pathname === '/contact' ? 'text-[#9CAA8E] font-bold' : 'hover:text-[#9CAA8E]'}`}
-          >
-            Contacto
-          </button>
-
-          </>}
-
-
+              <button 
+                onClick={() => navigate('/contact')} 
+                className={`transition-colors font-medium ${location.pathname === '/contact' ? 'text-[#9CAA8E] font-bold' : 'hover:text-[#9CAA8E]'}`}
+              >
+                Contacto
+              </button>
+            </>
+          )}
 
           {user?.role === 'admin' && (
             <button 
@@ -147,7 +140,7 @@ const Header = () => {
               Admin
             </button>
           )}
-        </div>}
+        </div>
         
         {/* Right side: Auth buttons and mobile menu */}
         <div className="flex items-center gap-3">
@@ -264,36 +257,87 @@ const Header = () => {
         {isMenuOpen && (
           <div className="lg:hidden absolute top-16 left-0 right-0 bg-white border-b shadow-lg z-50">
             <div className="flex flex-col px-6 py-4 space-y-4">
+              {/* Mobile Navigation Links - Same conditions as desktop */}
               <button 
                 onClick={() => { navigate('/'); setIsMenuOpen(false); }} 
                 className={`py-2 border-b border-gray-100 text-left font-medium ${location.pathname === '/' ? 'text-[#9CAA8E]' : 'text-gray-600 hover:text-[#9CAA8E]'}`}
               >
-                Início
+                {user ? 'Painel' : 'Início'}
               </button>
-              <button 
-                onClick={() => { navigate('/vendors'); setIsMenuOpen(false); }} 
-                className={`py-2 border-b border-gray-100 text-left font-medium ${location.pathname === '/vendors' ? 'text-[#9CAA8E]' : 'text-gray-600 hover:text-[#9CAA8E]'}`}
-              >
-                Fornecedores
-              </button>
-              <button 
-                onClick={() => { navigate('/checklist'); setIsMenuOpen(false); }} 
-                className={`py-2 border-b border-gray-100 text-left font-medium ${location.pathname === '/checklist' ? 'text-[#9CAA8E]' : 'text-gray-600 hover:text-[#9CAA8E]'}`}
-              >
-                Agenda e Tarefas
-              </button>
-              <button 
-                onClick={() => { navigate('/budget'); setIsMenuOpen(false); }} 
-                className={`py-2 border-b border-gray-100 text-left font-medium ${location.pathname === '/budget' ? 'text-[#9CAA8E]' : 'text-gray-600 hover:text-[#9CAA8E]'}`}
-              >
-                Orçamento
-              </button>
-              <button 
-                onClick={() => { navigate('/gallery'); setIsMenuOpen(false); }} 
-                className={`py-2 border-b border-gray-100 text-left font-medium ${location.pathname === '/gallery' ? 'text-[#9CAA8E]' : 'text-gray-600 hover:text-[#9CAA8E]'}`}
-              >
-                Galeria
-              </button>
+
+              {user?.role === "couple" && (
+                <>
+                  <button 
+                    onClick={() => { navigate('/checklist'); setIsMenuOpen(false); }} 
+                    className={`py-2 border-b border-gray-100 text-left font-medium ${location.pathname === '/checklist' ? 'text-[#9CAA8E]' : 'text-gray-600 hover:text-[#9CAA8E]'}`}
+                  >
+                    Agenda e Tarefas
+                  </button>
+
+                  <button 
+                    onClick={() => { navigate('/vendors'); setIsMenuOpen(false); }} 
+                    className={`py-2 border-b border-gray-100 text-left font-medium ${location.pathname === '/vendors' ? 'text-[#9CAA8E]' : 'text-gray-600 hover:text-[#9CAA8E]'}`}
+                  >
+                    Fornecedores
+                  </button>
+
+                  <button 
+                    onClick={() => { navigate('/budget'); setIsMenuOpen(false); }} 
+                    className={`py-2 border-b border-gray-100 text-left font-medium ${location.pathname === '/budget' ? 'text-[#9CAA8E]' : 'text-gray-600 hover:text-[#9CAA8E]'}`}
+                  >
+                    Orçamento
+                  </button>
+
+                  <button 
+                    onClick={() => { navigate('/guests'); setIsMenuOpen(false); }} 
+                    className={`py-2 border-b border-gray-100 text-left font-medium ${location.pathname === '/guests' ? 'text-[#9CAA8E]' : 'text-gray-600 hover:text-[#9CAA8E]'}`}
+                  >
+                    Convidados
+                  </button>
+
+                  <button 
+                    onClick={() => { navigate('/gallery'); setIsMenuOpen(false); }} 
+                    className={`py-2 border-b border-gray-100 text-left font-medium ${location.pathname === '/gallery' ? 'text-[#9CAA8E]' : 'text-gray-600 hover:text-[#9CAA8E]'}`}
+                  >
+                    Galeria
+                  </button>
+                </>
+              )}
+
+              {!user && (
+                <>
+                  <button 
+                    onClick={() => { navigate('/vendors'); setIsMenuOpen(false); }} 
+                    className={`py-2 border-b border-gray-100 text-left font-medium ${location.pathname === '/vendors' ? 'text-[#9CAA8E]' : 'text-gray-600 hover:text-[#9CAA8E]'}`}
+                  >
+                    Fornecedores
+                  </button>
+
+                  <button 
+                    onClick={() => { navigate('/public-gallery'); setIsMenuOpen(false); }} 
+                    className={`py-2 border-b border-gray-100 text-left font-medium ${location.pathname === '/public-gallery' ? 'text-[#9CAA8E]' : 'text-gray-600 hover:text-[#9CAA8E]'}`}
+                  >
+                    Gallery
+                  </button>
+
+                  <button 
+                    onClick={() => { navigate('/contact'); setIsMenuOpen(false); }} 
+                    className={`py-2 border-b border-gray-100 text-left font-medium ${location.pathname === '/contact' ? 'text-[#9CAA8E]' : 'text-gray-600 hover:text-[#9CAA8E]'}`}
+                  >
+                    Contacto
+                  </button>
+                </>
+              )}
+
+              {user?.role === 'admin' && (
+                <button 
+                  onClick={() => { navigate('/admin'); setIsMenuOpen(false); }} 
+                  className={`py-2 border-b border-gray-100 text-left font-medium flex items-center gap-2 ${location.pathname.startsWith('/admin') ? 'text-[#9CAA8E]' : 'text-gray-600 hover:text-[#9CAA8E]'}`}
+                >
+                  <Shield className="w-4 h-4" />
+                  Admin
+                </button>
+              )}
               
               {/* Mobile/Tablet Auth Buttons */}
               <div className="flex flex-col gap-3 pt-4">
@@ -328,6 +372,16 @@ const Header = () => {
                     >
                       <User className="w-5 h-5" />
                       Meu Perfil
+                    </button>
+                    <button 
+                      onClick={() => {
+                        navigate('/settings');
+                        setIsMenuOpen(false);
+                      }} 
+                      className="w-full py-3 text-center text-gray-700 hover:bg-gray-50 border border-gray-300 rounded-lg transition-colors flex items-center justify-center gap-2"
+                    >
+                      <Settings className="w-5 h-5" />
+                      Configurações
                     </button>
                     <button 
                       onClick={() => {

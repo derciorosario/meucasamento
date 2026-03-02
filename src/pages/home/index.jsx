@@ -220,22 +220,38 @@ export default function WeddingLanding() {
       
       
     
-    <nav className="flex items-center justify-between px-4 sm:px-6 lg:px-8 py-4 border-b">
+  
+  <nav className="flex items-center justify-between px-4 sm:px-6 lg:px-8 py-4 border-b bg-white">
   {/* Left side: Logo/Brand */}
-  <div className="flex items-center gap-2">
+  <div onClick={() => navigate('/')} className="flex items-center gap-2 cursor-pointer">
     <div className="w-8 h-8 bg-[#9CAA8E] rounded-full flex items-center justify-center">
       <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
         <path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" />
       </svg>
     </div>
-    <span className="text-lg sm:text-xl font-semibold text-black">{t('nav.brand')}</span>
+    <span className="text-lg sm:text-xl font-semibold text-black">Meu Casamento</span>
   </div>
   
   {/* Desktop Navigation - Hidden on mobile/tablet */}
   <div className="hidden lg:flex gap-6 xl:gap-8 text-gray-600">
-    <a href="/vendors" className="hover:text-gray-900 transition-colors">{t('nav.vendors')}</a>
-    <a href="/public-gallery" className="hover:text-gray-900 transition-colors">Galeria</a>
-    <a href="/contact" className="hover:text-gray-900 transition-colors">{t('nav.contact')}</a>
+    <button 
+      onClick={() => navigate('/vendors')} 
+      className={`transition-colors font-medium ${location.pathname === '/vendors' ? 'text-[#9CAA8E] font-bold' : 'hover:text-[#9CAA8E]'}`}
+    >
+      Fornecedores
+    </button>
+    <button 
+      onClick={() => navigate('/public-gallery')} 
+      className={`transition-colors font-medium ${location.pathname === '/public-gallery' ? 'text-[#9CAA8E] font-bold' : 'hover:text-[#9CAA8E]'}`}
+    >
+      Galeria
+    </button>
+    <button 
+      onClick={() => navigate('/contact')} 
+      className={`transition-colors font-medium ${location.pathname === '/contact' ? 'text-[#9CAA8E] font-bold' : 'hover:text-[#9CAA8E]'}`}
+    >
+      Contacto
+    </button>
   </div>
   
   {/* Right side: Auth buttons and mobile menu */}
@@ -245,23 +261,23 @@ export default function WeddingLanding() {
       {user ? (
         <button 
           onClick={signOut} 
-          className="px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors"
+          className="px-4 py-2 text-gray-600 hover:text-[#9CAA8E] transition-colors font-medium"
         >
-          {t('nav.logout')}
+          Sair
         </button>
       ) : (
         <>
           <button 
             onClick={() => navigate('/login')} 
-            className="px-4 py-2 text-gray-600 hover:text-gray-900 transition-colors"
+            className="px-4 py-2 text-gray-600 hover:text-[#9CAA8E] transition-colors font-medium"
           >
-            {t('nav.login')}
+            Entrar
           </button>
           <button 
             onClick={() => navigate('/signup')} 
-            className="px-6 py-2 bg-[#9CAA8E] text-white rounded-full hover:bg-[#8A9A7E] transition-colors"
+            className="px-6 py-2 bg-[#9CAA8E] text-white rounded-full hover:bg-[#8A9A7E] transition-colors font-medium"
           >
-            {t('nav.signup')}
+            Cadastrar
           </button>
         </>
       )}
@@ -291,47 +307,83 @@ export default function WeddingLanding() {
   {isMenuOpen && (
     <div className="lg:hidden absolute top-16 left-0 right-0 bg-white border-b shadow-lg z-50">
       <div className="flex flex-col px-6 py-4 space-y-4">
-        <a 
-          href="#" 
-          className="py-2 text-gray-600 hover:text-gray-900 border-b border-gray-100"
-          onClick={() => setIsMenuOpen(false)}
+        {/* Mobile Navigation Links - Same as desktop */}
+        <button 
+          onClick={() => { 
+            navigate('/'); 
+            setIsMenuOpen(false); 
+          }} 
+          className={`py-2 border-b border-gray-100 text-left font-medium ${location.pathname === '/' ? 'text-[#9CAA8E]' : 'text-gray-600 hover:text-[#9CAA8E]'}`}
         >
-          {t('nav.forCouples')}
-        </a>
-        <a 
-          href="#" 
-          className="py-2 text-gray-600 hover:text-gray-900 border-b border-gray-100"
-          onClick={() => setIsMenuOpen(false)}
+          Início
+        </button>
+
+        <button 
+          onClick={() => { 
+            navigate('/vendors'); 
+            setIsMenuOpen(false); 
+          }} 
+          className={`py-2 border-b border-gray-100 text-left font-medium ${location.pathname === '/vendors' ? 'text-[#9CAA8E]' : 'text-gray-600 hover:text-[#9CAA8E]'}`}
         >
-          {t('nav.vendors')}
-        </a>
-        <a 
-          href="#" 
-          className="py-2 text-gray-600 hover:text-gray-900 border-b border-gray-100"
-          onClick={() => setIsMenuOpen(false)}
+          Fornecedores
+        </button>
+
+        <button 
+          onClick={() => { 
+            navigate('/public-gallery'); 
+            setIsMenuOpen(false); 
+          }} 
+          className={`py-2 border-b border-gray-100 text-left font-medium ${location.pathname === '/public-gallery' ? 'text-[#9CAA8E]' : 'text-gray-600 hover:text-[#9CAA8E]'}`}
         >
-          {t('nav.categories')}
-        </a>
-        <a 
-          href="#" 
-          className="py-2 text-gray-600 hover:text-gray-900 border-b border-gray-100"
-          onClick={() => setIsMenuOpen(false)}
+          Galeria
+        </button>
+
+        <button 
+          onClick={() => { 
+            navigate('/contact'); 
+            setIsMenuOpen(false); 
+          }} 
+          className={`py-2 border-b border-gray-100 text-left font-medium ${location.pathname === '/contact' ? 'text-[#9CAA8E]' : 'text-gray-600 hover:text-[#9CAA8E]'}`}
         >
-          {t('nav.contact')}
-        </a>
+          Contacto
+        </button>
         
         {/* Mobile/Tablet Auth Buttons */}
         <div className="flex flex-col gap-3 pt-4">
           {user ? (
-            <button 
-              onClick={() => {
-                signOut();
-                setIsMenuOpen(false);
-              }} 
-              className="w-full py-3 text-center text-gray-600 hover:text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              {t('nav.logout')}
-            </button>
+            <>
+              {/* User Info - Optional: Show user info if needed */}
+              {user.name && (
+                <div className="flex items-center gap-3 pb-4 border-b border-gray-100">
+                  {user.avatar ? (
+                    <img 
+                      src={user.avatar.startsWith('http') ? user.avatar : `${API_URL}${user.avatar}`} 
+                      alt={user.name}
+                      className="w-10 h-10 rounded-full object-cover border-2 border-[#9CAA8E]"
+                    />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-[#9CAA8E] flex items-center justify-center">
+                      <span className="text-white font-medium">
+                        {user.name?.charAt(0)?.toUpperCase() || '?'}
+                      </span>
+                    </div>
+                  )}
+                  <div>
+                    <p className="font-medium text-gray-900">{user.name}</p>
+                    <p className="text-sm text-gray-500">{user.email}</p>
+                  </div>
+                </div>
+              )}
+              <button 
+                onClick={() => {
+                  signOut();
+                  setIsMenuOpen(false);
+                }} 
+                className="w-full py-3 text-center text-red-600 hover:bg-red-50 border border-red-300 rounded-lg transition-colors font-medium"
+              >
+                Sair
+              </button>
+            </>
           ) : (
             <>
               <button 
@@ -339,18 +391,18 @@ export default function WeddingLanding() {
                   navigate('/login');
                   setIsMenuOpen(false);
                 }} 
-                className="w-full py-3 text-center text-gray-600 hover:text-gray-900 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                className="w-full py-3 text-center text-gray-600 hover:bg-gray-50 border border-gray-300 rounded-lg transition-colors font-medium"
               >
-                {t('nav.login')}
+                Entrar
               </button>
               <button 
                 onClick={() => {
                   navigate('/signup');
                   setIsMenuOpen(false);
                 }} 
-                className="w-full py-3 bg-[#9CAA8E] text-white rounded-lg hover:bg-[#8A9A7E] transition-colors"
+                className="w-full py-3 bg-[#9CAA8E] text-white rounded-lg hover:bg-[#8A9A7E] transition-colors font-medium"
               >
-                {t('nav.signup')}
+                Cadastrar
               </button>
             </>
           )}
@@ -359,7 +411,6 @@ export default function WeddingLanding() {
     </div>
   )}
 </nav>
-
 
 
 

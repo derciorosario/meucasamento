@@ -7,7 +7,38 @@ import { toast } from 'react-hot-toast';
 import Header from '../../components/Header';
 import Gallery from '../../components/Gallery';
 import Loader from '../../components/loader';
-import { X, Trash2, Upload, Image, Check, XCircle, MessageSquare, Star, Clock, User, Store } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { 
+  X, 
+  Trash2, 
+  Upload, 
+  Image, 
+  Check, 
+  XCircle, 
+  MessageSquare, 
+  Star, 
+  Clock, 
+  User, 
+  Store,
+  Settings,
+  Heart,
+  Calendar,
+  MapPin,
+  Phone,
+  Mail,
+  Globe,
+  Camera,
+  MoreVertical,
+  Grid,
+  List,
+  ChevronRight,
+  Edit3,
+  Briefcase,
+  DollarSign,
+  Award,
+  ThumbsUp,
+  AlertCircle
+} from 'lucide-react';
 
 const ProfilePage = () => {
   const [searchParams] = useSearchParams();
@@ -20,6 +51,7 @@ const ProfilePage = () => {
   const [categories, setCategories] = useState([]);
   const [activeTab, setActiveTab] = useState('personal');
   const [showAddVendorModal, setShowAddVendorModal] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const [newVendorData, setNewVendorData] = useState({ name: '', category: '', phone: '', email: '' });
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
@@ -30,12 +62,14 @@ const ProfilePage = () => {
   const [responseMessage, setResponseMessage] = useState('');
   const [myQuoteRequests, setMyQuoteRequests] = useState([]);
   const [loadingMyQuotes, setLoadingMyQuotes] = useState(false);
+  const [vendorViewMode, setVendorViewMode] = useState('grid'); // 'grid' or 'list' - for mobile vendor display
   
   // Vendor Profile Modal states
   const [showProfile, setShowProfile] = useState(false);
   const [selectedVendorProfile, setSelectedVendorProfile] = useState(null);
   const [currentSlide, setCurrentSlide] = useState(0);
   const avatarInputRef = useRef(null);
+  const mobileMenuRef = useRef(null);
   
   // Form states
   const [formData, setFormData] = useState({
@@ -63,6 +97,18 @@ const ProfilePage = () => {
     vendorPriceRange: 'medium',
     vendorImages: [],
   });
+
+  // Handle click outside for mobile menu
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (mobileMenuRef.current && !mobileMenuRef.current.contains(event.target)) {
+        setShowMobileMenu(false);
+      }
+    };
+    
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   useEffect(() => {
     // Check for tab parameter in URL
@@ -524,9 +570,9 @@ const ProfilePage = () => {
     <div className="min-h-screen bg-gray-50">
       <Header />
       
-      <div className="max-w-4xl mx-auto px-4 py-8">
-        {/* Header Card */}
-        <div className="bg-white rounded-2xl shadow-md p-6 mb-6">
+      <div className="max-w-4xl mx-auto px-4 py-4 md:py-8">
+        {/* Profile Header Card - Desktop */}
+        <div className="hidden md:block bg-white rounded-2xl shadow-md p-6 mb-6">
           <div className="flex items-center space-x-6">
             <div className="relative">
               <input
@@ -577,11 +623,62 @@ const ProfilePage = () => {
           </div>
         </div>
 
-        {/* Tabs */}
-        <div className="flex space-x-3 mb-6 overflow-x-auto pb-2">
+        {/* Profile Header - Mobile Optimized */}
+        <div className="md:hidden bg-white rounded-xl shadow-sm p-4 mb-4">
+          <div className="flex items-center gap-4">
+            <div className="relative">
+              <input
+                type="file"
+                ref={avatarInputRef}
+                accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                onChange={handleAvatarUpload}
+                className="hidden"
+              />
+              <button
+                type="button"
+                onClick={() => avatarInputRef.current?.click()}
+                disabled={uploadingAvatar}
+                className="relative group"
+              >
+                {formData.avatar ? (
+                  <img
+                    src={formData.avatar.startsWith('https') ? formData.avatar : `${API_URL}${formData.avatar}`}
+                    alt={formData.name}
+                    className="w-16 h-16 rounded-full object-cover shadow-md"
+                  />
+                ) : (
+                  <div className="w-16 h-16 rounded-full bg-[#9CAA8E] flex items-center justify-center shadow-md">
+                    <span className="text-2xl text-white font-bold">
+                      {formData.name?.charAt(0)?.toUpperCase() || '?'}
+                    </span>
+                  </div>
+                )}
+                <div className="absolute inset-0 rounded-full bg-black/0 group-active:bg-black/40 transition-colors flex items-center justify-center">
+                  <div className="opacity-0 group-active:opacity-100 transition-opacity">
+                    {uploadingAvatar ? (
+                      <div className="w-6 h-6 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    ) : (
+                      <Camera className="w-6 h-6 text-white" />
+                    )}
+                  </div>
+                </div>
+              </button>
+            </div>
+            <div className="flex-1">
+              <h1 className="text-lg font-semibold text-black">{formData.name}</h1>
+              <p className="text-xs text-gray-500">{user?.email}</p>
+              <span className="inline-block mt-1 px-3 py-1 text-xs font-medium bg-[#9CAA8E]/10 text-[#9CAA8E] rounded-full">
+                {userTypeOptions.find(opt => opt.value === formData.userType)?.label || formData.userType}
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* Tabs - Desktop */}
+        <div className="hidden md:flex space-x-3 mb-6 overflow-x-auto pb-2">
           <button
             onClick={() => setActiveTab('personal')}
-            className={`px-6 py-3 rounded-full font-medium transition-all ${
+            className={`px-6 py-3 rounded-full font-medium transition-all whitespace-nowrap ${
               activeTab === 'personal' 
                 ? 'bg-[#9CAA8E] text-white shadow-lg' 
                 : 'bg-white text-gray-600 hover:bg-gray-100 shadow-md'
@@ -589,30 +686,34 @@ const ProfilePage = () => {
           >
             Dados Pessoais
           </button>
-         {(formData.role  == 'couple') &&  <button
-            onClick={() => setActiveTab('wedding')}
-            className={`px-6 py-3 rounded-full font-medium transition-all ${
-              activeTab === 'wedding' 
-                ? 'bg-[#9CAA8E] text-white shadow-lg' 
-                : 'bg-white text-gray-600 hover:bg-gray-100 shadow-md'
-            }`}
-          >
-            Casamento
-          </button>}
-         {formData.role == 'couple' && <button
-            onClick={() => setActiveTab('gallery')}
-            className={`px-6 py-3 rounded-full font-medium transition-all ${
-              activeTab === 'gallery' 
-                ? 'bg-[#9CAA8E] text-white shadow-lg' 
-                : 'bg-white text-gray-600 hover:bg-gray-100 shadow-md'
-            }`}
-          >
-            Galeria
-          </button>}
+          {(formData.role === 'couple') && (
+            <button
+              onClick={() => setActiveTab('wedding')}
+              className={`px-6 py-3 rounded-full font-medium transition-all whitespace-nowrap ${
+                activeTab === 'wedding' 
+                  ? 'bg-[#9CAA8E] text-white shadow-lg' 
+                  : 'bg-white text-gray-600 hover:bg-gray-100 shadow-md'
+              }`}
+            >
+              Casamento
+            </button>
+          )}
+          {formData.role === 'couple' && (
+            <button
+              onClick={() => setActiveTab('gallery')}
+              className={`px-6 py-3 rounded-full font-medium transition-all whitespace-nowrap ${
+                activeTab === 'gallery' 
+                  ? 'bg-[#9CAA8E] text-white shadow-lg' 
+                  : 'bg-white text-gray-600 hover:bg-gray-100 shadow-md'
+              }`}
+            >
+              Galeria
+            </button>
+          )}
           {formData.userType === 'vendor' && (
             <button
               onClick={() => setActiveTab('vendor')}
-              className={`px-6 py-3 rounded-full font-medium transition-all ${
+              className={`px-6 py-3 rounded-full font-medium transition-all whitespace-nowrap ${
                 activeTab === 'vendor' 
                   ? 'bg-[#9CAA8E] text-white shadow-lg' 
                   : 'bg-white text-gray-600 hover:bg-gray-100 shadow-md'
@@ -625,7 +726,7 @@ const ProfilePage = () => {
             <>
               <button
                 onClick={() => setActiveTab('quotes')}
-                className={`px-6 py-3 rounded-full font-medium transition-all ${
+                className={`px-6 py-3 rounded-full font-medium transition-all whitespace-nowrap ${
                   activeTab === 'quotes' 
                     ? 'bg-[#9CAA8E] text-white shadow-lg' 
                     : 'bg-white text-gray-600 hover:bg-gray-100 shadow-md'
@@ -638,7 +739,7 @@ const ProfilePage = () => {
               </button>
               <button
                 onClick={() => setActiveTab('reviews')}
-                className={`px-6 py-3 rounded-full font-medium transition-all ${
+                className={`px-6 py-3 rounded-full font-medium transition-all whitespace-nowrap ${
                   activeTab === 'reviews' 
                     ? 'bg-[#9CAA8E] text-white shadow-lg' 
                     : 'bg-white text-gray-600 hover:bg-gray-100 shadow-md'
@@ -648,10 +749,10 @@ const ProfilePage = () => {
               </button>
             </>
           )}
-          {formData.role == 'couple' && (
+          {formData.role === 'couple' && (
             <button
               onClick={() => setActiveTab('myquotes')}
-              className={`px-6 py-3 rounded-full font-medium transition-all ${
+              className={`px-6 py-3 rounded-full font-medium transition-all whitespace-nowrap ${
                 activeTab === 'myquotes' 
                   ? 'bg-[#9CAA8E] text-white shadow-lg' 
                   : 'bg-white text-gray-600 hover:bg-gray-100 shadow-md'
@@ -665,354 +766,217 @@ const ProfilePage = () => {
           )}
         </div>
 
+        {/* Tabs - Mobile Optimized with Horizontal Scroll */}
+        <div className="md:hidden mb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex-1 overflow-x-auto scrollbar-hide pb-2">
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setActiveTab('personal')}
+                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
+                    activeTab === 'personal' 
+                      ? 'bg-[#9CAA8E] text-white shadow-md' 
+                      : 'bg-white text-gray-600 border border-gray-200'
+                  }`}
+                >
+                  <User className="w-4 h-4 inline-block mr-1" />
+                  Dados
+                </button>
+                {(formData.role === 'couple') && (
+                  <button
+                    onClick={() => setActiveTab('wedding')}
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
+                      activeTab === 'wedding' 
+                        ? 'bg-[#9CAA8E] text-white shadow-md' 
+                        : 'bg-white text-gray-600 border border-gray-200'
+                    }`}
+                  >
+                    <Heart className="w-4 h-4 inline-block mr-1" />
+                    Casamento
+                  </button>
+                )}
+                {formData.role === 'couple' && (
+                  <button
+                    onClick={() => setActiveTab('gallery')}
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
+                      activeTab === 'gallery' 
+                        ? 'bg-[#9CAA8E] text-white shadow-md' 
+                        : 'bg-white text-gray-600 border border-gray-200'
+                    }`}
+                  >
+                    <Image className="w-4 h-4 inline-block mr-1" />
+                    Galeria
+                  </button>
+                )}
+                {formData.userType === 'vendor' && (
+                  <button
+                    onClick={() => setActiveTab('vendor')}
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
+                      activeTab === 'vendor' 
+                        ? 'bg-[#9CAA8E] text-white shadow-md' 
+                        : 'bg-white text-gray-600 border border-gray-200'
+                    }`}
+                  >
+                    <Store className="w-4 h-4 inline-block mr-1" />
+                    Empresa
+                  </button>
+                )}
+                {formData.userType === 'vendor' && selectedVendor && (
+                  <>
+                    <button
+                      onClick={() => setActiveTab('quotes')}
+                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
+                        activeTab === 'quotes' 
+                          ? 'bg-[#9CAA8E] text-white shadow-md' 
+                          : 'bg-white text-gray-600 border border-gray-200'
+                      }`}
+                    >
+                      <MessageSquare className="w-4 h-4 inline-block mr-1" />
+                      Orçamentos
+                      {quoteRequests.filter(q => q.status === 'pending').length > 0 && (
+                        <span className="ml-1 bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">
+                          {quoteRequests.filter(q => q.status === 'pending').length}
+                        </span>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => setActiveTab('reviews')}
+                      className={`px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
+                        activeTab === 'reviews' 
+                          ? 'bg-[#9CAA8E] text-white shadow-md' 
+                          : 'bg-white text-gray-600 border border-gray-200'
+                      }`}
+                    >
+                      <Star className="w-4 h-4 inline-block mr-1" />
+                      Avaliações
+                    </button>
+                  </>
+                )}
+                {formData.role === 'couple' && (
+                  <button
+                    onClick={() => setActiveTab('myquotes')}
+                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
+                      activeTab === 'myquotes' 
+                        ? 'bg-[#9CAA8E] text-white shadow-md' 
+                        : 'bg-white text-gray-600 border border-gray-200'
+                    }`}
+                  >
+                    <MessageSquare className="w-4 h-4 inline-block mr-1" />
+                    Meus Orçamentos
+                    {myQuoteRequests.filter(q => q.status === 'pending').length > 0 && (
+                      <span className="ml-1 bg-yellow-500 text-white text-xs px-1.5 py-0.5 rounded-full">
+                        {myQuoteRequests.filter(q => q.status === 'pending').length}
+                      </span>
+                    )}
+                  </button>
+                )}
+              </div>
+            </div>
+            
+            {/* Mobile Menu Button for additional actions */}
+            {formData.userType === 'vendor' && (
+              <div className="relative ml-2" ref={mobileMenuRef}>
+                <button
+                  onClick={() => setShowMobileMenu(!showMobileMenu)}
+                  className="w-10 h-10 flex items-center justify-center bg-white rounded-full shadow-sm border border-gray-200 active:bg-gray-50"
+                >
+                  <MoreVertical className="w-5 h-5 text-gray-600" />
+                </button>
+                
+                <AnimatePresence>
+                  {showMobileMenu && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-20"
+                    >
+                      <button
+                        onClick={() => {
+                          setShowAddVendorModal(true);
+                          setShowMobileMenu(false);
+                        }}
+                        className="w-full px-4 py-3 text-left text-sm text-gray-700 active:bg-gray-50 flex items-center gap-3"
+                      >
+                        <Plus className="w-4 h-4" />
+                        Adicionar Fornecedor
+                      </button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            )}
+          </div>
+        </div>
+
         {/* Content */}
         {activeTab === 'gallery' ? (
           <Gallery userId={user?.id} isOwner={true} />
         ) : (
-        <form onSubmit={handleSubmit} className="bg-white rounded-2xl shadow-lg p-8">
-          {/* Personal Info Tab */}
-          {activeTab === 'personal' && (
-            <div className="space-y-6">
-              <h2 className="text-xl font-serif font-semibold text-black mb-6 pb-2 border-b border-gray-100">
-                Informações Pessoais
-              </h2>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Nome Completo
-                  </label>
-                  <input
-                    type="text"
-                    name="name"
-                    value={formData.name}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black"
-                  />
+          <form onSubmit={handleSubmit} className="bg-white rounded-2xl md:rounded-2xl shadow-lg p-4 md:p-8 pb-10 mb-10">
+            {/* Personal Info Tab */}
+            {activeTab === 'personal' && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between mb-6">
+                  <h2 className="text-lg md:text-xl font-serif font-semibold text-black pb-2 border-b border-gray-100 flex-1">
+                    Informações Pessoais
+                  </h2>
                 </div>
                 
-                <div className="hidden">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Tipo de Usuário
-                  </label>
-                  <select
-                    name="userType"
-                    value={formData.userType}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black bg-white"
-                  >
-                    {userTypeOptions.map(option => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                
-               
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Telefone
-                  </label>
-                  <input
-                    type="tel"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    País
-                  </label>
-                  <select
-                    name="country"
-                    value={formData.country}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black bg-white"
-                  >
-                    <option value="">Selecione um país</option>
-                    {countries.map(country => (
-                      <option key={country.code} value={country.name}>
-                        {country.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Cidade
-                  </label>
-                  <input
-                    type="text"
-                    name="city"
-                    value={formData.city}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black"
-                  />
-                </div>
-              </div>
-
-              {/* Partner Info */}
-              {(formData.userType === 'bride' || formData.userType === 'groom') && (
-                <div className="mt-8 pt-6 border-t border-gray-100">
-                  <h3 className="text-lg font-serif font-semibold text-black mb-4">
-                    Informações do Parceiro(a)
-                  </h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Nome do(a) Parceiro(a)
-                      </label>
-                      <input
-                        type="text"
-                        name="partnerName"
-                        value={formData.partnerName}
-                        onChange={handleChange}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        E-mail do(a) Parceiro(a)
-                      </label>
-                      <input
-                        type="email"
-                        name="partnerEmail"
-                        value={formData.partnerEmail}
-                        onChange={handleChange}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Wedding Info Tab */}
-          {activeTab === 'wedding' && (
-            <div className="space-y-6">
-              <h2 className="text-xl font-serif font-semibold text-black mb-6 pb-2 border-b border-gray-100">
-                Informações do Casamento
-              </h2>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Data do Casamento
-                  </label>
-                  <input
-                    type="date"
-                    name="weddingDate"
-                    value={formData.weddingDate}
-                    onChange={handleChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Local do Casamento
-                  </label>
-                  <input
-                    type="text"
-                    name="weddingVenue"
-                    value={formData.weddingVenue}
-                    onChange={handleChange}
-                    placeholder="Nome do espaço ou endereço"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Número de Convidados
-                  </label>
-                  <input
-                    type="number"
-                    name="weddingGuestCount"
-                    value={formData.weddingGuestCount}
-                    onChange={handleChange}
-                    min="0"
-                    className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black"
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* Vendor Info Tab */}
-          {activeTab === 'vendor' && formData.userType === 'vendor' && (
-            <div className="space-y-6">
-              <div className="flex items-center justify-between">
-                <h2 className="text-xl font-serif font-semibold text-black pb-2 border-b border-gray-100">
-                  Informações do Fornecedor
-                </h2>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setShowAddVendorModal(true);
-                    setNewVendorData({ name: '', category: '', phone: '', email: '' });
-                  }}
-                  className="flex items-center gap-2 px-4 py-2 bg-[#9CAA8E] text-white rounded-full hover:bg-[#8A9A7E] transition-colors"
-                >
-                  + Adicionar Fornecedor
-                </button>
-              </div>
-
-              {/* Vendor Selector */}
-              {vendors.length > 0 && (
-                <div className="bg-gray-50 rounded-xl p-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Selecione o fornecedor para editar:
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {vendors.map((v) => (
-                      <button
-                        type="button"
-                        key={v._id}
-                        onClick={() => {
-                          setSelectedVendor(v);
-                          setFormData({
-                            ...formData,
-                            vendorCompanyName: v.name || '',
-                            vendorDescription: v.description || '',
-                            vendorPhone: v.phone || '',
-                            vendorEmail: v.email || '',
-                            vendorCity: v.city || '',
-                            vendorCountry: v.country || '',
-                            vendorRegion: v.region || '',
-                            vendorCategory: v.category?._id || '',
-                            vendorStartingPrice: v.startingPrice || '',
-                            vendorPriceRange: v.priceRange || 'medium',
-                            vendorImages: v.images || [],
-                          });
-                        }}
-                        className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                          selectedVendor?._id === v._id
-                            ? 'bg-[#9CAA8E] text-white'
-                            : 'bg-white text-gray-700 hover:bg-gray-100'
-                        }`}
-                      >
-                        {v.name} {v.category && `(${v.category.name})`}
-                        {v.status && v.status !== 'approved' && (
-                          <span className={`ml-2 px-2 py-0.5 text-xs rounded-full ${
-                            v.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'
-                          }`}>
-                            {v.status === 'pending' ? 'Pendente' : 'Rejeitado'}
-                          </span>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {/* Vendor Form - shown when a vendor is selected */}
-              {selectedVendor && (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  {/* Pending Status Warning */}
-                  {selectedVendor.status === 'pending' && (
-                    <div className="md:col-span-2 bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-4">
-                      <div className="flex items-start gap-3">
-                        <Clock className="w-5 h-5 text-yellow-600 mt-0.5" />
-                        <div>
-                          <p className="font-medium text-yellow-800">Aguardando Aprovação</p>
-                          <p className="text-sm text-yellow-700 mt-1">
-                            O seu perfil de fornecedor está pendente de aprovação por um administrador. 
-                            Após a aprovação, você poderá receber pedidos de orçamento e seu perfil será visível publicamente.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Rejected Status Warning */}
-                  {selectedVendor.status === 'rejected' && (
-                    <div className="md:col-span-2 bg-red-50 border border-red-200 rounded-xl p-4 mb-4">
-                      <div className="flex items-start gap-3">
-                        <XCircle className="w-5 h-5 text-red-600 mt-0.5" />
-                        <div>
-                          <p className="font-medium text-red-800">Perfil Rejeitado</p>
-                          <p className="text-sm text-red-700 mt-1">
-                            O seu perfil de fornecedor foi rejeitado. Por favor, entre em contacto com o administrador para mais informações.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-                  )}
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Nome da Empresa
+                    <label className="block text-sm font-medium text-gray-700 mb-1 md:mb-2">
+                      Nome Completo
                     </label>
                     <input
                       type="text"
-                      name="vendorCompanyName"
-                      value={formData.vendorCompanyName}
+                      name="name"
+                      value={formData.name}
                       onChange={handleChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black text-sm md:text-base"
                     />
                   </div>
                   
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Categoria
+                  <div className="hidden">
+                    <label className="block text-sm font-medium text-gray-700 mb-1 md:mb-2">
+                      Tipo de Usuário
                     </label>
                     <select
-                      name="vendorCategory"
-                      value={formData.vendorCategory}
+                      name="userType"
+                      value={formData.userType}
                       onChange={handleChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black bg-white"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black bg-white text-sm md:text-base"
                     >
-                      <option value="">Selecione uma categoria</option>
-                      {categories.map(cat => (
-                        <option key={cat._id} value={cat._id}>
-                          {cat.name}
+                      {userTypeOptions.map(option => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
                         </option>
                       ))}
                     </select>
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1 md:mb-2">
                       Telefone
                     </label>
                     <input
                       type="tel"
-                      name="vendorPhone"
-                      value={formData.vendorPhone}
+                      name="phone"
+                      value={formData.phone}
                       onChange={handleChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black text-sm md:text-base"
                     />
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      E-mail
-                    </label>
-                    <input
-                      type="email"
-                      name="vendorEmail"
-                      value={formData.vendorEmail}
-                      onChange={handleChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black"
-                    />
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-gray-700 mb-1 md:mb-2">
                       País
                     </label>
                     <select
-                      name="vendorCountry"
-                      value={formData.vendorCountry}
+                      name="country"
+                      value={formData.country}
                       onChange={handleChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black bg-white"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black bg-white text-sm md:text-base"
                     >
                       <option value="">Selecione um país</option>
                       {countries.map(country => (
@@ -1024,444 +988,913 @@ const ProfilePage = () => {
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Provincia/Região
+                    <label className="block text-sm font-medium text-gray-700 mb-1 md:mb-2">
+                      Cidade
                     </label>
                     <input
                       type="text"
-                      name="vendorRegion"
-                      value={formData.vendorRegion}
+                      name="city"
+                      value={formData.city}
                       onChange={handleChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black text-sm md:text-base"
+                    />
+                  </div>
+                </div>
+
+                {/* Partner Info */}
+                {(formData.userType === 'bride' || formData.userType === 'groom') && (
+                  <div className="mt-6 md:mt-8 pt-6 border-t border-gray-100">
+                    <h3 className="text-base md:text-lg font-serif font-semibold text-black mb-4">
+                      Informações do Parceiro(a)
+                    </h3>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1 md:mb-2">
+                          Nome do(a) Parceiro(a)
+                        </label>
+                        <input
+                          type="text"
+                          name="partnerName"
+                          value={formData.partnerName}
+                          onChange={handleChange}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black text-sm md:text-base"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1 md:mb-2">
+                          E-mail do(a) Parceiro(a)
+                        </label>
+                        <input
+                          type="email"
+                          name="partnerEmail"
+                          value={formData.partnerEmail}
+                          onChange={handleChange}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black text-sm md:text-base"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Wedding Info Tab */}
+            {activeTab === 'wedding' && (
+              <div className="space-y-6">
+                <h2 className="text-lg md:text-xl font-serif font-semibold text-black mb-6 pb-2 border-b border-gray-100">
+                  Informações do Casamento
+                </h2>
+                
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1 md:mb-2">
+                      Data do Casamento
+                    </label>
+                    <input
+                      type="date"
+                      name="weddingDate"
+                      value={formData.weddingDate}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black text-sm md:text-base"
                     />
                   </div>
                   
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Preço Inicial (MT)
+                    <label className="block text-sm font-medium text-gray-700 mb-1 md:mb-2">
+                      Local do Casamento
+                    </label>
+                    <input
+                      type="text"
+                      name="weddingVenue"
+                      value={formData.weddingVenue}
+                      onChange={handleChange}
+                      placeholder="Nome do espaço ou endereço"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black text-sm md:text-base"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1 md:mb-2">
+                      Número de Convidados
                     </label>
                     <input
                       type="number"
-                      name="vendorStartingPrice"
-                      value={formData.vendorStartingPrice}
+                      name="weddingGuestCount"
+                      value={formData.weddingGuestCount}
                       onChange={handleChange}
                       min="0"
-                      step="0.01"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black"
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black text-sm md:text-base"
                     />
                   </div>
-                  
-                  <div>
+                </div>
+              </div>
+            )}
+
+            {/* Vendor Info Tab */}
+            {activeTab === 'vendor' && formData.userType === 'vendor' && (
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg md:text-xl font-serif font-semibold text-black pb-2 border-b border-gray-100 flex-1">
+                    Informações do Fornecedor
+                  </h2>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setShowAddVendorModal(true);
+                      setNewVendorData({ name: '', category: '', phone: '', email: '' });
+                    }}
+                    className="hidden md:flex items-center gap-2 px-4 py-2 bg-[#9CAA8E] text-white rounded-full hover:bg-[#8A9A7E] transition-colors text-sm"
+                  >
+                    <Plus className="w-4 h-4" />
+                    Adicionar Fornecedor
+                  </button>
+                </div>
+
+                {/* Vendor Selector */}
+                {vendors.length > 0 && (
+                  <div className="bg-gray-50 rounded-xl p-3 md:p-4">
                     <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Faixa de Preço
+                      Selecione o fornecedor para editar:
                     </label>
-                    <select
-                      name="vendorPriceRange"
-                      value={formData.vendorPriceRange}
-                      onChange={handleChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black bg-white"
-                    >
-                      {priceRanges.map(range => (
-                        <option key={range.value} value={range.value}>
-                          {range.label}
-                        </option>
+                    
+                    {/* Vendor View Toggle - Mobile Only */}
+                    <div className="md:hidden flex items-center justify-between mb-3">
+                      <span className="text-xs text-gray-500">{vendors.length} fornecedor(es)</span>
+                      <div className="flex items-center gap-1 bg-white rounded-lg p-1 border border-gray-200">
+                        <button
+                          onClick={() => setVendorViewMode('grid')}
+                          className={`p-2 rounded-md transition-colors ${
+                            vendorViewMode === 'grid' ? 'bg-[#9CAA8E] text-white' : 'text-gray-500 active:bg-gray-100'
+                          }`}
+                          aria-label="Visualização em grade"
+                        >
+                          <Grid className="w-4 h-4" />
+                        </button>
+                        <button
+                          onClick={() => setVendorViewMode('list')}
+                          className={`p-2 rounded-md transition-colors ${
+                            vendorViewMode === 'list' ? 'bg-[#9CAA8E] text-white' : 'text-gray-500 active:bg-gray-100'
+                          }`}
+                          aria-label="Visualização em lista"
+                        >
+                          <List className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Desktop Vendor Selector */}
+                    <div className="hidden md:flex flex-wrap gap-2">
+                      {vendors.map((v) => (
+                        <button
+                          type="button"
+                          key={v._id}
+                          onClick={() => {
+                            setSelectedVendor(v);
+                            setFormData({
+                              ...formData,
+                              vendorCompanyName: v.name || '',
+                              vendorDescription: v.description || '',
+                              vendorPhone: v.phone || '',
+                              vendorEmail: v.email || '',
+                              vendorCity: v.city || '',
+                              vendorCountry: v.country || '',
+                              vendorRegion: v.region || '',
+                              vendorCategory: v.category?._id || '',
+                              vendorStartingPrice: v.startingPrice || '',
+                              vendorPriceRange: v.priceRange || 'medium',
+                              vendorImages: v.images || [],
+                            });
+                          }}
+                          className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                            selectedVendor?._id === v._id
+                              ? 'bg-[#9CAA8E] text-white'
+                              : 'bg-white text-gray-700 hover:bg-gray-100'
+                          }`}
+                        >
+                          {v.name} {v.category && `(${v.category.name})`}
+                          {v.status && v.status !== 'approved' && (
+                            <span className={`ml-2 px-2 py-0.5 text-xs rounded-full ${
+                              v.status === 'pending' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800'
+                            }`}>
+                              {v.status === 'pending' ? 'Pendente' : 'Rejeitado'}
+                            </span>
+                          )}
+                        </button>
                       ))}
-                    </select>
+                    </div>
+
+                    {/* Mobile Vendor Selector - Grid View */}
+                    <div className="md:hidden">
+                      {vendorViewMode === 'grid' ? (
+                        <div className="grid grid-cols-2 gap-2">
+                          {vendors.map((v) => (
+                            <button
+                              type="button"
+                              key={v._id}
+                              onClick={() => {
+                                setSelectedVendor(v);
+                                setFormData({
+                                  ...formData,
+                                  vendorCompanyName: v.name || '',
+                                  vendorDescription: v.description || '',
+                                  vendorPhone: v.phone || '',
+                                  vendorEmail: v.email || '',
+                                  vendorCity: v.city || '',
+                                  vendorCountry: v.country || '',
+                                  vendorRegion: v.region || '',
+                                  vendorCategory: v.category?._id || '',
+                                  vendorStartingPrice: v.startingPrice || '',
+                                  vendorPriceRange: v.priceRange || 'medium',
+                                  vendorImages: v.images || [],
+                                });
+                              }}
+                              className={`p-3 rounded-xl text-left transition-colors border ${
+                                selectedVendor?._id === v._id
+                                  ? 'bg-[#9CAA8E] text-white border-[#9CAA8E]'
+                                  : 'bg-white text-gray-700 border-gray-200'
+                              }`}
+                            >
+                              <div className="font-medium text-sm truncate">{v.name}</div>
+                              {v.category && (
+                                <div className={`text-xs mt-1 truncate ${
+                                  selectedVendor?._id === v._id ? 'text-white/80' : 'text-gray-500'
+                                }`}>
+                                  {v.category.name}
+                                </div>
+                              )}
+                              {v.status && v.status !== 'approved' && (
+                                <span className={`inline-block mt-2 px-2 py-0.5 text-xs rounded-full ${
+                                  v.status === 'pending' 
+                                    ? 'bg-yellow-100 text-yellow-800' 
+                                    : 'bg-red-100 text-red-800'
+                                }`}>
+                                  {v.status === 'pending' ? 'Pendente' : 'Rejeitado'}
+                                </span>
+                              )}
+                            </button>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="space-y-2">
+                          {vendors.map((v) => (
+                            <button
+                              type="button"
+                              key={v._id}
+                              onClick={() => {
+                                setSelectedVendor(v);
+                                setFormData({
+                                  ...formData,
+                                  vendorCompanyName: v.name || '',
+                                  vendorDescription: v.description || '',
+                                  vendorPhone: v.phone || '',
+                                  vendorEmail: v.email || '',
+                                  vendorCity: v.city || '',
+                                  vendorCountry: v.country || '',
+                                  vendorRegion: v.region || '',
+                                  vendorCategory: v.category?._id || '',
+                                  vendorStartingPrice: v.startingPrice || '',
+                                  vendorPriceRange: v.priceRange || 'medium',
+                                  vendorImages: v.images || [],
+                                });
+                              }}
+                              className={`w-full p-3 rounded-xl text-left transition-colors border flex items-center justify-between ${
+                                selectedVendor?._id === v._id
+                                  ? 'bg-[#9CAA8E] text-white border-[#9CAA8E]'
+                                  : 'bg-white text-gray-700 border-gray-200'
+                              }`}
+                            >
+                              <div>
+                                <div className="font-medium text-sm">{v.name}</div>
+                                {v.category && (
+                                  <div className={`text-xs mt-1 ${
+                                    selectedVendor?._id === v._id ? 'text-white/80' : 'text-gray-500'
+                                  }`}>
+                                    {v.category.name}
+                                  </div>
+                                )}
+                                {v.status && v.status !== 'approved' && (
+                                  <span className={`inline-block mt-2 px-2 py-0.5 text-xs rounded-full ${
+                                    v.status === 'pending' 
+                                      ? 'bg-yellow-100 text-yellow-800' 
+                                      : 'bg-red-100 text-red-800'
+                                  }`}>
+                                    {v.status === 'pending' ? 'Pendente' : 'Rejeitado'}
+                                  </span>
+                                )}
+                              </div>
+                              <ChevronRight className={`w-5 h-5 ${
+                                selectedVendor?._id === v._id ? 'text-white' : 'text-gray-400'
+                              }`} />
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Mobile Add Vendor Button */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowAddVendorModal(true);
+                        setNewVendorData({ name: '', category: '', phone: '', email: '' });
+                      }}
+                      className="md:hidden w-full mt-3 flex items-center justify-center gap-2 px-4 py-3 bg-[#9CAA8E] text-white rounded-xl active:bg-[#8A9A7E] transition-colors text-sm"
+                    >
+                      <Plus className="w-4 h-4" />
+                      Adicionar Novo Fornecedor
+                    </button>
                   </div>
-                  
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Imagens do Fornecedor
-                    </label>
-                    <input
-                      type="file"
-                      ref={(el) => setVendorImagesInput(el)}
-                      accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
-                      onChange={handleMultipleImageUpload}
-                      multiple
-                      className="hidden"
-                    />
-                    <div className="flex items-center gap-3 mb-4">
-                      <button
-                        type="button"
-                        onClick={() => vendorImagesInput?.click()}
-                        disabled={uploadingCover}
-                        className="px-4 py-2 bg-[#9CAA8E] text-white rounded-lg hover:bg-[#8A9A7E] transition-colors disabled:opacity-50"
+                )}
+
+                {/* Vendor Form - shown when a vendor is selected */}
+                {selectedVendor && (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                    {/* Pending Status Warning */}
+                    {selectedVendor.status === 'pending' && (
+                      <div className="md:col-span-2 bg-yellow-50 border border-yellow-200 rounded-xl p-4 mb-2">
+                        <div className="flex items-start gap-3">
+                          <Clock className="w-5 h-5 text-yellow-600 mt-0.5 flex-shrink-0" />
+                          <div>
+                            <p className="font-medium text-yellow-800 text-sm md:text-base">Aguardando Aprovação</p>
+                            <p className="text-xs md:text-sm text-yellow-700 mt-1">
+                              O seu perfil de fornecedor está pendente de aprovação por um administrador. 
+                              Após a aprovação, você poderá receber pedidos de orçamento e seu perfil será visível publicamente.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    {/* Rejected Status Warning */}
+                    {selectedVendor.status === 'rejected' && (
+                      <div className="md:col-span-2 bg-red-50 border border-red-200 rounded-xl p-4 mb-2">
+                        <div className="flex items-start gap-3">
+                          <XCircle className="w-5 h-5 text-red-600 mt-0.5 flex-shrink-0" />
+                          <div>
+                            <p className="font-medium text-red-800 text-sm md:text-base">Perfil Rejeitado</p>
+                            <p className="text-xs md:text-sm text-red-700 mt-1">
+                              O seu perfil de fornecedor foi rejeitado. Por favor, entre em contacto com o administrador para mais informações.
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                    )}
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1 md:mb-2">
+                        Nome da Empresa
+                      </label>
+                      <input
+                        type="text"
+                        name="vendorCompanyName"
+                        value={formData.vendorCompanyName}
+                        onChange={handleChange}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black text-sm md:text-base"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1 md:mb-2">
+                        Categoria
+                      </label>
+                      <select
+                        name="vendorCategory"
+                        value={formData.vendorCategory}
+                        onChange={handleChange}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black bg-white text-sm md:text-base"
                       >
-                        {uploadingCover ? 'A carregar...' : 'Adicionar Imagens'}
-                      </button>
-                      {formData.vendorImages.length > 0 && (
-                        <span className="text-sm text-gray-500">{formData.vendorImages.length} imagem(ns) adicionada(s)</span>
+                        <option value="">Selecione uma categoria</option>
+                        {categories.map(cat => (
+                          <option key={cat._id} value={cat._id}>
+                            {cat.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1 md:mb-2">
+                        Telefone
+                      </label>
+                      <input
+                        type="tel"
+                        name="vendorPhone"
+                        value={formData.vendorPhone}
+                        onChange={handleChange}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black text-sm md:text-base"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1 md:mb-2">
+                        E-mail
+                      </label>
+                      <input
+                        type="email"
+                        name="vendorEmail"
+                        value={formData.vendorEmail}
+                        onChange={handleChange}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black text-sm md:text-base"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1 md:mb-2">
+                        País
+                      </label>
+                      <select
+                        name="vendorCountry"
+                        value={formData.vendorCountry}
+                        onChange={handleChange}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black bg-white text-sm md:text-base"
+                      >
+                        <option value="">Selecione um país</option>
+                        {countries.map(country => (
+                          <option key={country.code} value={country.name}>
+                            {country.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1 md:mb-2">
+                        Provincia/Região
+                      </label>
+                      <input
+                        type="text"
+                        name="vendorRegion"
+                        value={formData.vendorRegion}
+                        onChange={handleChange}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black text-sm md:text-base"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1 md:mb-2">
+                        Preço Inicial (MT)
+                      </label>
+                      <input
+                        type="number"
+                        name="vendorStartingPrice"
+                        value={formData.vendorStartingPrice}
+                        onChange={handleChange}
+                        min="0"
+                        step="0.01"
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black text-sm md:text-base"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1 md:mb-2">
+                        Faixa de Preço
+                      </label>
+                      <select
+                        name="vendorPriceRange"
+                        value={formData.vendorPriceRange}
+                        onChange={handleChange}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black bg-white text-sm md:text-base"
+                      >
+                        {priceRanges.map(range => (
+                          <option key={range.value} value={range.value}>
+                            {range.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1 md:mb-2">
+                        Imagens do Fornecedor
+                      </label>
+                      <input
+                        type="file"
+                        ref={(el) => setVendorImagesInput(el)}
+                        accept="image/jpeg,image/jpg,image/png,image/gif,image/webp"
+                        onChange={handleMultipleImageUpload}
+                        multiple
+                        className="hidden"
+                      />
+                      <div className="flex flex-col md:flex-row items-start md:items-center gap-3 mb-4">
+                        <button
+                          type="button"
+                          onClick={() => vendorImagesInput?.click()}
+                          disabled={uploadingCover}
+                          className="w-full md:w-auto px-4 py-3 bg-[#9CAA8E] text-white rounded-xl md:rounded-lg hover:bg-[#8A9A7E] transition-colors disabled:opacity-50 text-sm"
+                        >
+                          {uploadingCover ? 'A carregar...' : 'Adicionar Imagens'}
+                        </button>
+                        {formData.vendorImages.length > 0 && (
+                          <span className="text-xs md:text-sm text-gray-500">{formData.vendorImages.length} imagem(ns) adicionada(s)</span>
+                        )}
+                      </div>
+                      
+                      {/* Images Grid */}
+                      {formData.vendorImages.length > 0 ? (
+                        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2 md:gap-4">
+                          {formData.vendorImages.map((img, index) => (
+                            <div 
+                              key={index} 
+                              className="relative group aspect-square rounded-lg md:rounded-xl overflow-hidden"
+                            >
+                              <img 
+                                src={img.startsWith('https') ? img : `${API_URL}${img}`} 
+                                alt={`Imagem ${index + 1}`}
+                                className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
+                              />
+                              
+                              {/* Overlay with delete button */}
+                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-end">
+                                <div className="absolute top-1 right-1 md:top-2 md:right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleDeleteImage(img)}
+                                    className="p-1.5 md:p-2 bg-red-500 text-white rounded-full hover:bg-red-600"
+                                  >
+                                    <Trash2 className="w-3 h-3 md:w-4 md:h-4" />
+                                  </button>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 bg-gray-50 rounded-xl">
+                          <Image className="w-10 h-10 md:w-12 md:h-12 text-gray-300 mx-auto mb-2" />
+                          <p className="text-gray-500 text-xs md:text-sm">Nenhuma imagem adicionada ainda</p>
+                        </div>
                       )}
                     </div>
                     
-                    {/* Images Grid */}
-                    {formData.vendorImages.length > 0 ? (
-                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                        {formData.vendorImages.map((img, index) => (
-                          <div 
-                            key={index} 
-                            className="relative group aspect-square rounded-xl overflow-hidden"
-                          >
-                            <img 
-                              src={img.startsWith('https') ? img : `${API_URL}${img}`} 
-                              alt={`Imagem ${index + 1}`}
-                              className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-110"
-                            />
-                            
-                            {/* Overlay with delete button */}
-                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-end">
-                              <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                                <button
-                                  type="button"
-                                  onClick={() => handleDeleteImage(img)}
-                                  className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                </button>
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1 md:mb-2">
+                        Descrição
+                      </label>
+                      <textarea
+                        name="vendorDescription"
+                        value={formData.vendorDescription}
+                        onChange={handleChange}
+                        rows="4"
+                        placeholder="Descreva seus serviços..."
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black text-sm md:text-base"
+                      ></textarea>
+                    </div>
+                  </div>
+                )}
+
+                {/* Show vendor stats if vendor is selected */}
+                {selectedVendor && (
+                  <div className="mt-6 md:mt-8 pt-6 border-t border-gray-100">
+                    <h3 className="text-base md:text-lg font-serif font-semibold text-black mb-4">
+                      Estatísticas do Perfil
+                    </h3>
+                    <div className="grid grid-cols-3 gap-2 md:gap-4">
+                      <div className="bg-gray-50 rounded-lg md:rounded-xl p-3 md:p-4 text-center">
+                        <p className="text-xl md:text-3xl font-bold text-[#9CAA8E]">{selectedVendor.averageRating || 0}</p>
+                        <p className="text-xs md:text-sm text-gray-600 mt-1">Avaliação</p>
+                      </div>
+                      <div className="bg-gray-50 rounded-lg md:rounded-xl p-3 md:p-4 text-center">
+                        <p className="text-xl md:text-3xl font-bold text-[#9CAA8E]">{selectedVendor.totalReviews || 0}</p>
+                        <p className="text-xs md:text-sm text-gray-600 mt-1">Avaliações</p>
+                      </div>
+                      <div className="bg-gray-50 rounded-lg md:rounded-xl p-3 md:p-4 text-center">
+                        <p className="text-xl md:text-3xl font-bold text-[#9CAA8E]">{selectedVendor.quoteRequests?.length || 0}</p>
+                        <p className="text-xs md:text-sm text-gray-600 mt-1">Orçamentos</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Quote Requests Tab */}
+            {activeTab === 'quotes' && formData.userType === 'vendor' && (
+              <div className="space-y-6">
+                <h2 className="text-lg md:text-xl font-serif font-semibold text-black pb-2 border-b border-gray-100">
+                  Gestão de Orçamentos
+                </h2>
+
+                {loadingQuotes ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin w-8 h-8 border-4 border-[#9CAA8E] border-t-transparent rounded-full mx-auto"></div>
+                    <p className="text-gray-500 mt-2 text-sm">A carregar orçamentos...</p>
+                  </div>
+                ) : quoteRequests.length === 0 ? (
+                  <div className="text-center py-8 md:py-12 bg-gray-50 rounded-xl">
+                    <MessageSquare className="w-10 h-10 md:w-12 md:h-12 text-gray-300 mx-auto mb-3" />
+                    <p className="text-gray-500 text-sm">Nenhum orçamento solicitado ainda</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3 md:space-y-4">
+                    {quoteRequests.map((quote) => (
+                      <div key={quote._id} className="bg-white border border-gray-200 rounded-xl p-4 md:p-5">
+                        <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
+                          <div className="flex items-start gap-3 md:gap-4">
+                            <div className="w-10 h-10 md:w-12 md:h-12 bg-[#9CAA8E]/10 rounded-full flex items-center justify-center flex-shrink-0">
+                              <User className="w-5 h-5 md:w-6 md:h-6 text-[#9CAA8E]" />
+                            </div>
+                            <div className="flex-1">
+                              <h4 className="font-semibold text-black text-sm md:text-base">{quote.client?.name || 'Cliente'}</h4>
+                              <p className="text-xs md:text-sm text-gray-500">{quote.client?.email}</p>
+                              <div className="flex flex-wrap items-center gap-2 md:gap-4 mt-2 text-xs md:text-sm text-gray-600">
+                                {quote.eventDate && (
+                                  <span className="flex items-center gap-1">
+                                    <Clock className="w-3 h-3 md:w-4 md:h-4" />
+                                    {new Date(quote.eventDate).toLocaleDateString('pt-PT')}
+                                  </span>
+                                )}
+                                {quote.guestCount && (
+                                  <span>{quote.guestCount} convidados</span>
+                                )}
                               </div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    ) : (
-                      <div className="text-center py-8 bg-gray-50 rounded-xl">
-                        <Image className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-                        <p className="text-gray-500 text-sm">Nenhuma imagem adicionada ainda</p>
-                      </div>
-                    )}
-                  </div>
-                  
-                  <div className="md:col-span-2">
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                      Descrição
-                    </label>
-                    <textarea
-                      name="vendorDescription"
-                      value={formData.vendorDescription}
-                      onChange={handleChange}
-                      rows="4"
-                      placeholder="Descreva seus serviços..."
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black"
-                    ></textarea>
-                  </div>
-                </div>
-              )}
-
-              {/* Show vendor stats if vendor is selected */}
-              {selectedVendor && (
-                <div className="mt-8 pt-6 border-t border-gray-100">
-                  <h3 className="text-lg font-serif font-semibold text-black mb-4">
-                    Estatísticas do Perfil
-                  </h3>
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="bg-gray-50 rounded-xl p-4 text-center">
-                      <p className="text-3xl font-bold text-[#9CAA8E]">{selectedVendor.averageRating || 0}</p>
-                      <p className="text-sm text-gray-600 mt-1">Avaliação</p>
-                    </div>
-                    <div className="bg-gray-50 rounded-xl p-4 text-center">
-                      <p className="text-3xl font-bold text-[#9CAA8E]">{selectedVendor.totalReviews || 0}</p>
-                      <p className="text-sm text-gray-600 mt-1">Avaliações</p>
-                    </div>
-                    <div className="bg-gray-50 rounded-xl p-4 text-center">
-                      <p className="text-3xl font-bold text-[#9CAA8E]">{selectedVendor.quoteRequests?.length || 0}</p>
-                      <p className="text-sm text-gray-600 mt-1">Orçamentos</p>
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Quote Requests Tab */}
-          {activeTab === 'quotes' && formData.userType === 'vendor' && (
-            <div className="space-y-6">
-              <h2 className="text-xl font-serif font-semibold text-black pb-2 border-b border-gray-100">
-                Gestão de Orçamentos
-              </h2>
-
-              {loadingQuotes ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin w-8 h-8 border-4 border-[#9CAA8E] border-t-transparent rounded-full mx-auto"></div>
-                  <p className="text-gray-500 mt-2">A carregar orçamentos...</p>
-                </div>
-              ) : quoteRequests.length === 0 ? (
-                <div className="text-center py-12 bg-gray-50 rounded-xl">
-                  <MessageSquare className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-500">Nenhum orçamento solicitado ainda</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {quoteRequests.map((quote) => (
-                    <div key={quote._id} className="bg-white border border-gray-200 rounded-xl p-5">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-start gap-4">
-                          <div className="w-12 h-12 bg-[#9CAA8E]/10 rounded-full flex items-center justify-center flex-shrink-0">
-                            <User className="w-6 h-6 text-[#9CAA8E]" />
-                          </div>
-                          <div>
-                            <h4 className="font-semibold text-black">{quote.client?.name || 'Cliente'}</h4>
-                            <p className="text-sm text-gray-500">{quote.client?.email}</p>
-                            <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
-                              {quote.eventDate && (
-                                <span className="flex items-center gap-1">
-                                  <Clock className="w-4 h-4" />
-                                  {new Date(quote.eventDate).toLocaleDateString('pt-PT')}
-                                </span>
-                              )}
-                              {quote.guestCount && (
-                                <span>{quote.guestCount} convidados</span>
+                              {quote.message && (
+                                <p className="mt-3 text-gray-700 bg-gray-50 p-3 rounded-lg text-xs md:text-sm">
+                                  {quote.message}
+                                </p>
                               )}
                             </div>
-                            {quote.message && (
-                              <p className="mt-3 text-gray-700 bg-gray-50 p-3 rounded-lg text-sm">
-                                {quote.message}
+                          </div>
+                          <div className="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-start gap-2 md:gap-2">
+                            <span className={`px-2 py-1 md:px-3 md:py-1 rounded-full text-xs font-medium whitespace-nowrap ${
+                              quote.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                              quote.status === 'accepted' ? 'bg-green-100 text-green-800' :
+                              'bg-red-100 text-red-800'
+                            }`}>
+                              {quote.status === 'pending' ? 'Pendente' : 
+                               quote.status === 'accepted' ? 'Aceite' : 'Recusado'}
+                            </span>
+                            {quote.responseMessage && (
+                              <p className="text-xs text-gray-500 text-right max-w-xs hidden md:block">
+                                <span className="font-medium">Resposta:</span> {quote.responseMessage}
                               </p>
                             )}
                           </div>
                         </div>
-                        <div className="flex flex-col items-end gap-2">
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            quote.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                            quote.status === 'accepted' ? 'bg-green-100 text-green-800' :
-                            'bg-red-100 text-red-800'
-                          }`}>
-                            {quote.status === 'pending' ? 'Pendente' : 
-                             quote.status === 'accepted' ? 'Aceite' : 'Recusado'}
-                          </span>
-                          {quote.responseMessage && (
-                            <p className="text-sm text-gray-500 text-right max-w-xs">
-                              <span className="font-medium">Resposta:</span> {quote.responseMessage}
-                            </p>
-                          )}
-                        </div>
+
+                        {/* Mobile Response Message */}
+                        {quote.responseMessage && (
+                          <p className="md:hidden mt-2 text-xs text-gray-500 border-t border-gray-100 pt-2">
+                            <span className="font-medium">Resposta:</span> {quote.responseMessage}
+                          </p>
+                        )}
+
+                        {/* Response Section */}
+                        {quote.status === 'pending' && respondingQuote === quote._id && (
+                          <div className="mt-4 pt-4 border-t border-gray-100">
+                            <textarea
+                              value={responseMessage}
+                              onChange={(e) => setResponseMessage(e.target.value)}
+                              placeholder="Escreva uma mensagem para o cliente (opcional)..."
+                              className="w-full px-4 py-3 border border-gray-300 rounded-lg text-black mb-3 text-sm"
+                              rows="2"
+                            />
+                            <div className="flex flex-col md:flex-row gap-2">
+                              <button
+                                onClick={() => handleQuoteResponse(quote._id, 'accepted')}
+                                className="flex items-center justify-center gap-2 px-4 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 text-sm"
+                              >
+                                <Check className="w-4 h-4" /> Aceitar
+                              </button>
+                              <button
+                                onClick={() => handleQuoteResponse(quote._id, 'rejected')}
+                                className="flex items-center justify-center gap-2 px-4 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 text-sm"
+                              >
+                                <XCircle className="w-4 h-4" /> Recusar
+                              </button>
+                              <button
+                                onClick={() => { setRespondingQuote(null); setResponseMessage(''); }}
+                                className="px-4 py-3 text-gray-600 hover:text-gray-800 text-sm"
+                              >
+                                Cancelar
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {quote.status === 'pending' && respondingQuote !== quote._id && (
+                          <div className="mt-4 pt-4 border-t border-gray-100">
+                            <button
+                              onClick={() => setRespondingQuote(quote._id)}
+                              className="text-[#9CAA8E] hover:text-[#8A9A7E] font-medium text-sm"
+                            >
+                              Responder ao orçamento
+                            </button>
+                          </div>
+                        )}
                       </div>
-
-                      {/* Response Section */}
-                      {quote.status === 'pending' && respondingQuote === quote._id && (
-                        <div className="mt-4 pt-4 border-t border-gray-100">
-                          <textarea
-                            value={responseMessage}
-                            onChange={(e) => setResponseMessage(e.target.value)}
-                            placeholder="Escreva uma mensagem para o cliente (opcional)..."
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg text-black mb-3"
-                            rows="2"
-                          />
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => handleQuoteResponse(quote._id, 'accepted')}
-                              className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600"
-                            >
-                              <Check className="w-4 h-4" /> Aceitar
-                            </button>
-                            <button
-                              onClick={() => handleQuoteResponse(quote._id, 'rejected')}
-                              className="flex items-center gap-2 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
-                            >
-                              <XCircle className="w-4 h-4" /> Recusar
-                            </button>
-                            <button
-                              onClick={() => { setRespondingQuote(null); setResponseMessage(''); }}
-                              className="px-4 py-2 text-gray-600 hover:text-gray-800"
-                            >
-                              Cancelar
-                            </button>
-                          </div>
-                        </div>
-                      )}
-
-                      {quote.status === 'pending' && respondingQuote !== quote._id && (
-                        <div className="mt-4 pt-4 border-t border-gray-100">
-                          <button
-                            onClick={() => setRespondingQuote(quote._id)}
-                            className="text-[#9CAA8E] hover:text-[#8A9A7E] font-medium"
-                          >
-                            Responder ao orçamento
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Reviews Tab */}
-          {activeTab === 'reviews' && formData.userType === 'vendor' && (
-            <div className="space-y-6">
-              <h2 className="text-xl font-serif font-semibold text-black pb-2 border-b border-gray-100">
-                Gestão de Avaliações
-              </h2>
-
-              {selectedVendor?.reviews?.length === 0 || !selectedVendor?.reviews ? (
-                <div className="text-center py-12 bg-gray-50 rounded-xl">
-                  <Star className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-500">Nenhuma avaliação recebida ainda</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {/* Average Rating Card */}
-                  <div className="bg-[#9CAA8E]/10 rounded-xl p-6 text-center">
-                    <p className="text-5xl font-bold text-[#9CAA8E]">{selectedVendor.averageRating?.toFixed(1) || '0.0'}</p>
-                    <div className="flex justify-center gap-1 my-2">
-                      {[1, 2, 3, 4, 5].map((star) => (
-                        <Star 
-                          key={star} 
-                          className={`w-5 h-5 ${star <= Math.round(selectedVendor.averageRating || 0) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} 
-                        />
-                      ))}
-                    </div>
-                    <p className="text-gray-600">{selectedVendor.totalReviews || 0} avaliação(ões)</p>
+                    ))}
                   </div>
+                )}
+              </div>
+            )}
 
-                  {/* Reviews List */}
-                  {selectedVendor?.reviews?.map((review, index) => (
-                    <div key={index} className="bg-white border border-gray-200 rounded-xl p-5">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-start gap-4">
-                          <div className="w-12 h-12 bg-[#9CAA8E]/10 rounded-full flex items-center justify-center flex-shrink-0">
-                            <User className="w-6 h-6 text-[#9CAA8E]" />
+            {/* Reviews Tab */}
+            {activeTab === 'reviews' && formData.userType === 'vendor' && (
+              <div className="space-y-6">
+                <h2 className="text-lg md:text-xl font-serif font-semibold text-black pb-2 border-b border-gray-100">
+                  Gestão de Avaliações
+                </h2>
+
+                {selectedVendor?.reviews?.length === 0 || !selectedVendor?.reviews ? (
+                  <div className="text-center py-8 md:py-12 bg-gray-50 rounded-xl">
+                    <Star className="w-10 h-10 md:w-12 md:h-12 text-gray-300 mx-auto mb-3" />
+                    <p className="text-gray-500 text-sm">Nenhuma avaliação recebida ainda</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {/* Average Rating Card */}
+                    <div className="bg-[#9CAA8E]/10 rounded-xl p-4 md:p-6 text-center">
+                      <p className="text-3xl md:text-5xl font-bold text-[#9CAA8E]">{selectedVendor.averageRating?.toFixed(1) || '0.0'}</p>
+                      <div className="flex justify-center gap-1 my-2">
+                        {[1, 2, 3, 4, 5].map((star) => (
+                          <Star 
+                            key={star} 
+                            className={`w-4 h-4 md:w-5 md:h-5 ${star <= Math.round(selectedVendor.averageRating || 0) ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} 
+                          />
+                        ))}
+                      </div>
+                      <p className="text-xs md:text-sm text-gray-600">{selectedVendor.totalReviews || 0} avaliação(ões)</p>
+                    </div>
+
+                    {/* Reviews List */}
+                    {selectedVendor?.reviews?.map((review, index) => (
+                      <div key={index} className="bg-white border border-gray-200 rounded-xl p-4 md:p-5">
+                        <div className="flex items-start gap-3 md:gap-4">
+                          <div className="w-10 h-10 md:w-12 md:h-12 bg-[#9CAA8E]/10 rounded-full flex items-center justify-center flex-shrink-0">
+                            <User className="w-5 h-5 md:w-6 md:h-6 text-[#9CAA8E]" />
                           </div>
-                          <div>
-                            <h4 className="font-semibold text-black">{review.clientName || 'Cliente'}</h4>
+                          <div className="flex-1">
+                            <h4 className="font-semibold text-black text-sm md:text-base">{review.clientName || 'Cliente'}</h4>
                             <div className="flex gap-1 my-1">
                               {[1, 2, 3, 4, 5].map((star) => (
                                 <Star 
                                   key={star} 
-                                  className={`w-4 h-4 ${star <= review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} 
+                                  className={`w-3 h-3 md:w-4 md:h-4 ${star <= review.rating ? 'fill-yellow-400 text-yellow-400' : 'text-gray-300'}`} 
                                 />
                               ))}
                             </div>
-                            <p className="text-gray-700 mt-2">{review.comment}</p>
+                            <p className="text-gray-700 mt-2 text-xs md:text-sm">{review.comment}</p>
                             {review.createdAt && (
-                              <p className="text-sm text-gray-400 mt-2">
+                              <p className="text-xs text-gray-400 mt-2">
                                 {new Date(review.createdAt).toLocaleDateString('pt-PT')}
                               </p>
                             )}
                           </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
 
-          {/* My Quote Requests Tab (for non-vendor users) */}
-          {activeTab === 'myquotes' && formData.userType !== 'vendor' && (
-            <div className="space-y-6">
-              <h2 className="text-xl font-serif font-semibold text-black pb-2 border-b border-gray-100">
-                Meus Orçamentos
-              </h2>
+            {/* My Quote Requests Tab (for non-vendor users) */}
+            {activeTab === 'myquotes' && formData.userType !== 'vendor' && (
+              <div className="space-y-6">
+                <h2 className="text-lg md:text-xl font-serif font-semibold text-black pb-2 border-b border-gray-100">
+                  Meus Orçamentos
+                </h2>
 
-              {loadingMyQuotes ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin w-8 h-8 border-4 border-[#9CAA8E] border-t-transparent rounded-full mx-auto"></div>
-                  <p className="text-gray-500 mt-2">A carregar orçamentos...</p>
-                </div>
-              ) : myQuoteRequests.length === 0 ? (
-                <div className="text-center py-12 bg-gray-50 rounded-xl">
-                  <MessageSquare className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                  <p className="text-gray-500">Você ainda não solicitou nenhum orçamento</p>
-                  <p className="text-sm text-gray-400 mt-2">Visite a página de fornecedores para encontrar os melhores serviços</p>
-                </div>
-              ) : (
-                <div className="space-y-4">
-                  {myQuoteRequests.map((quote) => (
-                    <div 
-                      key={quote._id} 
-                      className="bg-white border border-gray-200 rounded-xl p-5 hover:shadow-md transition-shadow cursor-pointer"
-                      onClick={() => quote.vendor?._id && handleVendorClick(quote.vendor._id)}
-                    >
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-start gap-4">
-                          <div className="w-12 h-12 bg-[#9CAA8E]/10 rounded-full flex items-center justify-center flex-shrink-0">
-                            <Store className="w-6 h-6 text-[#9CAA8E]" />
-                          </div>
-                          <div>
-                            <h4 className="font-semibold text-black">{quote.vendor?.name || 'Fornecedor'}</h4>
-                            <p className="text-sm text-gray-500">{quote.vendor?.category?.name}</p>
-                            <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
-                              {quote.eventDate && (
-                                <span className="flex items-center gap-1">
-                                  <Clock className="w-4 h-4" />
-                                  {new Date(quote.eventDate).toLocaleDateString('pt-PT')}
-                                </span>
-                              )}
-                              {quote.guestCount && (
-                                <span>{quote.guestCount} convidados</span>
+                {loadingMyQuotes ? (
+                  <div className="text-center py-8">
+                    <div className="animate-spin w-8 h-8 border-4 border-[#9CAA8E] border-t-transparent rounded-full mx-auto"></div>
+                    <p className="text-gray-500 mt-2 text-sm">A carregar orçamentos...</p>
+                  </div>
+                ) : myQuoteRequests.length === 0 ? (
+                  <div className="text-center py-8 md:py-12 bg-gray-50 rounded-xl">
+                    <MessageSquare className="w-10 h-10 md:w-12 md:h-12 text-gray-300 mx-auto mb-3" />
+                    <p className="text-gray-500 text-sm">Você ainda não solicitou nenhum orçamento</p>
+                    <p className="text-xs text-gray-400 mt-2">Visite a página de fornecedores para encontrar os melhores serviços</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3 md:space-y-4">
+                    {myQuoteRequests.map((quote) => (
+                      <div 
+                        key={quote._id} 
+                        className="bg-white border border-gray-200 rounded-xl p-4 md:p-5 hover:shadow-md transition-shadow cursor-pointer"
+                        onClick={() => quote.vendor?._id && handleVendorClick(quote.vendor._id)}
+                      >
+                        <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
+                          <div className="flex items-start gap-3 md:gap-4">
+                            <div className="w-10 h-10 md:w-12 md:h-12 bg-[#9CAA8E]/10 rounded-full flex items-center justify-center flex-shrink-0">
+                              <Store className="w-5 h-5 md:w-6 md:h-6 text-[#9CAA8E]" />
+                            </div>
+                            <div className="flex-1">
+                              <h4 className="font-semibold text-black text-sm md:text-base">{quote.vendor?.name || 'Fornecedor'}</h4>
+                              <p className="text-xs md:text-sm text-gray-500">{quote.vendor?.category?.name}</p>
+                              <div className="flex flex-wrap items-center gap-2 md:gap-4 mt-2 text-xs md:text-sm text-gray-600">
+                                {quote.eventDate && (
+                                  <span className="flex items-center gap-1">
+                                    <Clock className="w-3 h-3 md:w-4 md:h-4" />
+                                    {new Date(quote.eventDate).toLocaleDateString('pt-PT')}
+                                  </span>
+                                )}
+                                {quote.guestCount && (
+                                  <span>{quote.guestCount} convidados</span>
+                                )}
+                              </div>
+                              {quote.message && (
+                                <p className="mt-3 text-gray-700 bg-gray-50 p-3 rounded-lg text-xs md:text-sm">
+                                  {quote.message}
+                                </p>
                               )}
                             </div>
-                            {quote.message && (
-                              <p className="mt-3 text-gray-700 bg-gray-50 p-3 rounded-lg text-sm">
-                                {quote.message}
-                              </p>
+                          </div>
+                          <div className="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-start gap-2">
+                            <span className={`px-2 py-1 md:px-3 md:py-1 rounded-full text-xs font-medium whitespace-nowrap ${
+                              quote.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                              quote.status === 'accepted' ? 'bg-green-100 text-green-800' :
+                              'bg-red-100 text-red-800'
+                            }`}>
+                              {quote.status === 'pending' ? 'Pendente' : 
+                               quote.status === 'accepted' ? 'Aceite' : 'Recusado'}
+                            </span>
+                            {quote.vendor?._id && (
+                              <span className="text-xs text-[#9CAA8E] hidden md:block">
+                                Ver fornecedor
+                              </span>
                             )}
                           </div>
                         </div>
-                        <div className="flex flex-col items-end gap-2">
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                            quote.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                            quote.status === 'accepted' ? 'bg-green-100 text-green-800' :
-                            'bg-red-100 text-red-800'
-                          }`}>
-                            {quote.status === 'pending' ? 'Pendente' : 
-                             quote.status === 'accepted' ? 'Aceite' : 'Recusado'}
-                          </span>
-                          {quote.responseMessage && (
-                            <p className="text-sm text-gray-500 text-right max-w-xs">
-                              <span className="font-medium">Resposta do fornecedor:</span> {quote.responseMessage}
-                            </p>
-                          )}
-                          {quote.vendor?._id && (
-                            <a 
-                              className="text-xs text-[#9CAA8E] hover:underline"
-                            >
-                              Ver fornecedor
-                            </a>
-                          )}
-                        </div>
-                      </div>
-                      {quote.createdAt && (
-                        <p className="text-xs text-gray-400 mt-4">
-                          Solicitado em: {new Date(quote.createdAt).toLocaleDateString('pt-PT')}
-                        </p>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
 
-          {/* Submit Button */}
-          <div className="mt-8 pt-6 border-t border-gray-100">
-            <button
-              type="submit"
-              disabled={saving}
-              className="w-full md:w-auto px-8 py-4 bg-[#9CAA8E] text-white font-medium rounded-full hover:bg-[#8A9A7E] focus:ring-4 focus:ring-[#9CAA8E]/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl"
-            >
-              {saving ? (
-                <span className="flex items-center justify-center">
-                  <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Guardando...
-                </span>
-              ) : (
-                'Guardar Alterações'
-              )}
-            </button>
-          </div>
-        </form>
+                        {/* Mobile View Details */}
+                        {quote.vendor?._id && (
+                          <div className="md:hidden mt-2 pt-2 border-t border-gray-100 flex items-center justify-between">
+                            <span className="text-xs text-[#9CAA8E]">Ver fornecedor</span>
+                            {quote.responseMessage && (
+                              <p className="text-xs text-gray-500 text-right max-w-xs">
+                                <span className="font-medium">Resposta:</span> {quote.responseMessage}
+                              </p>
+                            )}
+                          </div>
+                        )}
+
+                        {/* Desktop Response Message */}
+                        {quote.responseMessage && (
+                          <p className="hidden md:block mt-4 text-sm text-gray-500 border-t border-gray-100 pt-4">
+                            <span className="font-medium">Resposta do fornecedor:</span> {quote.responseMessage}
+                          </p>
+                        )}
+
+                        {quote.createdAt && (
+                          <p className="text-xs text-gray-400 mt-3 md:mt-4">
+                            Solicitado em: {new Date(quote.createdAt).toLocaleDateString('pt-PT')}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Submit Button - Desktop */}
+            <div className="hidden md:block mt-8 pt-6 border-t border-gray-100">
+              <button
+                type="submit"
+                disabled={saving}
+                className="w-full md:w-auto px-8 py-4 bg-[#9CAA8E] text-white font-medium rounded-full hover:bg-[#8A9A7E] focus:ring-4 focus:ring-[#9CAA8E]/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl"
+              >
+                {saving ? (
+                  <span className="flex items-center justify-center">
+                    <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Guardando...
+                  </span>
+                ) : (
+                  'Guardar Alterações'
+                )}
+              </button>
+            </div>
+
+            {/* Submit Button - Mobile Sticky Bottom */}
+            <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-10">
+              <button
+                type="submit"
+                disabled={saving}
+                className="w-full py-3 bg-[#9CAA8E] text-white font-medium rounded-xl hover:bg-[#8A9A7E] disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg"
+              >
+                {saving ? (
+                  <span className="flex items-center justify-center">
+                    <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Guardando...
+                  </span>
+                ) : (
+                  'Guardar Alterações'
+                )}
+              </button>
+            </div>
+          </form>
         )}
 
-        {/* Add Vendor Modal */}
+        {/* Add Vendor Modal - Desktop */}
         {showAddVendorModal && (
-          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="hidden md:flex fixed inset-0 bg-black/50 items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl p-6 max-w-md w-full max-h-[90vh] overflow-y-auto">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-xl font-serif font-bold text-black">Adicionar Novo Fornecedor</h3>
@@ -1474,9 +1907,7 @@ const ProfilePage = () => {
               <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
                 <div className="flex items-start gap-3">
                   <div className="flex-shrink-0 mt-0.5">
-                    <svg className="w-5 h-5 text-blue-500" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                    </svg>
+                    <AlertCircle className="w-5 h-5 text-blue-500" />
                   </div>
                   <div>
                     <p className="text-sm text-blue-800 font-medium">Aprovação Necessária</p>
@@ -1553,6 +1984,118 @@ const ProfilePage = () => {
             </div>
           </div>
         )}
+
+        {/* Add Vendor Modal - Mobile Optimized */}
+        <AnimatePresence>
+          {showAddVendorModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="md:hidden fixed inset-0 bg-black/50 z-50 flex items-end"
+              onClick={() => setShowAddVendorModal(false)}
+            >
+              <motion.div
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                exit={{ y: "100%" }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                className="bg-white rounded-t-2xl w-full max-w-md mx-auto overflow-hidden"
+                onClick={e => e.stopPropagation()}
+              >
+                <div className="p-4 border-b border-gray-200">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-black">Adicionar Fornecedor</h3>
+                    <button 
+                      onClick={() => setShowAddVendorModal(false)}
+                      className="w-10 h-10 flex items-center justify-center rounded-full active:bg-gray-100"
+                    >
+                      <X className="w-5 h-5 text-gray-500" />
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="p-4">
+                  {/* Info message about pending approval */}
+                  <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-start gap-2">
+                      <AlertCircle className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                      <div>
+                        <p className="text-xs text-blue-800 font-medium">Aprovação Necessária</p>
+                        <p className="text-xs text-blue-700 mt-1">
+                          Perfil ficará pendente de aprovação por um administrador.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <form onSubmit={handleAddVendor} className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Nome da Empresa</label>
+                      <input
+                        type="text"
+                        value={newVendorData.name}
+                        onChange={(e) => setNewVendorData({...newVendorData, name: e.target.value})}
+                        placeholder="Ex: Foto & Vídeos LM"
+                        required
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-black focus:outline-none focus:ring-2 focus:ring-[#9CAA8E] text-sm"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Categoria</label>
+                      <select
+                        value={newVendorData.category}
+                        onChange={(e) => setNewVendorData({...newVendorData, category: e.target.value})}
+                        required
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-black focus:outline-none focus:ring-2 focus:ring-[#9CAA8E] text-sm"
+                      >
+                        <option value="">Selecione uma categoria</option>
+                        {categories
+                          .filter(cat => !vendors.some(v => v.category?._id === cat._id))
+                          .map(cat => (
+                            <option key={cat._id} value={cat._id}>
+                              {cat.name}
+                            </option>
+                          ))}
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Telefone</label>
+                      <input
+                        type="tel"
+                        value={newVendorData.phone || ''}
+                        onChange={(e) => setNewVendorData({...newVendorData, phone: e.target.value})}
+                        placeholder="Ex: +258 84/85 xxx xxxx"
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-black focus:outline-none focus:ring-2 focus:ring-[#9CAA8E] text-sm"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">E-mail</label>
+                      <input
+                        type="email"
+                        value={newVendorData.email || ''}
+                        onChange={(e) => setNewVendorData({...newVendorData, email: e.target.value})}
+                        placeholder="Ex: contacto@empresa.com"
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-black focus:outline-none focus:ring-2 focus:ring-[#9CAA8E] text-sm"
+                      />
+                    </div>
+                    
+                    <button
+                      type="submit"
+                      disabled={saving}
+                      className="w-full py-3 bg-[#9CAA8E] text-white rounded-xl font-medium active:bg-[#8A9A7E] transition-colors disabled:opacity-50"
+                    >
+                      {saving ? 'Criando...' : 'Criar Fornecedor'}
+                    </button>
+                  </form>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* Vendor Profile Modal */}
         {showProfile && selectedVendorProfile && (
