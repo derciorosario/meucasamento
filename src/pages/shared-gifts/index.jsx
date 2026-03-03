@@ -113,7 +113,7 @@ const SharedGifts = () => {
         <Header />
         <div className="flex items-center justify-center py-16">
           <div className="text-center">
-            <Gift className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <Gift className="w-16 h-16 text-gray-300 mx-auto mb-4 max-md:hidden" />
             <h2 className="text-2xl font-bold text-black mb-2">Lista de Presentes</h2>
             <p className="text-gray-500">{error}</p>
           </div>
@@ -129,8 +129,8 @@ const SharedGifts = () => {
       {/* Header */}
       <div className="bg-white shadow-md p-6">
         <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
+          <div className="flex items-center max-md:justify-center justify-between">
+            <div className="flex items-center gap-4 max-md:hidden">
               <a href="/" className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors">
                 <ChevronLeft className="w-5 h-5" />
                 <span>Voltar</span>
@@ -152,7 +152,7 @@ const SharedGifts = () => {
                 </p>
               )}
             </div>
-            <div className="w-24"></div> {/* Spacer for alignment */}
+            <div className="w-24 max-md:hidden"></div> {/* Spacer for alignment */}
           </div>
         </div>
       </div>
