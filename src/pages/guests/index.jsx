@@ -5,7 +5,7 @@ import {
   Edit2, Trash2, X, MoreVertical, Filter, ChevronDown, Users, 
   Check, Clock, AlertCircle, Plus, Search, Mail, UserPlus, 
   UsersRound, Utensils, Table2, Menu, ChevronRight, Home,
-  Settings, Bell, Calendar, MessageSquare, Upload, Download, FileSpreadsheet
+  Settings, Bell, Calendar, MessageSquare, Upload, Download, FileSpreadsheet, Play
 } from 'lucide-react';
 import {
   getGuests,
@@ -28,6 +28,7 @@ import {
   deleteMenu,
   initGuestData,
   sendInvitationEmails,
+  getTutorials,
 } from "../../api/client";
 import { toast } from "react-hot-toast";
 
@@ -86,6 +87,14 @@ const groupColors = [
   "bg-green-400",
 ];
 
+// Helper function to extract YouTube video ID
+const extractYouTubeId = (url) => {
+  if (!url) return null;
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+  const match = url.match(regExp);
+  return (match && match[2].length === 11) ? match[2] : null;
+};
+
 export default function GuestsPage() {
   const [activeTab, setActiveTab] = useState("Lista Geral");
   const [mobileActiveTab, setMobileActiveTab] = useState("lista");
@@ -136,6 +145,11 @@ export default function GuestsPage() {
   const [sendingInvites, setSendingInvites] = useState(false);
   const [showInviteConfirm, setShowInviteConfirm] = useState(false);
   const [invitationMessage, setInvitationMessage] = useState('');
+
+  // Tutorial video state
+  const [guestsTutorial, setGuestsTutorial] = useState(null);
+  const [showTutorialDropdown, setShowTutorialDropdown] = useState(false);
+  const [showTutorialDesktop, setShowTutorialDesktop] = useState(false);
 
   // Form states
   const [guestForm, setGuestForm] = useState({
@@ -202,6 +216,21 @@ export default function GuestsPage() {
   const initializeAndLoadData = async () => {
     try {
       setLoading(true);
+      
+      // Fetch tutorial videos
+      try {
+        const tutorialsRes = await getTutorials();
+        if (tutorialsRes.data?.tutorialVideos?.guests) {
+          const videoId = extractYouTubeId(tutorialsRes.data.tutorialVideos.guests);
+          setGuestsTutorial({
+            url: tutorialsRes.data.tutorialVideos.guests,
+            videoId
+          });
+        }
+      } catch (tutError) {
+        console.log('No tutorial videos available');
+      }
+      
       await initGuestData();
       await Promise.all([loadGuests(), loadStats(), loadGroups(), loadTables(), loadMenus()]);
     } catch (error) {
@@ -824,6 +853,35 @@ export default function GuestsPage() {
            </div>
           </div>
 
+          {/* Tutorial Video - Mobile Only */}
+          {guestsTutorial && (
+            <div className="lg:hidden mb-4">
+              <button
+                onClick={() => setShowTutorialDropdown(!showTutorialDropdown)}
+                className="w-full flex items-center justify-between p-3 bg-primary-50 rounded-lg border border-primary-100 hover:bg-primary-100 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <Play className="w-5 h-5 text-primary-500" fill="currentColor" />
+                  <span className="text-sm font-medium text-primary-700">Ver tutorial</span>
+                  <span className="text-xs text-primary-600 ml-1">(como usar esta página)</span>
+                </div>
+                <ChevronDown className={`w-4 h-4 text-primary-500 transition-transform ${showTutorialDropdown ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {showTutorialDropdown && (
+                <div className="mt-2 rounded-lg overflow-hidden">
+                  <iframe
+                    src={`https://www.youtube.com/embed/${guestsTutorial.videoId}`}
+                    title="Tutorial Video"
+                    className="w-full aspect-video"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  ></iframe>
+                </div>
+              )}
+            </div>
+          )}
+
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Left Column */}
             <div className="lg:col-span-2">
@@ -1363,6 +1421,9 @@ export default function GuestsPage() {
             {/* Desktop Right Column - Smart Tips */}
             <div className="hidden lg:block lg:col-span-1">
               <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 sticky top-8">
+                
+               
+
                 <div className="flex items-center space-x-2 mb-6">
                   <div className="w-6 h-6 bg-primary-500 rounded-full flex items-center justify-center">
                     <span className="text-white text-sm">💡</span>
@@ -1390,6 +1451,35 @@ export default function GuestsPage() {
                     </p>
                   </div>
                 </div>
+
+                 {/* Tutorial Video - Desktop Only */}
+                {guestsTutorial && (
+                  <div className="mb-6">
+                    <button
+                      onClick={() => setShowTutorialDesktop(!showTutorialDesktop)}
+                      className="w-full flex items-center justify-between p-3 bg-primary-50 rounded-lg border border-primary-100 hover:bg-primary-100 transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Play className="w-5 h-5 text-primary-500" fill="currentColor" />
+                        <span className="text-sm font-medium text-primary-700">Ver tutorial</span>
+                        <span className="text-xs text-primary-600 ml-1">(como usar esta página)</span>
+                      </div>
+                      <ChevronDown className={`w-4 h-4 text-primary-500 transition-transform ${showTutorialDesktop ? 'rotate-180' : ''}`} />
+                    </button>
+                    
+                    {showTutorialDesktop && (
+                      <div className="mt-2 rounded-lg overflow-hidden">
+                        <iframe
+                          src={`https://www.youtube.com/embed/${guestsTutorial.videoId}`}
+                          title="Tutorial Video"
+                          className="w-full aspect-video"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        ></iframe>
+                      </div>
+                    )}
+                  </div>
+                )}
 
                 <div className="border-t border-gray-200 pt-6 mb-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Resumo</h3>
@@ -1507,8 +1597,40 @@ export default function GuestsPage() {
              <div className="sticky top-0 z-30">
 
 
+              
+
+
                {/* Mobile Search and Filter */}
             <div className="px-4 pb-3">
+
+               {/* Tutorial Video - Desktop Only */}
+                {guestsTutorial && (
+                  <div className="mb-6">
+                    <button
+                      onClick={() => setShowTutorialDesktop(!showTutorialDesktop)}
+                      className="w-full flex items-center justify-between p-3 bg-primary-50 rounded-lg border border-primary-100 hover:bg-primary-100 transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Play className="w-5 h-5 text-primary-500" fill="currentColor" />
+                        <span className="text-sm font-medium text-primary-700">Ver tutorial</span>
+                        <span className="text-xs text-primary-600 ml-1">(como usar esta página)</span>
+                      </div>
+                      <ChevronDown className={`w-4 h-4 text-primary-500 transition-transform ${showTutorialDesktop ? 'rotate-180' : ''}`} />
+                    </button>
+                    
+                    {showTutorialDesktop && (
+                      <div className="mt-2 rounded-lg overflow-hidden">
+                        <iframe
+                          src={`https://www.youtube.com/embed/${guestsTutorial.videoId}`}
+                          title="Tutorial Video"
+                          className="w-full aspect-video"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        ></iframe>
+                      </div>
+                    )}
+                  </div>
+                )}
               <div className="flex gap-2">
                 <div className="flex-1 relative">
                   <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />

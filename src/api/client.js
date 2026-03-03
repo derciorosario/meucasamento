@@ -405,6 +405,9 @@ export const updateSettings = (data) => client.put('/settings', data);
 export const changePassword = (data) => client.put('/settings/password', data);
 export const deleteAccount = (data) => client.delete('/settings/account', { data });
 
+// Public Tutorials API
+export const getTutorials = () => client.get('/settings/tutorials');
+
 // Upload profile image
 export const uploadProfileImage = (formData) => client.post('/upload/profile', formData, {
   headers: { 'Content-Type': 'multipart/form-data' }
@@ -504,6 +507,12 @@ export const getAdminGalleries = (params) => client.get('/admin/galleries', { pa
 
 // Delete gallery
 export const deleteAdminGallery = (id) => client.delete(`/admin/galleries/${id}`);
+
+// Get admin settings
+export const getAdminSettings = () => client.get('/admin/settings');
+
+// Update admin settings
+export const updateAdminSettings = (data) => client.put('/admin/settings', data);
 
 // ==================== FAVORITES API ====================
 

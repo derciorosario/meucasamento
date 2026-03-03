@@ -18,6 +18,8 @@ const SharedGallery = () => {
   const [loading, setLoading] = useState(true);
   const [lightboxIndex, setLightboxIndex] = useState(-1);
   const [error, setError] = useState(null);
+  const [downloading, setDownloading] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(0);
 
   // Keyboard navigation
   const handleKeyDown = useCallback((e) => {
@@ -61,11 +63,45 @@ const SharedGallery = () => {
     }
   };
 
-  const downloadPhoto = (photoUrl) => {
-    const link = document.createElement('a');
-    link.href = `${API_URL}${photoUrl}`;
-    link.download = photoUrl.split('/').pop();
-    link.click();
+  const downloadPhoto = (photoUrl, fileName) => {
+    const url = `${API_URL}/download/${fileName}`;
+    
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true);
+    xhr.responseType = 'blob';
+    
+    xhr.onprogress = (event) => {
+      if (event.lengthComputable) {
+        const percentComplete = Math.round((event.loaded * 100) / event.total);
+        setDownloadProgress(percentComplete);
+      }
+    };
+    
+    xhr.onload = function() {
+      setDownloading(false);
+      setDownloadProgress(0);
+      
+      if (this.status === 200) {
+        const blob = this.response;
+        const link = document.createElement('a');
+        link.href = window.URL.createObjectURL(blob);
+        link.download = fileName;
+        link.click();
+        window.URL.revokeObjectURL(link.href);
+      } else {
+        toast.error('Erro ao descargar imagem');
+      }
+    };
+    
+    xhr.onerror = function() {
+      setDownloading(false);
+      setDownloadProgress(0);
+      toast.error('Erro ao descargar imagem');
+    };
+    
+    setDownloading(true);
+    setDownloadProgress(0);
+    xhr.send();
   };
 
   if (loading) {
@@ -94,6 +130,26 @@ const SharedGallery = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
+
+      {/* Download Progress */}
+      {downloading && (
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-white rounded-full shadow-lg border border-gray-200 px-6 py-3">
+          <div className="flex items-center gap-4">
+            <span className="text-sm font-medium text-gray-700">
+              A descargar...
+            </span>
+            <div className="w-32 bg-gray-200 rounded-full h-2">
+              <div 
+                className="bg-[#9CAA8E] h-2 rounded-full transition-all duration-300"
+                style={{ width: `${downloadProgress}%` }}
+              ></div>
+            </div>
+            <span className="text-sm font-medium text-[#9CAA8E] w-10">
+              {downloadProgress}%
+            </span>
+          </div>
+        </div>
+      )}
 
       {/* Album Header */}
       <div className="bg-white shadow-md p-6">
@@ -141,7 +197,8 @@ const SharedGallery = () => {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          downloadPhoto(photo.url);
+                          const fileName = photo.url.split('/').pop();
+                          downloadPhoto(photo.url, fileName);
                         }}
                         className="p-2 bg-white text-gray-700 rounded-full hover:bg-gray-100"
                       >
@@ -251,7 +308,8 @@ const SharedGallery = () => {
               <button
                 onClick={(e) => {
                   e.stopPropagation();
-                  downloadPhoto(album.photos[lightboxIndex].url);
+                  const fileName = album.photos[lightboxIndex].url.split('/').pop();
+                  downloadPhoto(album.photos[lightboxIndex].url, fileName);
                 }}
                 className="absolute bottom-4 right-4 p-3 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white rounded-full z-10"
               >

@@ -1,8 +1,16 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import DefaultLayout from '../../layout/DefaultLayout';
-import { ChevronDown, ChevronRight, Check, Heart, Loader2, Plus, Trash2, Edit2, X, MoreVertical, Filter } from 'lucide-react';
-import { getCategories, updateCategory, deleteCategory, createCategory, initDefaultCategories, getBudget, updateBudget } from '../../api/client';
+import { ChevronDown, ChevronRight, Check, Heart, Loader2, Plus, Trash2, Edit2, X, MoreVertical, Filter, Play } from 'lucide-react';
+import { getCategories, updateCategory, deleteCategory, createCategory, initDefaultCategories, getBudget, updateBudget, getTutorials } from '../../api/client';
 import {toast} from '../../lib/toast';
+
+// Helper function to extract YouTube video ID
+const extractYouTubeId = (url) => {
+  if (!url) return null;
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+  const match = url.match(regExp);
+  return (match && match[2].length === 11) ? match[2] : null;
+};
 
 const statusLabels = {
   'not-started': 'Não iniciado',
@@ -28,11 +36,30 @@ const WeddingBudgetManager = () => {
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [activeTab, setActiveTab] = useState('categories'); // 'categories' or 'summary'
 
+  // Tutorial video state
+  const [budgetTutorial, setBudgetTutorial] = useState(null);
+  const [showTutorialDropdown, setShowTutorialDropdown] = useState(false);
+  const [showTutorialDesktop, setShowTutorialDesktop] = useState(false);
+
   // Fetch budget and categories from API
   const fetchData = useCallback(async () => {
     try {
       setLoading(true);
       
+      // Fetch tutorial videos
+      try {
+        const tutorialsRes = await getTutorials();
+        if (tutorialsRes.data?.tutorialVideos?.budget) {
+          const videoId = extractYouTubeId(tutorialsRes.data.tutorialVideos.budget);
+          setBudgetTutorial({
+            url: tutorialsRes.data.tutorialVideos.budget,
+            videoId
+          });
+        }
+      } catch (tutError) {
+        console.log('No tutorial videos available');
+      }
+
       // Fetch budget
       const budgetResponse = await getBudget();
       if (budgetResponse.data.success) {
@@ -339,6 +366,8 @@ const WeddingBudgetManager = () => {
           {/* Left Column - Budget Details */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 mb-6">
+             
+
               {/* Budget Header */}
               <div className="mb-6">
                 <div className="flex flex-col lg:flex-row items-start lg:items-center gap-3 justify-between mb-4">
@@ -396,7 +425,7 @@ const WeddingBudgetManager = () => {
                     Total previsto: <span className="font-semibold text-gray-900">{formatCurrency(totalBudgeted)}</span>
                   </div>
                   <div className="text-sm text-gray-600">
-                    Restam <span className="font-semibold text-gray-900">{formatCurrency(remaining)}</span>
+                    Remanescente <span className="font-semibold text-gray-900">{formatCurrency(remaining)}</span>
                   </div>
                 </div>
 
@@ -408,6 +437,35 @@ const WeddingBudgetManager = () => {
                   </span>
                 </div>
               </div>
+
+               {/* Tutorial Video - Mobile Only */}
+              {budgetTutorial && (
+                <div className="lg:hidden mb-4">
+                  <button
+                    onClick={() => setShowTutorialDropdown(!showTutorialDropdown)}
+                    className="w-full flex items-center justify-between p-3 bg-primary-50 rounded-lg border border-primary-100 hover:bg-primary-100 transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Play className="w-5 h-5 text-primary-500" fill="currentColor" />
+                      <span className="text-sm font-medium text-primary-700">Ver tutorial</span>
+                      <span className="text-xs text-primary-600 ml-1">(como usar esta página)</span>
+                    </div>
+                    <ChevronDown className={`w-4 h-4 text-primary-500 transition-transform ${showTutorialDropdown ? 'rotate-180' : ''}`} />
+                  </button>
+                  
+                  {showTutorialDropdown && (
+                    <div className="mt-2 rounded-lg overflow-hidden">
+                      <iframe
+                        src={`https://www.youtube.com/embed/${budgetTutorial.videoId}`}
+                        title="Tutorial Video"
+                        className="w-full aspect-video"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      ></iframe>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Categories List - Only show when active on mobile */}
               {(activeTab === 'categories' || window.innerWidth >= 1024) && (
@@ -827,6 +885,8 @@ const WeddingBudgetManager = () => {
               </div>
 
               <div className="space-y-4 mb-6">
+               
+
                 <div className="flex items-start space-x-3">
                   <div className="w-1.5 h-1.5 bg-primary-500 rounded-full mt-2 flex-shrink-0"></div>
                   <p className="text-sm text-gray-700">
@@ -845,6 +905,35 @@ const WeddingBudgetManager = () => {
                     Reserve <span className="font-semibold text-gray-900">10-15%</span> do orçamento para imprevistos
                   </p>
                 </div>
+
+                 {/* Tutorial Video - Desktop Only */}
+                {budgetTutorial && (
+                  <div className="mb-4">
+                    <button
+                      onClick={() => setShowTutorialDesktop(!showTutorialDesktop)}
+                      className="w-full flex items-center justify-between p-3 bg-primary-50 rounded-lg border border-primary-100 hover:bg-primary-100 transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Play className="w-5 h-5 text-primary-500" fill="currentColor" />
+                        <span className="text-sm font-medium text-primary-700">Ver tutorial</span>
+                        <span className="text-xs text-primary-600 ml-1">(como usar esta página)</span>
+                      </div>
+                      <ChevronDown className={`w-4 h-4 text-primary-500 transition-transform ${showTutorialDesktop ? 'rotate-180' : ''}`} />
+                    </button>
+                    
+                    {showTutorialDesktop && (
+                      <div className="mt-2 rounded-lg overflow-hidden">
+                        <iframe
+                          src={`https://www.youtube.com/embed/${budgetTutorial.videoId}`}
+                          title="Tutorial Video"
+                          className="w-full aspect-video"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        ></iframe>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
 
               <div className="border-t border-gray-200 pt-6 mb-6 hidden">
@@ -859,7 +948,7 @@ const WeddingBudgetManager = () => {
                     <span className="font-semibold text-gray-900">{formatCurrency(totalActual)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Restam:</span>
+                    <span className="text-gray-600">Remanescente:</span>
                     <span className="font-semibold text-green-600">{formatCurrency(remaining)}</span>
                   </div>
                   <div className="flex justify-between pt-2 border-t border-gray-100">
@@ -962,7 +1051,7 @@ const WeddingBudgetManager = () => {
                       <span>Orçamento: {formatCurrency(totalBudget)}</span>
                     </div>
                     <div className={`text-xs font-medium mt-1 ${totalBudget - totalActual > 0 ? 'text-green-600' : totalBudget - totalActual < 0 ? 'text-red-600' : 'text-gray-500'}`}>
-                      Restante: {totalBudget - totalActual >= 0 ? '' : '+'}{formatCurrency(Math.abs(totalBudget - totalActual))}
+                      Remanescente: {totalBudget - totalActual >= 0 ? '' : '+'}{formatCurrency(Math.abs(totalBudget - totalActual))}
                     </div>
                   </div>
                 </div>

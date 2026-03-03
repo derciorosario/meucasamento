@@ -4,10 +4,11 @@ import {
   Heart, Bell, Calendar, MapPin, Check, Users, Euro, 
   ChevronRight, Camera, UtensilsCrossed, Music, Flower2, 
   User, LogOut, Settings, X, ChevronDown, Plus, Loader2,
-  TrendingUp, MessageSquare, Star, Eye, Briefcase, DollarSign
+  TrendingUp, MessageSquare, Star, Eye, Briefcase, DollarSign,
+  Play
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { API_URL, getTasks, getGuests, getGuestStats, getBudget, getCategories, updateBudget, getVendorQuoteRequests, getVendors, toggleTaskCompletion, getMyQuoteRequests, getVendor } from '../../api/client';
+import { API_URL, getTasks, getGuests, getGuestStats, getBudget, getCategories, updateBudget, getVendorQuoteRequests, getVendors, toggleTaskCompletion, getMyQuoteRequests, getVendor, getTutorials } from '../../api/client';
 import VendorProfileModal from '../../components/VendorProfileModal';
 import WelcomeDialog from '../../components/WelcomeDialog';
 import { toast } from 'react-hot-toast';
@@ -29,6 +30,10 @@ export default function WeddingDashboard() {
   const [quoteRequests, setQuoteRequests] = useState([]);
   const [myQuoteRequests, setMyQuoteRequests] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  // Tutorial videos state
+  const [tutorials, setTutorials] = useState([]);
+  const [playingTutorial, setPlayingTutorial] = useState(null);
   
   // Vendor Profile Modal states
   const [showProfile, setShowProfile] = useState(false);
@@ -59,6 +64,19 @@ export default function WeddingDashboard() {
       
       setLoading(true);
       try {
+        // Fetch tutorials (public endpoint)
+        const tutorialsRes = await getTutorials();
+        if (tutorialsRes.data?.tutorialVideos) {
+          const videos = Object.entries(tutorialsRes.data.tutorialVideos)
+            .filter(([_, url]) => url)
+            .map(([key, url]) => ({
+              key,
+              url,
+              videoId: extractYouTubeId(url)
+            }));
+          setTutorials(videos);
+        }
+        
         if (isCouple) {
           // Fetch couple data
           const [tasksRes, guestsRes, budgetRes, categoriesRes, myQuotesRes] = await Promise.allSettled([
@@ -263,6 +281,14 @@ export default function WeddingDashboard() {
     }
     // Fallback
     return quote.service || 'Serviço';
+  };
+
+  // Extract YouTube video ID
+  const extractYouTubeId = (url) => {
+    if (!url) return null;
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
   };
 
   // Price range helpers
@@ -758,7 +784,7 @@ export default function WeddingDashboard() {
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-2">
                     <div className="w-8 h-8 bg-amber-100 rounded-lg flex items-center justify-center">
-                      <Euro className="w-4 h-4 text-amber-600" />
+                      <DollarSign className="w-4 h-4 text-amber-600" />
                     </div>
                     <h2 className="text-lg font-medium text-gray-800">
                       Meu Orçamento
@@ -776,7 +802,7 @@ export default function WeddingDashboard() {
                     <span className="text-base text-amber-600">{formatCurrency(budget.spent)}</span>
                   </div>
                   <div className="flex justify-between items-center pt-2 border-t border-gray-100">
-                    <span className="text-sm font-medium text-gray-600">Restante</span>
+                    <span className="text-sm font-medium text-gray-600">Remanescente</span>
                     <span className="text-lg font-medium text-green-600">{formatCurrency(budget.remaining)}</span>
                   </div>
                 </div>
@@ -803,6 +829,82 @@ export default function WeddingDashboard() {
                 </Link>
               </div>
             </div>
+
+            {/* Tutorial Videos Section - Only show if there are videos */}
+            {tutorials.length > 0 && (
+              <div className="mt-6">
+                <div className="bg-gradient-to-r from-primary-500 to-primary-600 rounded-xl p-6 text-white mb-4">
+                  <div className="flex items-center gap-3 mb-2">
+                    <Play className="w-6 h-6" fill="currentColor" />
+                    <h2 className="text-lg font-medium">Tutoriais</h2>
+                  </div>
+                  <p className="text-primary-100 text-sm">
+                    Aprenda a usar cada secção do seu painel de casamento. Clique num vídeo para começar a assistir.
+                  </p>
+                </div>
+                
+                <div className="flex gap-4 overflow-x-auto pb-2 px-1 md:overflow-visible md:px-0 md:grid md:grid-cols-3 md:gap-4 lg:grid-cols-5">
+                  {tutorials.map((tutorial) => (
+                    <button
+                      key={tutorial.key}
+                      onClick={() => setPlayingTutorial(tutorial)}
+                      className="group flex-shrink-0 w-40 md:w-auto relative bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all text-left"
+                    >
+                      <div className="relative aspect-video bg-gray-100">
+                        <img
+                          src={`https://img.youtube.com/vi/${tutorial.videoId}/mqdefault.jpg`}
+                          alt={tutorial.key}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors flex items-center justify-center">
+                          <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Play className="w-6 h-6 text-primary-500 ml-1" fill="currentColor" />
+                          </div>
+                        </div>
+                      </div>
+                      <div className="p-3">
+                        <div className="text-sm font-medium text-gray-800 capitalize">
+                          {tutorial.key === 'guests' && 'Convidados'}
+                          {tutorial.key === 'checklist' && 'Agenda'}
+                          {tutorial.key === 'budget' && 'Orçamento'}
+                          {tutorial.key === 'vendors' && 'Fornecedores'}
+                          {tutorial.key === 'gallery' && 'Galeria'}
+                        </div>
+                        <div className="text-xs text-gray-500 mt-1">Tutorial</div>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Video Player Modal */}
+            {playingTutorial && (
+              <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-75 p-4" onClick={() => setPlayingTutorial(null)}>
+                <div className="bg-white rounded-xl overflow-hidden max-w-4xl w-full" onClick={e => e.stopPropagation()}>
+                  <div className="flex items-center justify-between px-4 py-3 bg-gray-100">
+                    <h3 className="text-lg font-semibold text-gray-900 capitalize">
+                      Tutorial: {playingTutorial.key === 'guests' ? 'Convidados' : playingTutorial.key === 'checklist' ? 'Agenda' : playingTutorial.key === 'budget' ? 'Orçamento' : playingTutorial.key === 'vendors' ? 'Fornecedores' : playingTutorial.key === 'gallery' ? 'Galeria' : playingTutorial.key}
+                    </h3>
+                    <button
+                      onClick={() => setPlayingTutorial(null)}
+                      className="p-1 hover:bg-gray-200 rounded-full transition-colors"
+                    >
+                      <X className="w-6 h-6 text-gray-600" />
+                    </button>
+                  </div>
+                  <div className="aspect-video">
+                    <iframe
+                      src={`https://www.youtube.com/embed/${playingTutorial.videoId}?autoplay=1`}
+                      title="YouTube video player"
+                      className="w-full h-full"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    ></iframe>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Second Row */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">

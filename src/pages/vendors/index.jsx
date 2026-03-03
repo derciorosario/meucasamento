@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import DefaultLayout from '../../layout/DefaultLayout';
 import { 
-  Heart, Star, ChevronLeft, ChevronRight, MapPin, Phone, Mail, Globe, 
+  Heart, Star, ChevronLeft, ChevronRight, ChevronDown, MapPin, Phone, Mail, Globe, 
   Send, X, User, Check, Loader2, Filter, Search, SlidersHorizontal,
   Award, Calendar, Users, MessageCircle, TrendingUp, Sparkles,
-  Camera, Music, Utensils, Flower2, Gem, Wine, Cake, Gift
+  Camera, Music, Utensils, Flower2, Gem, Wine, Cake, Gift, Play
 } from 'lucide-react';
 import {
   getVendorCategories,
@@ -18,12 +18,14 @@ import {
   addFavorite,
   removeFavorite,
   getVendorsByIds,
+  getTutorials,
 } from '../../api/client';
 import { toast } from 'react-hot-toast';
 import { API_URL } from '../../api/client';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import VendorProfileModal from '../../components/VendorProfileModal';
+import { useNavigate } from 'react-router-dom';
 
 // Category icons mapping
 const categoryIcons = {
@@ -44,6 +46,7 @@ const VendorsPage = () => {
   const [vendors, setVendors] = useState([]);
   const [locations, setLocations] = useState({ cities: [], regions: [] });
   const [pagination, setPagination] = useState({ page: 1, pages: 1, total: 0 });
+  const navigate=useNavigate()
 
   const {user} = useAuth()
   
@@ -88,6 +91,20 @@ const VendorsPage = () => {
   const [isSubmittingQuote, setIsSubmittingQuote] = useState(false);
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
 
+  const [showVendorTutorial,setShowVendorTutorial]=useState(false)
+
+  // Tutorial video state
+  const [vendorTutorial, setVendorTutorial] = useState(null);
+  const [playingTutorial, setPlayingTutorial] = useState(null);
+
+  // Helper function to extract YouTube video ID
+  const extractYouTubeId = (url) => {
+    if (!url) return null;
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+  };
+
   useEffect(() => {
     loadInitialData();
   }, []);
@@ -130,6 +147,20 @@ const VendorsPage = () => {
 
   const loadInitialData = async () => {
     try {
+      // Fetch tutorial videos
+      try {
+        const tutorialsRes = await getTutorials();
+        if (tutorialsRes.data?.tutorialVideos?.vendors) {
+          const videoId = extractYouTubeId(tutorialsRes.data.tutorialVideos.vendors);
+          setVendorTutorial({
+            url: tutorialsRes.data.tutorialVideos.vendors,
+            videoId
+          });
+        }
+      } catch (tutError) {
+        console.log('No tutorial videos available');
+      }
+
       // Try to seed vendor data first (for development)
       try {
         await seedVendorData();
@@ -270,6 +301,10 @@ const VendorsPage = () => {
   };
 
   const handleViewProfile = async (vendor) => {
+
+    navigate('/vendor/'+vendor._id)
+
+    return
     try {
       const response = await getVendor(vendor._id);
       setSelectedVendor(response.data);
@@ -468,6 +503,27 @@ const VendorsPage = () => {
                   <span className="text-sm font-medium">Ver favoritos</span>
                 </button>
               )}
+
+                          {/* Tutorial Video - Mobile Only */}
+            {/* Tutorial Video - Desktop Only - Opens Dialog */}
+            {vendorTutorial && (
+              <div className="max-lg:hidden mb-4">
+                <button
+                  onClick={() => setPlayingTutorial(vendorTutorial)}
+                  className="w-full flex items-center justify-between p-3 bg-primary-50 rounded-lg border border-primary-100 hover:bg-primary-100 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <Play className="w-5 h-5 text-primary-500" fill="currentColor" />
+                    <span className="text-sm font-medium text-primary-700">Ver tutorial</span>
+                    <span className="text-xs text-primary-600 ml-1">(como usar esta página)</span>
+                  </div>
+                  <ChevronDown className={`w-4 h-4 text-primary-500 transition-transform ${showVendorTutorial ? 'rotate-180' : ''}`} />
+                </button>
+                
+               
+              </div>
+            )}
+            
             </div>
           </div>
         </div>
@@ -742,6 +798,35 @@ const VendorsPage = () => {
               </div>
             </button>
 
+            {/* Tutorial Video - Mobile Only */}
+            {vendorTutorial && (
+              <div className="lg:hidden mb-4">
+                <button
+                  onClick={() => setShowVendorTutorial(true)}
+                  className="w-full flex items-center justify-between p-3 bg-primary-50 rounded-lg border border-primary-100 hover:bg-primary-100 transition-colors"
+                >
+                  <div className="flex items-center gap-2">
+                    <Play className="w-5 h-5 text-primary-500" fill="currentColor" />
+                    <span className="text-sm font-medium text-primary-700">Ver tutorial</span>
+                    <span className="text-xs text-primary-600 ml-1">(como usar esta página)</span>
+                  </div>
+                  <ChevronDown className={`w-4 h-4 text-primary-500 transition-transform ${showVendorTutorial ? 'rotate-180' : ''}`} />
+                </button>
+                
+                {showVendorTutorial && (
+                  <div className="mt-2 rounded-lg overflow-hidden">
+                    <iframe
+                      src={`https://www.youtube.com/embed/${vendorTutorial.videoId}`}
+                      title="Tutorial Video"
+                      className="w-full aspect-video"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    ></iframe>
+                  </div>
+                )}
+              </div>
+            )}
+
             {/* Results Header */}
             <div className="flex items-center justify-between mb-6">
               <div>
@@ -890,7 +975,7 @@ const VendorsPage = () => {
                           </span>
                         </>
                       )}
-                      {vendor.priceRange && (
+                      {(vendor.priceRange && false) && (
                         <>
                           <span>•</span>
                           <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getPriceRangeColor(vendor.priceRange)}`}>
@@ -915,7 +1000,7 @@ const VendorsPage = () => {
                       </div>
                     </div>
                     
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 hidden">
                       <button 
                         onClick={() => handleViewProfile(vendor)}
                         className="flex-1 bg-gradient-to-r from-primary-600 to-primary-500 hover:from-primary-700 hover:to-primary-600 text-white py-2 rounded-xl text-xs font-medium transition-all duration-300 shadow-md hover:shadow-lg"
@@ -1439,6 +1524,40 @@ const VendorsPage = () => {
           </>
         )}
       </AnimatePresence>
+
+      {/* Video Player Modal - Desktop Only */}
+      {vendorTutorial && playingTutorial && (
+        <div 
+          className="fixed inset-0 z-50 hidden lg:flex items-center justify-center bg-black bg-opacity-75 p-4"
+          onClick={() => setPlayingTutorial(null)}
+        >
+          <div 
+            className="bg-white rounded-2xl overflow-hidden max-w-3xl w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between p-4 border-b border-gray-200">
+              <h3 className="text-lg font-semibold text-gray-900">
+                Tutorial: Fornecedores
+              </h3>
+              <button
+                onClick={() => setPlayingTutorial(null)}
+                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+            <div className="aspect-video">
+              <iframe
+                src={`https://www.youtube.com/embed/${playingTutorial.videoId}?autoplay=1`}
+                title="YouTube video player"
+                className="w-full h-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                allowFullScreen
+              ></iframe>
+            </div>
+          </div>
+        </div>
+      )}
     </DefaultLayout>
   );
 };

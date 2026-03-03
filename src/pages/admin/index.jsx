@@ -24,7 +24,8 @@ import {
   ArrowTrendingUpIcon,
   UserPlusIcon,
   HeartIcon,
-  StarIcon
+  StarIcon,
+  Cog6ToothIcon
 } from '@heroicons/react/24/outline';
 import {
   UserGroupIcon as UserGroupIconSolid,
@@ -415,6 +416,23 @@ const AdminDashboard = () => {
                 <p className="text-sm text-gray-500 mb-4">View and manage photo galleries</p>
                 <div className="flex items-center text-pink-600 text-sm font-medium">
                   Go to Galleries <ChevronRightIcon className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                </div>
+              </div>
+            </Link>
+
+            <Link
+              to="/admin/settings"
+              className="group relative bg-white rounded-xl shadow-sm border border-gray-100 p-6 hover:shadow-lg transition-all overflow-hidden"
+            >
+              <div className="absolute top-0 right-0 w-32 h-32 bg-yellow-50 rounded-full transform translate-x-16 -translate-y-16 group-hover:scale-150 transition-transform"></div>
+              <div className="relative">
+                <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center mb-4">
+                  <Cog6ToothIcon className="w-6 h-6 text-yellow-600" />
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-1">Settings</h3>
+                <p className="text-sm text-gray-500 mb-4">Configure tutorial videos and site settings</p>
+                <div className="flex items-center text-yellow-600 text-sm font-medium">
+                  Go to Settings <ChevronRightIcon className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
                 </div>
               </div>
             </Link>

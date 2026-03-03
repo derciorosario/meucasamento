@@ -2,8 +2,8 @@ import React, { useState, useEffect, useCallback } from 'react';
 import DefaultLayout from '../../layout/DefaultLayout';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
-import { ChevronDown, Check, Heart, Lightbulb, Loader2, Edit2, Trash2, X, Plus, Filter, ChevronLeft, ChevronRight, MoreVertical, Calendar } from 'lucide-react';
-import { getTasksByTimeline, getTasksByCategory, updateTask, createTask, deleteTask, toggleTaskCompletion, initDefaultTasks } from '../../api/client';
+import { ChevronDown, Check, Heart, Lightbulb, Loader2, Edit2, Trash2, X, Plus, Filter, ChevronLeft, ChevronRight, MoreVertical, Calendar, Play } from 'lucide-react';
+import { getTasksByTimeline, getTasksByCategory, updateTask, createTask, deleteTask, toggleTaskCompletion, initDefaultTasks, getTutorials } from '../../api/client';
 import { toast } from '../../lib/toast';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -66,6 +66,38 @@ const getCurrentWeekBounds = () => {
   return { monday, sunday };
 };
 
+// Helper function to determine timeline period based on due date
+const getTimelinePeriodFromDate = (date) => {
+  if (!date) return '12_months_before';
+  
+  const now = new Date();
+  const targetDate = new Date(date);
+  const diffTime = targetDate - now;
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  if (diffDays < 0) {
+    // Date is in the past
+    if (diffDays >= -14) return 'after_wedding';
+    return 'after_wedding';
+  }
+  
+  if (diffDays <= 14) return 'wedding_day';
+  if (diffDays <= 30) return '2_weeks_before';
+  if (diffDays <= 60) return '1_month_before';
+  if (diffDays <= 150) return '3_months_before';
+  if (diffDays <= 240) return '6_months_before';
+  if (diffDays <= 365) return '9_months_before';
+  return '12_months_before';
+};
+
+// Helper function to extract YouTube video ID
+const extractYouTubeId = (url) => {
+  if (!url) return null;
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+  const match = url.match(regExp);
+  return (match && match[2].length === 11) ? match[2] : null;
+};
+
 const ChecklistPage = () => {
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -99,6 +131,9 @@ const ChecklistPage = () => {
     dueDate: null,
   });
 
+  // Date type selection: 'period' or 'dueDate'
+  const [dateType, setDateType] = useState('dueDate');
+
   // Edit task state
   const [editingTask, setEditingTask] = useState(null);
   const [editForm, setEditForm] = useState({});
@@ -116,6 +151,11 @@ const ChecklistPage = () => {
   // Mobile touch states
   const [touchStart, setTouchStart] = useState(null);
   const [touchEnd, setTouchEnd] = useState(null);
+
+  // Tutorial video state
+  const [checklistTutorial, setChecklistTutorial] = useState(null);
+  const [showTutorialDropdown, setShowTutorialDropdown] = useState(false);
+  const [showTutorialDesktop, setShowTutorialDesktop] = useState(false);
 
   // Minimum swipe distance
   const minSwipeDistance = 50;
@@ -147,6 +187,20 @@ const ChecklistPage = () => {
   const fetchTasks = useCallback(async () => {
     try {
       setLoading(true);
+      
+      // Fetch tutorial videos
+      try {
+        const tutorialsRes = await getTutorials();
+        if (tutorialsRes.data?.tutorialVideos?.checklist) {
+          const videoId = extractYouTubeId(tutorialsRes.data.tutorialVideos.checklist);
+          setChecklistTutorial({
+            url: tutorialsRes.data.tutorialVideos.checklist,
+            videoId
+          });
+        }
+      } catch (tutError) {
+        console.log('No tutorial videos available');
+      }
       
       // Try to fetch tasks by timeline
       try {
@@ -465,6 +519,7 @@ const ChecklistPage = () => {
         priority: 'medium',
         dueDate: null,
       });
+      setDateType('period');
     } catch (error) {
       console.error('Error creating task:', error);
       toast.error('Erro ao criar tarefa');
@@ -616,6 +671,35 @@ const ChecklistPage = () => {
                   </button>
                 </div>
               </div>
+
+              {/* Tutorial Video - Mobile Only (left column) */}
+              {checklistTutorial && (
+                <div className="mb-4 lg:hidden">
+                  <button
+                    onClick={() => setShowTutorialDropdown(!showTutorialDropdown)}
+                    className="w-full flex items-center justify-between p-3 bg-primary-50 rounded-lg border border-primary-100 hover:bg-primary-100 transition-colors"
+                  >
+                    <div className="flex items-center gap-2">
+                      <Play className="w-5 h-5 text-primary-500" fill="currentColor" />
+                      <span className="text-sm font-medium text-primary-700">Ver tutorial</span>
+                      <span className="text-xs text-primary-600 ml-1">(como usar esta página)</span>
+                    </div>
+                    <ChevronDown className={`w-4 h-4 text-primary-500 transition-transform ${showTutorialDropdown ? 'rotate-180' : ''}`} />
+                  </button>
+                  
+                  {showTutorialDropdown && (
+                    <div className="mt-2 rounded-lg overflow-hidden">
+                      <iframe
+                        src={`https://www.youtube.com/embed/${checklistTutorial.videoId}`}
+                        title="Tutorial Video"
+                        className="w-full aspect-video"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      ></iframe>
+                    </div>
+                  )}
+                </div>
+              )}
 
               {/* Mobile Filter Toggle */}
               <div className="lg:hidden mb-4">
@@ -1636,7 +1720,36 @@ const ChecklistPage = () => {
                 </div>
               </div>
 
-              <div className="border-t border-gray-200 pt-6 mb-6">
+              <div className="border-t border-gray-200 pt-6">
+                {/* Tutorial Video - Desktop Only (right column) */}
+                {checklistTutorial && (
+                  <div className="mb-6">
+                    <button
+                      onClick={() => setShowTutorialDesktop(!showTutorialDesktop)}
+                      className="w-full flex items-center justify-between p-3 bg-primary-50 rounded-lg border border-primary-100 hover:bg-primary-100 transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <Play className="w-5 h-5 text-primary-500" fill="currentColor" />
+                        <span className="text-sm font-medium text-primary-700">Ver tutorial</span>
+                        <span className="text-xs text-primary-600 ml-1">(como usar esta página)</span>
+                      </div>
+                      <ChevronDown className={`w-4 h-4 text-primary-500 transition-transform ${showTutorialDesktop ? 'rotate-180' : ''}`} />
+                    </button>
+                    
+                    {showTutorialDesktop && (
+                      <div className="mt-2 rounded-lg overflow-hidden">
+                        <iframe
+                          src={`https://www.youtube.com/embed/${checklistTutorial.videoId}`}
+                          title="Tutorial Video"
+                          className="w-full aspect-video"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        ></iframe>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Resumo</h3>
                 <div className="space-y-3">
                   <div className="flex justify-between">
@@ -1712,32 +1825,75 @@ const ChecklistPage = () => {
                   </select>
                 </div>
                 <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Período</label>
-                  <select
-                    value={newTask.timelinePeriod}
-                    onChange={(e) => setNewTask({...newTask, timelinePeriod: e.target.value})}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
-                  >
-                    {Object.entries(timelineLabels).map(([key, label]) => (
-                      <option key={key} value={key}>{label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="mb-4">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Data de vencimento</label>
-                  <div className="relative w-full">
-                    <DatePicker
-                      selected={newTask.dueDate}
-                      onChange={(date) => setNewTask({...newTask, dueDate: date})}
-                      minDate={new Date()}
-                      dateFormat="dd/MM/yyyy"
-                      placeholderText="Selecione uma data"
-                      popperPlacement="bottom-start"
-                      showPopperArrow={false}
-                    />
-                    <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Tipo de data</label>
+                  <div className="flex gap-2">
+
+                     <button
+                      type="button"
+                      onClick={() => {
+                        setDateType('dueDate');
+                        setNewTask({...newTask, timelinePeriod: '12_months_before'});
+                      }}
+                      className={`flex-1 py-2.5 px-3 rounded-lg font-medium transition-colors text-sm ${
+                        dateType === 'dueDate'
+                          ? 'bg-primary-500 text-white'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      Data de vencimento
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setDateType('period');
+                        setNewTask({...newTask, dueDate: null});
+                      }}
+                      className={`flex-1 py-2.5 px-3 rounded-lg font-medium transition-colors text-sm ${
+                        dateType === 'period'
+                          ? 'bg-primary-500 text-white'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      Período
+                    </button>
+                   
                   </div>
                 </div>
+                
+                {dateType === 'period' ? (
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Período</label>
+                    <select
+                      value={newTask.timelinePeriod}
+                      onChange={(e) => setNewTask({...newTask, timelinePeriod: e.target.value})}
+                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    >
+                      {Object.entries(timelineLabels).map(([key, label]) => (
+                        <option key={key} value={key}>{label}</option>
+                      ))}
+                    </select>
+                  </div>
+                ) : (
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Data de vencimento</label>
+                    <div className="relative w-full">
+                      <DatePicker
+                        selected={newTask.dueDate}
+                        onChange={(date) => {
+                          const period = getTimelinePeriodFromDate(date);
+                          setNewTask({...newTask, dueDate: date, timelinePeriod: period});
+                        }}
+                        minDate={new Date()}
+                        dateFormat="dd/MM/yyyy"
+                        placeholderText="Selecione uma data"
+                        popperPlacement="bottom-start"
+                        showPopperArrow={false}
+                      />
+                      <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                    </div>
+                  </div>
+                )}
                 <div className="mb-6">
                   <label className="block text-sm font-medium text-gray-700 mb-1">Prioridade</label>
                   <select

@@ -12,7 +12,8 @@ import {
   Calendar,
   Loader2,
   Grid,
-  Layers
+  Layers,
+  Download
 } from 'lucide-react';
 import DefaultLayout from '../../layout/DefaultLayout';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -27,6 +28,8 @@ const PublicGallery = () => {
   const [lightboxIndex, setLightboxIndex] = useState(0);
   const [galleryIndexes, setGalleryIndexes] = useState({}); // Track index per gallery
   const [viewMode, setViewMode] = useState('slides'); // 'slides' or 'grid'
+  const [downloading, setDownloading] = useState(false);
+  const [downloadProgress, setDownloadProgress] = useState(0);
 
   useEffect(() => {
     fetchGalleries();
@@ -88,6 +91,47 @@ const PublicGallery = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
+  const downloadPhoto = (photoUrl, fileName) => {
+    const url = `${API_URL}/download/${fileName}`;
+    
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', url, true);
+    xhr.responseType = 'blob';
+    
+    xhr.onprogress = (event) => {
+      if (event.lengthComputable) {
+        const percentComplete = Math.round((event.loaded * 100) / event.total);
+        setDownloadProgress(percentComplete);
+      }
+    };
+    
+    xhr.onload = function() {
+      setDownloading(false);
+      setDownloadProgress(0);
+      
+      if (this.status === 200) {
+        const blob = this.response;
+        const link = document.createElement('a');
+        link.href = window.URL.createObjectURL(blob);
+        link.download = fileName;
+        link.click();
+        window.URL.revokeObjectURL(link.href);
+      } else {
+        toast.error('Erro ao descargar imagem');
+      }
+    };
+    
+    xhr.onerror = function() {
+      setDownloading(false);
+      setDownloadProgress(0);
+      toast.error('Erro ao descargar imagem');
+    };
+    
+    setDownloading(true);
+    setDownloadProgress(0);
+    xhr.send();
+  };
+
   if (loading && galleries.length === 0) {
     return (
       <DefaultLayout hero={{ title: "Galeria Pública", subtitle: "Inspire-se com os casamentos mais lindos" }}>
@@ -107,6 +151,26 @@ const PublicGallery = () => {
     }}>
       {/* View Mode Toggle */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
+        {/* Download Progress */}
+        {downloading && (
+          <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-white rounded-full shadow-lg border border-gray-200 px-6 py-3">
+            <div className="flex items-center gap-4">
+              <span className="text-sm font-medium text-gray-700">
+                A descargar...
+              </span>
+              <div className="w-32 bg-gray-200 rounded-full h-2">
+                <div 
+                  className="bg-[#9CAA8E] h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${downloadProgress}%` }}
+                ></div>
+              </div>
+              <span className="text-sm font-medium text-[#9CAA8E] w-10">
+                {downloadProgress}%
+              </span>
+            </div>
+          </div>
+        )}
+
         <div className="flex items-center justify-between mb-8">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">
@@ -485,6 +549,17 @@ const PublicGallery = () => {
             <div className="absolute top-4 right-16 px-3 py-1 bg-white/20 backdrop-blur-sm text-white text-sm rounded-full">
               {lightboxIndex + 1} / {lightboxGallery.photos?.length}
             </div>
+            
+            {/* Download button */}
+            <button
+              onClick={() => {
+                const fileName = lightboxGallery.photos[lightboxIndex].url.split('/').pop();
+                downloadPhoto(lightboxGallery.photos[lightboxIndex].url, fileName);
+              }}
+              className="absolute bottom-4 right-4 p-3 bg-white/20 hover:bg-white/30 backdrop-blur-sm text-white rounded-full z-10"
+            >
+              <Download className="w-6 h-6" />
+            </button>
           </motion.div>
         )}
       </AnimatePresence>

@@ -268,6 +268,22 @@ const Gallery = ({ userId = null, isOwner = false, isPublicView = false }) => {
     toast.success('Link do perfil copiado para a área de transferência!');
   };
 
+  const downloadQRCode = async (url, fileName) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const link = document.createElement('a');
+      link.href = window.URL.createObjectURL(blob);
+      link.download = fileName;
+      link.click();
+      window.URL.revokeObjectURL(link.href);
+      toast.success('QR Code descargado com sucesso');
+    } catch (error) {
+      console.error('Error downloading QR code:', error);
+      toast.error('Erro ao descargar QR Code');
+    }
+  };
+
   const downloadPhoto = (photoUrl, fileName) => {
     const url = `${API_URL}/download/${fileName}`;
     
@@ -320,7 +336,7 @@ const Gallery = ({ userId = null, isOwner = false, isPublicView = false }) => {
   // Album detail view
   if (selectedAlbum) {
     return (
-      <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+      <div className="min-h-screen bg-gray-50 p-4 md:py-8">
         <div className="max-w-7xl mx-auto">
           {/* Header - Desktop */}
           <div className="hidden md:flex md:flex-row md:items-center justify-between gap-4 mb-6">
@@ -750,6 +766,13 @@ const Gallery = ({ userId = null, isOwner = false, isPublicView = false }) => {
                       alt="QR Code" 
                       className="w-40 h-40 mx-auto rounded-lg"
                     />
+                    <button
+                      onClick={() => downloadQRCode(getQRCodeUrl(), `qrcode-${selectedAlbum.shareCode}.png`)}
+                      className="mt-2 inline-flex items-center gap-1 text-sm text-[#9CAA8E] hover:text-[#8A9A7E] transition-colors"
+                    >
+                      <Download className="w-4 h-4" />
+                      Baixar QR Code
+                    </button>
                     <p className="text-xs text-gray-500 mt-2">Escaneie para ver o álbum</p>
                   </div>
                   <p className="text-sm text-gray-600 mb-2">Ou use o link:</p>
@@ -990,6 +1013,13 @@ const Gallery = ({ userId = null, isOwner = false, isPublicView = false }) => {
                         alt="QR Code" 
                         className="w-48 h-48 mx-auto rounded-lg"
                       />
+                      <button
+                        onClick={() => downloadQRCode(getQRCodeUrl(), `qrcode-${selectedAlbum.shareCode}.png`)}
+                        className="mt-3 w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-[#9CAA8E]/10 text-[#9CAA8E] rounded-lg hover:bg-[#9CAA8E]/20 transition-colors"
+                      >
+                        <Download className="w-4 h-4" />
+                        Baixar QR Code
+                      </button>
                     </div>
                     
                     <p className="text-sm text-gray-600 mb-4">
@@ -1072,6 +1102,13 @@ const Gallery = ({ userId = null, isOwner = false, isPublicView = false }) => {
                             alt="QR Code" 
                             className="w-48 h-48 mx-auto rounded-lg"
                           />
+                          <button
+                            onClick={() => downloadQRCode(getQRCodeUrl(), `qrcode-${selectedAlbum.shareCode}.png`)}
+                            className="mt-3 w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-[#9CAA8E]/10 text-[#9CAA8E] rounded-lg hover:bg-[#9CAA8E]/20 transition-colors"
+                          >
+                            <Download className="w-4 h-4" />
+                            Baixar QR Code
+                          </button>
                         </div>
                         
                         <p className="text-sm text-gray-600 mb-4 text-center">
@@ -1439,7 +1476,7 @@ const Gallery = ({ userId = null, isOwner = false, isPublicView = false }) => {
 
   // Albums grid view
   return (
-    <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+    <div className="min-h-screen bg-gray-50 p-4 md:py-8">
       <div className="max-w-7xl mx-auto">
         {/* Header - Desktop */}
         <div className="hidden md:flex md:flex-row md:items-center justify-between gap-4 mb-6">
@@ -1598,6 +1635,13 @@ const Gallery = ({ userId = null, isOwner = false, isPublicView = false }) => {
                     alt="QR Code do Perfil" 
                     className="w-40 h-40 mx-auto rounded-lg"
                   />
+                  <button
+                    onClick={() => downloadQRCode(getProfileQRCodeUrl(), 'qrcode-perfil.png')}
+                    className="mt-2 inline-flex items-center gap-1 text-sm text-[#9CAA8E] hover:text-[#8A9A7E] transition-colors"
+                  >
+                    <Download className="w-4 h-4" />
+                    Baixar QR Code
+                  </button>
                   <p className="text-xs text-gray-500 mt-2">Escaneie para ver sua galeria</p>
                 </div>
                 <p className="text-sm text-gray-600 mb-2">Ou use o link:</p>
@@ -1890,6 +1934,13 @@ const Gallery = ({ userId = null, isOwner = false, isPublicView = false }) => {
                   alt="QR Code do Perfil" 
                   className="w-48 h-48 mx-auto rounded-lg"
                 />
+                <button
+                  onClick={() => downloadQRCode(getProfileQRCodeUrl(), 'qrcode-perfil.png')}
+                  className="mt-3 w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-[#9CAA8E]/10 text-[#9CAA8E] rounded-lg hover:bg-[#9CAA8E]/20 transition-colors"
+                >
+                  <Download className="w-4 h-4" />
+                  Baixar QR Code
+                </button>
               </div>
               
               <p className="text-sm text-gray-600 mb-4">
@@ -1955,6 +2006,13 @@ const Gallery = ({ userId = null, isOwner = false, isPublicView = false }) => {
                       alt="QR Code do Perfil" 
                       className="w-48 h-48 mx-auto rounded-lg"
                     />
+                    <button
+                      onClick={() => downloadQRCode(getProfileQRCodeUrl(), 'qrcode-perfil.png')}
+                      className="mt-3 w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-[#9CAA8E]/10 text-[#9CAA8E] rounded-lg hover:bg-[#9CAA8E]/20 transition-colors"
+                    >
+                      <Download className="w-4 h-4" />
+                      Baixar QR Code
+                    </button>
                   </div>
                   
                   <p className="text-sm text-gray-600 mb-4 text-center">

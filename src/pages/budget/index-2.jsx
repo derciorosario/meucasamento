@@ -345,7 +345,7 @@ const WeddingBudgetManager = () => {
                     Total previsto nas categorias: <span className="font-semibold text-gray-900">{formatCurrency(totalBudgeted)}</span>
                   </div>
                   <div className="text-sm text-gray-600">
-                    Restam <span className="font-semibold text-gray-900">{formatCurrency(remaining)}</span>
+                    Remanescente <span className="font-semibold text-gray-900">{formatCurrency(remaining)}</span>
                   </div>
                 </div>
 
@@ -626,7 +626,7 @@ const WeddingBudgetManager = () => {
                     <span className="font-semibold text-gray-600">{formatCurrency(totalActual)}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-gray-600 text-gray-600">Restam:</span>
+                    <span className="text-gray-600 text-gray-600">Remanescente:</span>
                     <span className="font-semibold text-green-600">{formatCurrency(remaining)}</span>
                   </div>
                 </div>

@@ -20,6 +20,7 @@ import AdminDashboard from './pages/admin';
 import AdminUsers from './pages/admin/users';
 import AdminVendors from './pages/admin/vendors';
 import AdminGalleries from './pages/admin/galleries';
+import AdminSettings from './pages/admin/settings';
 import VendorPlans from './pages/vendors/plans';
 import Support from './pages/support';
 import About from './pages/about';
@@ -31,6 +32,7 @@ import Settings from './pages/settings';
 import Gallery from './pages/gallery';
 import GuestConfirm from './pages/guest-confirm';
 import CalendarPage from './pages/calendar';
+import VendorProfilePage from './pages/vendor';
 
 function App() {
   return (
@@ -48,6 +50,7 @@ function App() {
       <Route path="/profile/:userId" element={<UserProfile />} />
       <Route path="/vendors" element={<WeddingVendors />} />
       <Route path="/vendors/plans" element={<VendorPlans />} />
+      <Route path="/vendor/:vendorId" element={<VendorProfilePage />} />
       <Route path="/support" element={<Support />} />
       <Route path="/about" element={<About />} />
       <Route path="/contact" element={<Contact />} />
@@ -72,6 +75,7 @@ function App() {
         <Route path="/admin/users" element={<AdminUsers />} />
         <Route path="/admin/vendors" element={<AdminVendors />} />
         <Route path="/admin/galleries" element={<AdminGalleries />} />
+        <Route path="/admin/settings" element={<AdminSettings />} />
 
 
       </Route>
