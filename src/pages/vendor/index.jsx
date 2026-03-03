@@ -630,7 +630,7 @@ const VendorProfilePage = () => {
               </div>
               <div className="flex items-center gap-1 bg-yellow-50 px-2 py-1 rounded-lg">
                 <Star className="w-4 h-4 text-yellow-400 fill-yellow-400" />
-                <span className="font-semibold">{vendor.averageRating?.toFixed(1) || '0.0'}</span>
+                <span className="font-semibold text-yellow-600">{vendor.averageRating?.toFixed(1) || '0.0'}</span>
               </div>
             </div>
             <div className="flex items-center gap-2 text-sm text-gray-500 mb-3">
