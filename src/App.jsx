@@ -33,6 +33,8 @@ import Gallery from './pages/gallery';
 import GuestConfirm from './pages/guest-confirm';
 import CalendarPage from './pages/calendar';
 import VendorProfilePage from './pages/vendor';
+import WeddingGifts from './pages/gifts';
+import SharedGifts from './pages/shared-gifts';
 
 function App() {
   return (
@@ -47,6 +49,7 @@ function App() {
       <Route path="/reset-password/:token" element={<ResetPassword />} />
       <Route path="/" element={<Home />} />
       <Route path="/gallery/shared/:shareCode" element={<SharedGallery />} />
+      <Route path="/gifts/shared/:shareCode" element={<SharedGifts />} />
       <Route path="/profile/:userId" element={<UserProfile />} />
       <Route path="/vendors" element={<WeddingVendors />} />
       <Route path="/vendors/plans" element={<VendorPlans />} />
@@ -68,6 +71,7 @@ function App() {
         <Route path="/settings" element={<Settings />} />
         <Route path="/gallery" element={<Gallery />} />
         <Route path="/calendar" element={<CalendarPage />} />
+        <Route path="/gifts" element={<WeddingGifts />} />
 
         
         {/* Admin Routes - Require admin role */}

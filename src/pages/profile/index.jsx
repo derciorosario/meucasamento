@@ -8,6 +8,7 @@ import Header from '../../components/Header';
 import Gallery from '../../components/Gallery';
 import Loader from '../../components/loader';
 import { motion, AnimatePresence } from 'framer-motion';
+import COUNTRIES from '../../constants/countries';
 
 
 
@@ -116,6 +117,8 @@ const ProfilePage = () => {
   const [loadingMyQuotes, setLoadingMyQuotes] = useState(false);
   const [vendorViewMode, setVendorViewMode] = useState('grid'); // 'grid' or 'list' - for mobile vendor display
   const [customFaqInputs, setCustomFaqInputs] = useState({}); // Track custom input values for FAQ
+  const [cities, setCities] = useState([]); // Cities from JSON file
+  const [loadingCities, setLoadingCities] = useState(false);
   
   const navigate=useNavigate()
   // Vendor Profile Modal states
@@ -206,6 +209,10 @@ const ProfilePage = () => {
         
         // Populate form with existing data
         const currentVendor = vendor || (vendors && vendors.length > 0 ? vendors[0] : null);
+
+        if (profile?.country) {
+           loadCities(profile?.country);
+        }
         setFormData({
           name: user?.name || '',
           avatar: user?.avatar || '',
@@ -296,6 +303,22 @@ const ProfilePage = () => {
     if (activeTab === 'myquotes') {
       fetchMyQuoteRequests();
     }
+
+
+
+    if(activeTab === 'vendor'){
+      if (profile?.vendorCountry) {
+           loadCities(profile?.vendorCountry);
+      }
+    }
+
+    if(activeTab === 'personal'){
+      if (profile?.country) {
+           loadCities(profile?.country);
+      }
+    }
+    
+
   }, [selectedVendor, activeTab]);
 
   const handleChange = (e) => {
@@ -304,6 +327,46 @@ const ProfilePage = () => {
       ...prev,
       [name]: value
     }));
+    
+    // When country changes, load cities for that country
+    if (name === 'country' || name === 'vendorCountry') {
+      loadCities(value);
+    }
+  };
+  
+  // Load cities based on selected country
+  const loadCities = async (countryName) => {
+    if (!countryName) {
+      setCities([]);
+      return;
+    }
+    
+    setLoadingCities(true);
+    try {
+      const response = await fetch('/data/cities.json');
+      const allCities = await response.json();
+      
+      // Find country code from COUNTRIES constant
+      const country = COUNTRIES.find(c => c.pt === countryName || c.en === countryName);
+      
+      if (country) {
+        // Filter cities by country - using English name for matching
+        const filteredCities = allCities
+          .filter(city => city.country === country.en)
+          .map(city => city.city);
+        
+        // Remove duplicates and sort
+        const uniqueCities = [...new Set(filteredCities)].sort();
+        setCities(uniqueCities);
+      } else {
+        setCities([]);
+      }
+    } catch (error) {
+      console.error('Error loading cities:', error);
+      setCities([]);
+    } finally {
+      setLoadingCities(false);
+    }
   };
 
   const handleAvatarUpload = async (e) => {
@@ -605,40 +668,10 @@ const ProfilePage = () => {
     { value: 'luxury', label: 'Luxo' },
   ];
 
-  const countries = [
-    { code: 'MZ', name: 'Moçambique' },
-    { code: 'PT', name: 'Portugal' },
-    { code: 'BR', name: 'Brasil' },
-    { code: 'ZA', name: 'África do Sul' },
-    { code: 'AO', name: 'Angola' },
-    { code: 'GB', name: 'Reino Unido' },
-    { code: 'US', name: 'Estados Unidos' },
-    { code: 'ES', name: 'Espanha' },
-    { code: 'FR', name: 'França' },
-    { code: 'IT', name: 'Itália' },
-    { code: 'DE', name: 'Alemanha' },
-    { code: 'NL', name: 'Países Baixos' },
-    { code: 'BE', name: 'Bélgica' },
-    { code: 'CH', name: 'Suíça' },
-    { code: 'AT', name: 'Áustria' },
-    { code: 'GR', name: 'Grécia' },
-    { code: 'TK', name: 'Turquia' },
-    { code: 'EG', name: 'Egito' },
-    { code: 'MA', name: 'Marrocos' },
-    { code: 'SC', name: 'Seicheles' },
-    { code: 'MU', name: 'Maurícia' },
-    { code: 'KE', name: 'Quénia' },
-    { code: 'TZ', name: 'Tanzânia' },
-    { code: 'NA', name: 'Namíbia' },
-    { code: 'BW', name: 'Botsuana' },
-    { code: 'ZM', name: 'Zâmbia' },
-    { code: 'ZW', name: 'Zimbábue' },
-    { code: 'NG', name: 'Nigéria' },
-    { code: 'GH', name: 'Gana' },
-    { code: 'SN', name: 'Senegal' },
-    { code: 'CI', name: 'Costa do Marfim' },
-    { code: 'OTHER', name: 'Outro' },
-  ];
+  const countryOptions = COUNTRIES.map(country => ({
+    value: country.pt,
+    label: country.pt,
+  }));
 
   if (loading) {
     return <Loader />;
@@ -1073,9 +1106,9 @@ const ProfilePage = () => {
                       className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black bg-white text-sm md:text-base"
                     >
                       <option value="">Selecione um país</option>
-                      {countries.map(country => (
-                        <option key={country.code} value={country.name}>
-                          {country.name}
+                      {countryOptions.map(country => (
+                        <option key={country.value} value={country.value}>
+                          {country.label}
                         </option>
                       ))}
                     </select>
@@ -1085,13 +1118,35 @@ const ProfilePage = () => {
                     <label className="block text-sm font-medium text-gray-700 mb-1 md:mb-2">
                       Cidade
                     </label>
-                    <input
-                      type="text"
-                      name="city"
-                      value={formData.city}
-                      onChange={handleChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black text-sm md:text-base"
-                    />
+                    {loadingCities ? (
+                      <div className="w-full px-4 py-3 border border-gray-300 rounded-xl bg-gray-50 text-gray-500 text-sm">
+                        A carregar cidades...
+                      </div>
+                    ) : cities.length > 0 ? (
+                      <select
+                        name="city"
+                        value={formData.city}
+                        onChange={handleChange}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black bg-white text-sm md:text-base"
+                      >
+                        <option value="">Selecione uma cidade</option>
+                        {cities.map(city => (
+                          <option key={city} value={city}>
+                            {city}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        type="text"
+                        name="city"
+                        value={formData.city}
+                        onChange={handleChange}
+                        placeholder={formData.country ? "Digite a cidade" : "Selecione um país primeiro"}
+                        disabled={!formData.country}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black text-sm md:text-base disabled:bg-gray-100 disabled:text-gray-400"
+                      />
+                    )}
                   </div>
                 </div>
 
@@ -1512,12 +1567,47 @@ const ProfilePage = () => {
                         className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black bg-white text-sm md:text-base"
                       >
                         <option value="">Selecione um país</option>
-                        {countries.map(country => (
-                          <option key={country.code} value={country.name}>
-                            {country.name}
+                        {countryOptions.map(country => (
+                          <option key={country.value} value={country.value}>
+                            {country.label}
                           </option>
                         ))}
                       </select>
+                    </div>
+                    
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1 md:mb-2">
+                        Cidade
+                      </label>
+                      {loadingCities ? (
+                        <div className="w-full px-4 py-3 border border-gray-300 rounded-xl bg-gray-50 text-gray-500 text-sm">
+                          A carregar cidades...
+                        </div>
+                      ) : cities.length > 0 ? (
+                        <select
+                          name="vendorCity"
+                          value={formData.vendorCity}
+                          onChange={handleChange}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black bg-white text-sm md:text-base"
+                        >
+                          <option value="">Selecione uma cidade</option>
+                          {cities.map(city => (
+                            <option key={city} value={city}>
+                              {city}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <input
+                          type="text"
+                          name="vendorCity"
+                          value={formData.vendorCity}
+                          onChange={handleChange}
+                          placeholder={formData.vendorCountry ? "Digite a cidade" : "Selecione um país primeiro"}
+                          disabled={!formData.vendorCountry}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black text-sm md:text-base disabled:bg-gray-100 disabled:text-gray-400"
+                        />
+                      )}
                     </div>
                     
                     <div>

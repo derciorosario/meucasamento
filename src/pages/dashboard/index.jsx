@@ -212,6 +212,7 @@ export default function WeddingDashboard() {
     { id: 'convidados', label: 'Convidados', path: '/guests' },
     { id: 'orcamento', label: 'Orçamento', path: '/budget' },
     { id: 'gallery', label: 'Galeria', path: '/gallery' },
+    { id: 'gifts', label: 'Presentes', path: '/gifts' },
   ];
 
   // Vendor tabs

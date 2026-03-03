@@ -110,6 +110,13 @@ const Header = ({notSticky}) => {
               >
                 Galeria
               </button>
+
+              <button 
+                onClick={() => navigate('/gifts')} 
+                className={`transition-colors font-medium ${location.pathname === '/gifts' ? 'text-[#9CAA8E] font-bold' : 'hover:text-[#9CAA8E]'}`}
+              >
+                Presentes
+              </button>
             </>
           )}
 
@@ -315,6 +322,13 @@ const Header = ({notSticky}) => {
                     className={`py-2 border-b border-gray-100 text-left font-medium ${location.pathname === '/gallery' ? 'text-[#9CAA8E]' : 'text-gray-600 hover:text-[#9CAA8E]'}`}
                   >
                     Galeria
+                  </button>
+
+                  <button 
+                    onClick={() => { navigate('/gifts'); setIsMenuOpen(false); }} 
+                    className={`py-2 border-b border-gray-100 text-left font-medium ${location.pathname === '/gifts' ? 'text-[#9CAA8E]' : 'text-gray-600 hover:text-[#9CAA8E]'}`}
+                  >
+                    Presentes
                   </button>
                 </>
               )}

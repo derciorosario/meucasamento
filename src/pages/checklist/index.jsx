@@ -131,8 +131,8 @@ const ChecklistPage = () => {
     dueDate: null,
   });
 
-  // Date type selection: 'period' or 'dueDate'
-  const [dateType, setDateType] = useState('dueDate');
+  // Date type selection: 'period' or 'dueDate' (mandatory)
+  const [dateType, setDateType] = useState(null);
 
   // Edit task state
   const [editingTask, setEditingTask] = useState(null);
@@ -476,6 +476,24 @@ const ChecklistPage = () => {
   // Handle save new task
   const handleSaveTask = async (e) => {
     e.preventDefault();
+    
+    // Validate that dateType is selected
+    if (!dateType) {
+      toast.error('Por favor, selecione o tipo de data');
+      return;
+    }
+    
+    // Validate required fields based on dateType
+    if (dateType === 'dueDate' && !newTask.dueDate) {
+      toast.error('Por favor, selecione uma data de vencimento');
+      return;
+    }
+    
+    if (dateType === 'period' && !newTask.timelinePeriod) {
+      toast.error('Por favor, selecione um período');
+      return;
+    }
+    
     try {
       // Prepare task data with dueDate formatted for backend
       const taskData = {
@@ -519,7 +537,7 @@ const ChecklistPage = () => {
         priority: 'medium',
         dueDate: null,
       });
-      setDateType('period');
+      setDateType(null);
     } catch (error) {
       console.error('Error creating task:', error);
       toast.error('Erro ao criar tarefa');

@@ -4,49 +4,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import axios from 'axios';
 import { toast } from '../../lib/toast';
 import client from '../../api/client';
-
-
-const countries = [
-    "Afeganistão", "África do Sul", "Albânia", "Alemanha", "Andorra", 
-    "Angola", "Antígua e Barbuda", "Arábia Saudita", "Argélia", "Argentina", 
-    "Armênia", "Austrália", "Áustria", "Azerbaijão", "Bahamas", "Bahrein", 
-    "Bangladesh", "Barbados", "Bélgica", "Belize", "Benim", "Bielorrússia", 
-    "Bolívia", "Bósnia e Herzegovina", "Botsuana", "Brasil", "Brunei", 
-    "Bulgária", "Burkina Faso", "Burundi", "Butão", "Cabo Verde", 
-    "Camarões", "Camboja", "Canadá", "Catar", "Cazaquistão", "Chade", 
-    "Chile", "China", "Chipre", "Colômbia", "Comores", "Congo", 
-    "Congo, República Democrática do", "Coreia do Norte", "Coreia do Sul", 
-    "Costa do Marfim", "Costa Rica", "Croácia", "Cuba", "Dinamarca", 
-    "Djibuti", "Dominica", "Egito", "El Salvador", "Emirados Árabes Unidos", 
-    "Equador", "Eritreia", "Eslováquia", "Eslovênia", "Espanha", 
-    "Estados Unidos", "Estônia", "Eswatini", "Etiópia", "Fiji", 
-    "Filipinas", "Finlândia", "França", "Gabão", "Gâmbia", "Gana", 
-    "Geórgia", "Granada", "Grécia", "Guatemala", "Guiana", "Guiné", 
-    "Guiné Equatorial", "Guiné-Bissau", "Haiti", "Honduras", "Hungria", 
-    "Iêmen", "Ilhas Marshall", "Ilhas Salomão", "Índia", "Indonésia", 
-    "Irã", "Iraque", "Irlanda", "Islândia", "Israel", "Itália", 
-    "Jamaica", "Japão", "Jordânia", "Kiribati", "Kuwait", "Laos", 
-    "Lesoto", "Letônia", "Líbano", "Libéria", "Líbia", "Liechtenstein", 
-    "Lituânia", "Luxemburgo", "Macedônia do Norte", "Madagáscar", 
-    "Malásia", "Malaui", "Maldivas", "Mali", "Malta", "Marrocos", 
-    "Maurício", "Mauritânia", "México", "Mianmar", "Micronésia", 
-    "Moçambique", "Moldávia", "Mônaco", "Mongólia", "Montenegro", 
-    "Namíbia", "Nauru", "Nepal", "Nicarágua", "Níger", "Nigéria", 
-    "Noruega", "Nova Zelândia", "Omã", "Países Baixos", "Palau", 
-    "Panamá", "Papua Nova Guiné", "Paquistão", "Paraguai", "Peru", 
-    "Polônia", "Portugal", "Quênia", "Quirguistão", "Reino Unido", 
-    "República Centro-Africana", "República Dominicana", "República Tcheca", 
-    "Romênia", "Ruanda", "Rússia", "Samoa", "San Marino", 
-    "Santa Lúcia", "São Cristóvão e Nevis", "São Tomé e Príncipe", 
-    "São Vicente e Granadinas", "Seicheles", "Senegal", "Serra Leoa", 
-    "Sérvia", "Singapura", "Síria", "Somália", "Sri Lanka", 
-    "Sudão", "Sudão do Sul", "Suécia", "Suíça", "Suriname", 
-    "Tailândia", "Taiwan*", "Tajiquistão", "Tanzânia", "Tchéquia", 
-    "Timor-Leste", "Togo", "Tonga", "Trinidad e Tobago", "Tunísia", 
-    "Turcomenistão", "Turquia", "Tuvalu", "Ucrânia", "Uganda", 
-    "Uruguai", "Uzbequistão", "Vanuatu", "Vaticano", "Venezuela", 
-    "Vietnã", "Zâmbia", "Zimbábue"
-];
+import COUNTRIES from '../../constants/countries';
 
 // Email validation function
 const emailOK = (v) => /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/.test(String(v || "").toLowerCase());
@@ -137,6 +95,58 @@ export default function WeddingSignUp() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [googleConnected, setGoogleConnected] = useState(false);
+  
+  // Country options with Portuguese labels
+  const countryOptions = COUNTRIES.map(country => ({
+    value: country.pt,
+    label: country.pt,
+  }));
+  
+  // Cities state for dynamic filtering
+  const [cities, setCities] = useState([]);
+  const [loadingCities, setLoadingCities] = useState(false);
+  
+  // Load cities based on selected country
+  const loadCities = async (countryName) => {
+    if (!countryName) {
+      setCities([]);
+      return;
+    }
+    
+    setLoadingCities(true);
+    try {
+      const response = await fetch('/data/cities.json');
+      const allCities = await response.json();
+      
+      // Find country code from COUNTRIES constant (like in profile page)
+      const country = COUNTRIES.find(c => c.pt === countryName || c.en === countryName);
+      
+      if (country) {
+        // Filter cities by country - using English name for matching
+        const filteredCities = allCities
+          .filter(city => city.country === country.en)
+          .map(city => city.city); // Note: profile page uses 'city' field, not 'name'
+        
+        // Remove duplicates and sort
+        const uniqueCities = [...new Set(filteredCities)].sort();
+        setCities(uniqueCities);
+      } else {
+        setCities([]);
+      }
+    } catch (error) {
+      console.error('Error loading cities:', error);
+      setCities([]);
+    } finally {
+      setLoadingCities(false);
+    }
+  };
+  
+  // Load cities when country changes
+  useEffect(() => {
+    if (formData.country) {
+      loadCities(formData.country);
+    }
+  }, [formData.country]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -591,8 +601,8 @@ export default function WeddingSignUp() {
                     }}
                   >
                     <option value="">Selecionar</option>
-                    {countries.map((i,k)=>(
-                      <option key={k} value={i}>{i}</option>
+                    {countryOptions.map((country) => (
+                      <option key={country.value} value={country.value}>{country.label}</option>
                     ))}
                   </select>
                   {errors.country && (
@@ -601,16 +611,41 @@ export default function WeddingSignUp() {
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-[#4a4a4a] mb-2">Cidade</label>
-                  <input
-                    type="text"
-                    name="city"
-                    value={formData.city}
-                    onChange={handleChange}
-                    placeholder="Sua cidade"
-                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9CAF88] focus:border-transparent bg-white text-[#2a2a2a] placeholder-[#a8a8a8] transition-all ${
-                      errors.city ? 'border-red-400 ring-red-400' : 'border-[#d4d4d4]'
-                    }`}
-                  />
+                  {loadingCities ? (
+                    <div className="w-full px-4 py-3 border border-[#d4d4d4] rounded-lg bg-white text-[#2a2a2a]">
+                      Carregando cidades...
+                    </div>
+                  ) : cities.length > 0 ? (
+                    <select
+                      name="city"
+                      value={formData.city}
+                      onChange={handleChange}
+                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9CAF88] focus:border-transparent bg-white text-[#2a2a2a] transition-all appearance-none cursor-pointer ${
+                        errors.city ? 'border-red-400 ring-red-400' : 'border-[#d4d4d4]'
+                      }`}
+                      style={{
+                        backgroundRepeat: 'no-repeat',
+                        backgroundPosition: 'right 0.75rem center',
+                        backgroundSize: '1.25rem'
+                      }}
+                    >
+                      <option value="">Selecionar</option>
+                      {cities.map((city, index) => (
+                        <option key={index} value={city}>{city}</option>
+                      ))}
+                    </select>
+                  ) : (
+                    <input
+                      type="text"
+                      name="city"
+                      value={formData.city}
+                      onChange={handleChange}
+                      placeholder="Sua cidade"
+                      className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9CAF88] focus:border-transparent bg-white text-[#2a2a2a] placeholder-[#a8a8a8] transition-all ${
+                        errors.city ? 'border-red-400 ring-red-400' : 'border-[#d4d4d4]'
+                      }`}
+                    />
+                  )}
                   {errors.city && (
                     <p className="mt-1 text-xs text-red-600">{errors.city}</p>
                   )}
