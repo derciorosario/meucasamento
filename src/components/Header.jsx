@@ -4,7 +4,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { API_URL } from '../api/client';
 import { User, LogOut, Settings, X, Menu, Shield } from 'lucide-react';
 
-const Header = () => {
+const Header = ({notSticky}) => {
   const navigate = useNavigate();
   const location = useLocation();
   const { isAuthed, user, signOut } = useAuth();
@@ -47,7 +47,7 @@ const Header = () => {
 
   return (
     <>
-      <nav className="flex items-center justify-between px-4 sm:px-6 lg:px-8 py-4 border-b bg-white">
+      <nav className={`flex items-center justify-between px-4 sm:px-6 lg:px-8 py-4 border-b border-gray-200 bg-white ${!notSticky ? 'sticky':''} top-0 z-50 shadow-sm`}>
         {/* Left side: Logo/Brand */}
         <div onClick={() => navigate('/')} className="flex items-center gap-2 cursor-pointer">
           <div className="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center">

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { getProfile, updateProfile, getVendorCategories, uploadProfileImage, getVendorQuoteRequests, updateQuoteRequestStatus, getMyQuoteRequests, getVendor } from '../../api/client';
 import VendorProfileModal from '../../components/VendorProfileModal';
 import { API_URL } from '../../api/client';
@@ -14,14 +14,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 // FAQ predefined questions configuration
 const FAQ_QUESTIONS = [
   // Services category
-  { id: 's1', question: 'Quais serviços estão incluídos no pacote?', type: 'text', _allowCustom: true, options: ['Fotografia', 'Vídeo', 'Decoração', 'Música', 'Iluminação', 'Buffet', 'Bolo', 'Convites', 'Flores', 'Outro'], category: 'services',placeholder:'Fotografia e Vídeo (8 horas), Decoração completa, Iluminação básica e Bolo personalizado.' },
+  { id: 's1', question: 'Quais serviços estão incluídos no pacote?', type: 'multi-select', allowCustom: true, options: [], category: 'services',_placeholder:'Fotografia e Vídeo (8 horas), Decoração completa, Iluminação básica e Bolo personalizado.' },
   { id: 's2', question: 'Quantas horas de serviço estão incluídas?', type: 'text', category: 'services', placeholder: 'Ex: 8 horas' },
   { id: 's3', question: 'É possível contratar serviços adicionais?', type: 'boolean', category: 'services' },
-  { id: 's4', question: 'Quais são as opções de personalização disponíveis?', type: 'multi-select', options: ['Cores', 'Tema', 'Decoração', 'Música', 'Menu', 'Outro'], category: 'services' },
+  { id: 's4', question: 'Quais são as opções de personalização disponíveis?', type: 'multi-select',allowCustom: true, options: ['Cores', 'Tema', 'Decoração', 'Música', 'Menu'], category: 'services' },
   
   // Pricing category
   { id: 'p1', question: 'Qual é o custo por convidado adicional?', type: 'text', category: 'pricing', placeholder: 'Ex: 500 MT por convidado' },
-  { id: 'p2', question: 'Quais formas de pagamento são aceites?', type: 'multi-select', options: ['Dinheiro', 'Transferência bancária', 'Multicaixa', 'PayPal', 'Cartão de crédito', 'Parcelamento'], category: 'pricing' },
+  { id: 'p2', question: 'Quais formas de pagamento são aceites?', type: 'multi-select',allowCustom: true, options: ['Dinheiro', 'Transferência bancária', 'Multicaixa', 'Cartão de crédito', 'Parcelamento'], category: 'pricing' },
   { id: 'p3', question: 'É necessário pagar uma caução?', type: 'boolean', category: 'pricing' },
   { id: 'p4', question: 'Qual é a política de reembolso?', type: 'text', category: 'pricing', placeholder: 'Ex: Reembolso até 30 dias antes' },
   
@@ -34,12 +34,12 @@ const FAQ_QUESTIONS = [
   { id: 'l1', question: 'Inclui transporte e logística?', type: 'boolean', category: 'logistics' },
   { id: 'l2', question: 'Qual é o raio de atuação?', type: 'text', category: 'logistics', placeholder: 'Ex: Até 100km da cidade' },
   { id: 'l3', question: 'Há custos adicionais para deslocação?', type: 'text', category: 'logistics', placeholder: 'Ex: 2 MT por km' },
-  { id: 'l4', question: 'Quais equipamentos são fornecidos?', type: 'multi-select', options: ['Som', 'Iluminação', 'Projétor', 'Decoração', 'Mobiliário', 'Pratos e talheres', 'Copos', 'Outro'], category: 'logistics' },
+  { id: 'l4', question: 'Quais equipamentos são fornecidos?', type: 'multi-select', options: ['Som', 'Iluminação', 'Projétor', 'Decoração', 'Mobiliário', 'Pratos e talheres', 'Copos'],allowCustom:true, category: 'logistics' },
   
   // Style category
   { id: 'st1', question: 'Qual é o estilo principal do serviço?', type: 'multi-select', options: ['Clássico', 'Rústico', 'Moderno', 'Minimalista', 'Boho', 'Vintage', 'Romântico', 'Luxo'], category: 'style' },
   { id: 'st2', question: 'É possível ver trabalhos anteriores?', type: 'boolean', category: 'style' },
-  { id: 'st3', question: 'Oferece serviços em diferentes idiomas?', type: 'multi-select', options: ['Português', 'Inglês', 'Espanhol', 'Francês', 'Outro'], category: 'style' },
+  { id: 'st3', question: 'Oferece serviços em diferentes idiomas?', type: 'multi-select', options: ['Português', 'Inglês', 'Espanhol', 'Francês'], allowCustom:true, category: 'style' },
   { id: 'st4', question: 'Pode criar um design exclusivo?', type: 'boolean', category: 'style' },
 ];
 
@@ -105,6 +105,8 @@ const ProfilePage = () => {
   const [newVendorData, setNewVendorData] = useState({ name: '', category: '', phone: '', email: '' });
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadTotal, setUploadTotal] = useState(0);
   const [vendorImagesInput, setVendorImagesInput] = useState(null);
   const [quoteRequests, setQuoteRequests] = useState([]);
   const [loadingQuotes, setLoadingQuotes] = useState(false);
@@ -115,12 +117,15 @@ const ProfilePage = () => {
   const [vendorViewMode, setVendorViewMode] = useState('grid'); // 'grid' or 'list' - for mobile vendor display
   const [customFaqInputs, setCustomFaqInputs] = useState({}); // Track custom input values for FAQ
   
+  const navigate=useNavigate()
   // Vendor Profile Modal states
   const [showProfile, setShowProfile] = useState(false);
   const [selectedVendorProfile, setSelectedVendorProfile] = useState(null);
   const [currentSlide, setCurrentSlide] = useState(0);
   const avatarInputRef = useRef(null);
   const mobileMenuRef = useRef(null);
+
+
   
   // Form states
   const [formData, setFormData] = useState({
@@ -149,6 +154,7 @@ const ProfilePage = () => {
     vendorImages: [],
     vendorMaxCapacity: '',
     vendorFaqs: [],
+    vendorMapLink: '',
   });
 
   // Handle click outside for mobile menu
@@ -226,6 +232,7 @@ const ProfilePage = () => {
           vendorImages: currentVendor?.images || [],
           vendorMaxCapacity: currentVendor?.maxCapacity || '',
           vendorFaqs: currentVendor?.faqs || [],
+          vendorMapLink: currentVendor?.mapLink || '',
 
           ...profile,
           ...user
@@ -238,6 +245,8 @@ const ProfilePage = () => {
       setLoading(false);
     }
   };
+
+  console.log(formData.vendorFaqs)
 
   const fetchCategories = async () => {
     try {
@@ -354,8 +363,11 @@ const ProfilePage = () => {
     }
 
     setUploadingCover(true);
+    setUploadProgress(0);
+    setUploadTotal(files.length);
     try {
       const uploadedUrls = [];
+      let completed = 0;
       
       for (const file of files) {
         const formData = new FormData();
@@ -366,6 +378,8 @@ const ProfilePage = () => {
         if (response.data.success) {
           uploadedUrls.push(response.data.imageUrl);
         }
+        completed++;
+        setUploadProgress(completed);
       }
 
       if (uploadedUrls.length > 0) {
@@ -380,6 +394,8 @@ const ProfilePage = () => {
       toast.error('Erro ao carregar imagens');
     } finally {
       setUploadingCover(false);
+      setUploadProgress(0);
+      setUploadTotal(0);
     }
   };
 
@@ -435,6 +451,8 @@ const ProfilePage = () => {
 
   // Handle opening vendor profile
   const handleVendorClick = async (vendorId) => {
+    navigate('/vendor/'+vendorId)
+    return
     try {
       const response = await getVendor(vendorId);
       setSelectedVendorProfile(response.data);
@@ -549,6 +567,7 @@ const ProfilePage = () => {
           images: formData.vendorImages,
           maxCapacity: formData.vendorMaxCapacity ? parseInt(formData.vendorMaxCapacity) : null,
           faqs: formData.vendorFaqs,
+          mapLink: formData.vendorMapLink,
         };
       }
 
@@ -760,7 +779,7 @@ const ProfilePage = () => {
           {formData.role === 'couple' && (
             <button
               onClick={() => setActiveTab('gallery')}
-              className={`px-6 py-3 rounded-full font-medium transition-all whitespace-nowrap ${
+              className={`px-6 py-3 hidden rounded-full font-medium transition-all whitespace-nowrap ${
                 activeTab === 'gallery' 
                   ? 'bg-[#9CAA8E] text-white shadow-lg' 
                   : 'bg-white text-gray-600 hover:bg-gray-100 shadow-md'
@@ -1240,6 +1259,7 @@ const ProfilePage = () => {
                               vendorImages: v.images || [],
                               vendorMaxCapacity: v.maxCapacity || '',
                               vendorFaqs: v.faqs || [],
+                              vendorMapLink: v.mapLink || '',
                             });
                           }}
                           className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
@@ -1285,6 +1305,7 @@ const ProfilePage = () => {
                                   vendorImages: v.images || [],
                                   vendorMaxCapacity: v.maxCapacity || '',
                                   vendorFaqs: v.faqs || [],
+                                  vendorMapLink: v.mapLink || '',
                                 });
                               }}
                               className={`p-3 rounded-xl text-left transition-colors border ${
@@ -1336,6 +1357,7 @@ const ProfilePage = () => {
                                   vendorImages: v.images || [],
                                   vendorMaxCapacity: v.maxCapacity || '',
                                   vendorFaqs: v.faqs || [],
+                                  vendorMapLink: v.mapLink || '',
                                 });
                               }}
                               className={`w-full p-3 rounded-xl text-left transition-colors border flex items-center justify-between ${
@@ -1582,12 +1604,28 @@ const ProfilePage = () => {
                           disabled={uploadingCover}
                           className="w-full md:w-auto px-4 py-3 bg-[#9CAA8E] text-white rounded-xl md:rounded-lg hover:bg-[#8A9A7E] transition-colors disabled:opacity-50 text-sm"
                         >
-                          {uploadingCover ? 'A carregar...' : 'Adicionar Imagens'}
+                          {uploadingCover ? `A carregar ${uploadProgress}/${uploadTotal}...` : 'Adicionar Imagens'}
                         </button>
                         {formData.vendorImages.length > 0 && (
                           <span className="text-xs md:text-sm text-gray-500">{formData.vendorImages.length} imagem(ns) adicionada(s)</span>
                         )}
                       </div>
+                      
+                      {/* Upload Progress Bar */}
+                      {uploadingCover && uploadTotal > 0 && (
+                        <div className="mb-4">
+                          <div className="flex justify-between text-xs text-gray-500 mb-1">
+                            <span>A carregar imagens...</span>
+                            <span>{Math.round((uploadProgress / uploadTotal) * 100)}%</span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-2">
+                            <div 
+                              className="bg-[#9CAA8E] h-2 rounded-full transition-all duration-300" 
+                              style={{ width: `${(uploadProgress / uploadTotal) * 100}%` }}
+                            ></div>
+                          </div>
+                        </div>
+                      )}
                       
                       {/* Images Grid */}
                       {formData.vendorImages.length > 0 ? (
@@ -1638,6 +1676,21 @@ const ProfilePage = () => {
                         placeholder="Descreva seus serviços..."
                         className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black text-sm md:text-base"
                       ></textarea>
+                    </div>
+                    
+                    <div className="md:col-span-2">
+                      <label className="block text-sm font-medium text-gray-700 mb-1 md:mb-2">
+                        Link do Google Maps
+                      </label>
+                      <input
+                        type="url"
+                        name="vendorMapLink"
+                        value={formData.vendorMapLink}
+                        onChange={handleChange}
+                        placeholder="https://maps.google.com/..."
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black text-sm md:text-base"
+                      />
+                      <p className="text-xs text-gray-500 mt-1">Cole aqui o link do Google Maps para a localização do seu negócio</p>
                     </div>
                     
                     {/* FAQ Section */}
@@ -1766,127 +1819,146 @@ const ProfilePage = () => {
                                       </div>
                                     )}
                                     
-                                    {/* Multi-select input */}
-                                    {faq.type === 'multi-select' && (
-                                      <div>
-                                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                                          {faq.options.map(option => {
-                                            const isSelected = Array.isArray(currentAnswer) && currentAnswer.includes(option);
-                                            return (
-                                              <label
-                                                key={option}
-                                                className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-colors ${
-                                                  isSelected 
-                                                    ? 'bg-[#9CAA8E]/10 border-[#9CAA8E] text-[#9CAA8E]' 
-                                                    : 'bg-white border-gray-200 text-gray-700 hover:border-gray-300'
-                                                }`}
-                                              >
-                                                <input
-                                                  type="checkbox"
-                                                  checked={isSelected}
-                                                  onChange={() => {
-                                                    const newFaqs = [...(formData.vendorFaqs || [])];
-                                                    const existingIndex = newFaqs.findIndex(f => f.questionId === faq.id);
-                                                    let currentAnswers = Array.isArray(currentAnswer) ? currentAnswer : [];
-                                                    
-                                                    if (isSelected) {
-                                                      currentAnswers = currentAnswers.filter(a => a !== option);
-                                                    } else {
-                                                      currentAnswers.push(option);
-                                                    }
-                                                    
-                                                    const newAnswer = { questionId: faq.id, answer: currentAnswers };
-                                                    
-                                                    if (existingIndex >= 0) {
-                                                      newFaqs[existingIndex] = newAnswer;
-                                                    } else {
-                                                      newFaqs.push(newAnswer);
-                                                    }
-                                                    
-                                                    setFormData(prev => ({ ...prev, vendorFaqs: newFaqs }));
-                                                  }}
-                                                  className="hidden"
-                                                />
-                                                {isSelected && <CheckCircle className="w-4 h-4 flex-shrink-0" />}
-                                                <span className="text-sm">{option}</span>
-                                              </label>
-                                            );
-                                          })}
-                                        </div>
-                                        
-                                        {/* Custom input for allowCustom */}
-                                        {faq.allowCustom && (
-                                          <div className="mt-3 flex gap-2">
-                                            <input
-                                              type="text"
-                                              value={customFaqInputs[faq.id] || ''}
-                                              onChange={(e) => setCustomFaqInputs(prev => ({ ...prev, [faq.id]: e.target.value }))}
-                                              placeholder="Adicionar item personalizado..."
-                                              className="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent"
-                                              onKeyPress={(e) => {
-                                                if (e.key === 'Enter' && customFaqInputs[faq.id]?.trim()) {
-                                                  e.preventDefault();
-                                                  const customValue = customFaqInputs[faq.id].trim();
-                                                  const newFaqs = [...(formData.vendorFaqs || [])];
-                                                  const existingIndex = newFaqs.findIndex(f => f.questionId === faq.id);
-                                                  let currentAnswers = Array.isArray(currentAnswer) ? currentAnswer : [];
-                                                  
-                                                  if (!currentAnswers.includes(customValue)) {
-                                                    currentAnswers.push(customValue);
-                                                    const newAnswer = { questionId: faq.id, answer: currentAnswers };
-                                                    
-                                                    if (existingIndex >= 0) {
-                                                      newFaqs[existingIndex] = newAnswer;
-                                                    } else {
-                                                      newFaqs.push(newAnswer);
-                                                    }
-                                                    
-                                                    setFormData(prev => ({ ...prev, vendorFaqs: newFaqs }));
-                                                    setCustomFaqInputs(prev => ({ ...prev, [faq.id]: '' }));
-                                                    toast.success(`"${customValue}" adicionado!`);
-                                                  } else {
-                                                    toast.error('Este item já foi adicionado');
-                                                  }
-                                                }
-                                              }}
-                                            />
-                                            <button
-                                              type="button"
-                                              onClick={() => {
-                                                const customValue = customFaqInputs[faq.id]?.trim();
-                                                if (customValue) {
-                                                  const newFaqs = [...(formData.vendorFaqs || [])];
-                                                  const existingIndex = newFaqs.findIndex(f => f.questionId === faq.id);
-                                                  let currentAnswers = Array.isArray(currentAnswer) ? currentAnswer : [];
-                                                  
-                                                  if (!currentAnswers.includes(customValue)) {
-                                                    currentAnswers.push(customValue);
-                                                    const newAnswer = { questionId: faq.id, answer: currentAnswers };
-                                                    
-                                                    if (existingIndex >= 0) {
-                                                      newFaqs[existingIndex] = newAnswer;
-                                                    } else {
-                                                      newFaqs.push(newAnswer);
-                                                    }
-                                                    
-                                                    setFormData(prev => ({ ...prev, vendorFaqs: newFaqs }));
-                                                    setCustomFaqInputs(prev => ({ ...prev, [faq.id]: '' }));
-                                                    toast.success(`"${customValue}" adicionado!`);
-                                                  } else {
-                                                    toast.error('Este item já foi adicionado');
-                                                  }
-                                                } else {
-                                                  toast.error('Digite um valor para adicionar');
-                                                }
-                                              }}
-                                              className="px-4 py-2 bg-[#9CAA8E] text-white rounded-lg text-sm hover:bg-[#8A9A7E]"
-                                            >
-                                              Adicionar
-                                            </button>
-                                          </div>
-                                        )}
-                                      </div>
-                                    )}
+                                   
+                                   
+                                   {/* Multi-select input */}
+{faq.type === 'multi-select' && (
+  <div>
+    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+      {/* Combine predefined options with any custom answers */}
+      {[...new Set([
+        ...faq.options,
+        ...(Array.isArray(currentAnswer) 
+          ? currentAnswer.filter(item => !faq.options.includes(item)) 
+          : [])
+      ])].map(option => {
+        const isSelected = Array.isArray(currentAnswer) && currentAnswer.includes(option);
+        const isCustom = !faq.options.includes(option);
+        
+        return (
+          <label
+            key={option}
+            className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-colors ${
+              isSelected 
+                ? 'bg-[#9CAA8E]/10 border-[#9CAA8E] text-[#9CAA8E]' 
+                : 'bg-white border-gray-200 text-gray-700 hover:border-gray-300'
+            }`}
+          >
+            <input
+              type="checkbox"
+              checked={isSelected}
+              onChange={() => {
+                const newFaqs = [...(formData.vendorFaqs || [])];
+                const existingIndex = newFaqs.findIndex(f => f.questionId === faq.id);
+                let currentAnswers = Array.isArray(currentAnswer) ? [...currentAnswer] : [];
+                
+                if (isSelected) {
+                  // Remove the option
+                  currentAnswers = currentAnswers.filter(a => a !== option);
+                } else {
+                  // Add the option
+                  currentAnswers.push(option);
+                }
+                
+                const newAnswer = { questionId: faq.id, answer: currentAnswers };
+                
+                if (existingIndex >= 0) {
+                  newFaqs[existingIndex] = newAnswer;
+                } else {
+                  newFaqs.push(newAnswer);
+                }
+                
+                setFormData(prev => ({ ...prev, vendorFaqs: newFaqs }));
+              }}
+              className="hidden"
+            />
+            {isSelected && <CheckCircle className="w-4 h-4 flex-shrink-0" />}
+            <span className="text-sm flex-1">
+              {option}
+              {isCustom && (
+                <span className="ml-1 hidden text-xs text-gray-400">(personalizado)</span>
+              )}
+            </span>
+          </label>
+        );
+      })}
+    </div>
+    
+    {/* Custom input for allowCustom */}
+    {faq.allowCustom && (
+      <div className="mt-3 flex gap-2">
+        <input
+          type="text"
+          value={customFaqInputs[faq.id] || ''}
+          onChange={(e) => setCustomFaqInputs(prev => ({ ...prev, [faq.id]: e.target.value }))}
+          placeholder={faq._placeholder || "Adicionar item personalizado..."}
+          className="flex-1 text-gray-500 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent"
+          onKeyPress={(e) => {
+            if (e.key === 'Enter' && customFaqInputs[faq.id]?.trim()) {
+              e.preventDefault();
+              const customValue = customFaqInputs[faq.id].trim();
+              const newFaqs = [...(formData.vendorFaqs || [])];
+              const existingIndex = newFaqs.findIndex(f => f.questionId === faq.id);
+              let currentAnswers = Array.isArray(currentAnswer) ? [...currentAnswer] : [];
+              
+              if (!currentAnswers.includes(customValue)) {
+                currentAnswers.push(customValue);
+                const newAnswer = { questionId: faq.id, answer: currentAnswers };
+                
+                if (existingIndex >= 0) {
+                  newFaqs[existingIndex] = newAnswer;
+                } else {
+                  newFaqs.push(newAnswer);
+                }
+                
+                setFormData(prev => ({ ...prev, vendorFaqs: newFaqs }));
+                setCustomFaqInputs(prev => ({ ...prev, [faq.id]: '' }));
+                toast.success(`"${customValue}" adicionado!`);
+              } else {
+                toast.error('Este item já foi adicionado');
+              }
+            }
+          }}
+        />
+        <button
+          type="button"
+          onClick={() => {
+            const customValue = customFaqInputs[faq.id]?.trim();
+            if (customValue) {
+              const newFaqs = [...(formData.vendorFaqs || [])];
+              const existingIndex = newFaqs.findIndex(f => f.questionId === faq.id);
+              let currentAnswers = Array.isArray(currentAnswer) ? [...currentAnswer] : [];
+              
+              if (!currentAnswers.includes(customValue)) {
+                currentAnswers.push(customValue);
+                const newAnswer = { questionId: faq.id, answer: currentAnswers };
+                
+                if (existingIndex >= 0) {
+                  newFaqs[existingIndex] = newAnswer;
+                } else {
+                  newFaqs.push(newAnswer);
+                }
+                
+                setFormData(prev => ({ ...prev, vendorFaqs: newFaqs }));
+                setCustomFaqInputs(prev => ({ ...prev, [faq.id]: '' }));
+                toast.success(`"${customValue}" adicionado!`);
+              } else {
+                toast.error('Este item já foi adicionado');
+              }
+            } else {
+              toast.error('Digite um valor para adicionar');
+            }
+          }}
+          className="px-4 py-2 bg-[#9CAA8E] text-white rounded-lg text-sm hover:bg-[#8A9A7E]"
+        >
+          Adicionar
+        </button>
+      </div>
+    )}
+  </div>
+)}
+
+
                                   </div>
                                 );
                               })}
@@ -2078,11 +2150,33 @@ const ProfilePage = () => {
                     {selectedVendor?.reviews?.map((review, index) => (
                       <div key={index} className="bg-white border border-gray-200 rounded-xl p-4 md:p-5">
                         <div className="flex items-start gap-3 md:gap-4">
-                          <div className="w-10 h-10 md:w-12 md:h-12 bg-[#9CAA8E]/10 rounded-full flex items-center justify-center flex-shrink-0">
-                            <User className="w-5 h-5 md:w-6 md:h-6 text-[#9CAA8E]" />
-                          </div>
+                          {/* User Avatar or Guest Icon */}
+                          {(review.user && typeof review.user === 'object' && review.user.name) ? (
+                            review.user.avatar ? (
+                              <img
+                                src={review.user.avatar.startsWith('https') ? review.user.avatar : `${API_URL}${review.user.avatar}`}
+                                alt={review.user.name}
+                                className="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover flex-shrink-0"
+                              />
+                            ) : (
+                              <div className="w-10 h-10 md:w-12 md:h-12 bg-[#9CAA8E] rounded-full flex items-center justify-center flex-shrink-0">
+                                <span className="text-sm md:text-base text-white font-medium">
+                                  {review.user.name?.charAt(0)?.toUpperCase() || '?'}
+                                </span>
+                              </div>
+                            )
+                          ) : (
+                            <div className="w-10 h-10 md:w-12 md:h-12 bg-gray-200 rounded-full flex items-center justify-center flex-shrink-0">
+                              <User className="w-5 h-5 md:w-6 md:h-6 text-gray-400" />
+                            </div>
+                          )}
                           <div className="flex-1">
-                            <h4 className="font-semibold text-black text-sm md:text-base">{review.clientName || 'Cliente'}</h4>
+                            {/* Show user name or Guest */}
+                            <h4 className="font-semibold text-black text-sm md:text-base">
+                              {(review.user && typeof review.user === 'object' && review.user.name) 
+                                ? review.user.name 
+                                : (review.clientName || 'Convidado')}
+                            </h4>
                             <div className="flex gap-1 my-1">
                               {[1, 2, 3, 4, 5].map((star) => (
                                 <Star 
@@ -2125,83 +2219,101 @@ const ProfilePage = () => {
                     <p className="text-xs text-gray-400 mt-2">Visite a página de fornecedores para encontrar os melhores serviços</p>
                   </div>
                 ) : (
+                
+                
                   <div className="space-y-3 md:space-y-4">
-                    {myQuoteRequests.map((quote) => (
-                      <div 
-                        key={quote._id} 
-                        className="bg-white border border-gray-200 rounded-xl p-4 md:p-5 hover:shadow-md transition-shadow cursor-pointer"
-                        onClick={() => quote.vendor?._id && handleVendorClick(quote.vendor._id)}
-                      >
-                        <div className="flex flex-col md:flex-row md:items-start justify-between gap-3">
-                          <div className="flex items-start gap-3 md:gap-4">
-                            <div className="w-10 h-10 md:w-12 md:h-12 bg-[#9CAA8E]/10 rounded-full flex items-center justify-center flex-shrink-0">
-                              <Store className="w-5 h-5 md:w-6 md:h-6 text-[#9CAA8E]" />
-                            </div>
-                            <div className="flex-1">
-                              <h4 className="font-semibold text-black text-sm md:text-base">{quote.vendor?.name || 'Fornecedor'}</h4>
-                              <p className="text-xs md:text-sm text-gray-500">{quote.vendor?.category?.name}</p>
-                              <div className="flex flex-wrap items-center gap-2 md:gap-4 mt-2 text-xs md:text-sm text-gray-600">
-                                {quote.eventDate && (
-                                  <span className="flex items-center gap-1">
-                                    <Clock className="w-3 h-3 md:w-4 md:h-4" />
-                                    {new Date(quote.eventDate).toLocaleDateString('pt-PT')}
-                                  </span>
-                                )}
-                                {quote.guestCount && (
-                                  <span>{quote.guestCount} convidados</span>
-                                )}
-                              </div>
-                              {quote.message && (
-                                <p className="mt-3 text-gray-700 bg-gray-50 p-3 rounded-lg text-xs md:text-sm">
-                                  {quote.message}
-                                </p>
-                              )}
-                            </div>
-                          </div>
-                          <div className="flex flex-row md:flex-col items-center md:items-end justify-between md:justify-start gap-2">
-                            <span className={`px-2 py-1 md:px-3 md:py-1 rounded-full text-xs font-medium whitespace-nowrap ${
-                              quote.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                              quote.status === 'accepted' ? 'bg-green-100 text-green-800' :
-                              'bg-red-100 text-red-800'
-                            }`}>
-                              {quote.status === 'pending' ? 'Pendente' : 
-                               quote.status === 'accepted' ? 'Aceite' : 'Recusado'}
-                            </span>
-                            {quote.vendor?._id && (
-                              <span className="text-xs text-[#9CAA8E] hidden md:block">
-                                Ver fornecedor
-                              </span>
-                            )}
-                          </div>
-                        </div>
+  {myQuoteRequests.map((quote) => (
+    <div
+      key={quote._id}
+      className="bg-white border border-gray-200 rounded-xl p-4 md:p-5 hover:shadow-md transition-all duration-200 cursor-pointer"
+      onClick={() => quote.vendor?._id && handleVendorClick(quote.vendor._id)}
+    >
+      <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+        
+        {/* LEFT SIDE */}
+        <div className="flex items-start gap-3 md:gap-4">
+          <div className="w-10 h-10 md:w-12 md:h-12 bg-[#9CAA8E]/10 rounded-full flex items-center justify-center flex-shrink-0">
+            <Store className="w-5 h-5 md:w-6 md:h-6 text-[#9CAA8E]" />
+          </div>
 
-                        {/* Mobile View Details */}
-                        {quote.vendor?._id && (
-                          <div className="md:hidden mt-2 pt-2 border-t border-gray-100 flex items-center justify-between">
-                            <span className="text-xs text-[#9CAA8E]">Ver fornecedor</span>
-                            {quote.responseMessage && (
-                              <p className="text-xs text-gray-500 text-right max-w-xs">
-                                <span className="font-medium">Resposta:</span> {quote.responseMessage}
-                              </p>
-                            )}
-                          </div>
-                        )}
+          <div className="flex-1 min-w-0">
+            <h4 className="font-semibold text-black text-sm md:text-base truncate">
+              {quote.vendor?.name || 'Fornecedor'}
+            </h4>
 
-                        {/* Desktop Response Message */}
-                        {quote.responseMessage && (
-                          <p className="hidden md:block mt-4 text-sm text-gray-500 border-t border-gray-100 pt-4">
-                            <span className="font-medium">Resposta do fornecedor:</span> {quote.responseMessage}
-                          </p>
-                        )}
+            <p className="text-xs md:text-sm text-gray-500 truncate">
+              {quote.vendor?.category?.name}
+            </p>
 
-                        {quote.createdAt && (
-                          <p className="text-xs text-gray-400 mt-3 md:mt-4">
-                            Solicitado em: {new Date(quote.createdAt).toLocaleDateString('pt-PT')}
-                          </p>
-                        )}
-                      </div>
-                    ))}
-                  </div>
+            <div className="flex flex-wrap items-center gap-3 mt-2 text-xs md:text-sm text-gray-600">
+              {quote.eventDate && (
+                <span className="flex items-center gap-1">
+                  <Clock className="w-3 h-3 md:w-4 md:h-4" />
+                  {new Date(quote.eventDate).toLocaleDateString('pt-PT')}
+                </span>
+              )}
+
+              {quote.guestCount && (
+                <span>{quote.guestCount} convidados</span>
+              )}
+            </div>
+
+            {quote.message && (
+              <p className="mt-3 text-gray-700 bg-gray-50 p-3 rounded-lg text-xs md:text-sm break-words">
+                {quote.message}
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* RIGHT SIDE */}
+        <div className="flex items-center justify-between lg:flex-col lg:items-end gap-2">
+          <span
+            className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
+              quote.status === 'pending'
+                ? 'bg-yellow-100 text-yellow-800'
+                : quote.status === 'accepted'
+                ? 'bg-green-100 text-green-800'
+                : 'bg-red-100 text-red-800'
+            }`}
+          >
+            {quote.status === 'pending'
+              ? 'Pendente'
+              : quote.status === 'accepted'
+              ? 'Aceite'
+              : 'Recusado'}
+          </span>
+
+          {quote.vendor?._id && (
+            <span className="text-xs text-[#9CAA8E]">
+              Ver fornecedor
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* RESPONSE MESSAGE */}
+      {quote.responseMessage && (
+        <p className="mt-4 text-xs md:text-sm text-gray-500 border-t border-gray-100 pt-4 break-words">
+          <span className="font-medium">
+            Resposta do fornecedor:
+          </span>{' '}
+          {quote.responseMessage}
+        </p>
+      )}
+
+      {/* CREATED DATE */}
+      {quote.createdAt && (
+        <p className="text-xs text-gray-400 mt-3 md:mt-4">
+          Solicitado em:{' '}
+          {new Date(quote.createdAt).toLocaleDateString('pt-PT')}
+        </p>
+      )}
+    </div>
+  ))}
+</div>
+
+
                 )}
               </div>
             )}

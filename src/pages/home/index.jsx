@@ -72,6 +72,10 @@ export default function WeddingLanding() {
 
   const handleViewProfile = async (vendor) => {
     try {
+
+      navigate('/vendor/'+vendor._id)
+
+      return
       const response = await getVendor(vendor._id);
       setSelectedVendor(response.data);
       setCurrentSlide(0);
@@ -963,7 +967,7 @@ export default function WeddingLanding() {
               onClick={() => navigate('/public-gallery')} 
               className="px-8 py-3 bg-[#9CAA8E] text-white rounded-full hover:bg-[#8A9A7E] transition-colors font-medium"
             >
-              Ver mais images
+              Ver mais imagens
             </button>
           </div>
         </div>
@@ -1015,7 +1019,7 @@ export default function WeddingLanding() {
               <h4 className="font-semibold mb-4">{t('footer.vendors.title')}</h4>
               <ul className="space-y-2 text-gray-400 text-sm">
                 <li><a href="/signup?as=vendor" className="hover:text-white !text-gray-400">{t('footer.vendors.register')}</a></li>
-                <li><a href="/vendors/plans" className="hover:text-white !text-gray-400">{t('footer.vendors.plans')}</a></li>
+                <li><a href="/vendors/plans" className="hover:text-white hidden !text-gray-400">{t('footer.vendors.plans')}</a></li>
                 <li><a href="/support" className="hover:text-white !text-gray-400">{t('footer.vendors.support')}</a></li>
               </ul>
             </div>

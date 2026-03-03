@@ -1,13 +1,14 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams } from 'react-router-dom';
-import { API_URL, getSharedAlbum } from '../../api/client';
+import { API_URL, getSharedAlbum, uploadToSharedAlbum } from '../../api/client';
 import { toast } from 'react-hot-toast';
 import { 
   Download, 
   ChevronLeft,
   ChevronRight,
   X,
-  Image
+  Image,
+  Upload
 } from 'lucide-react';
 import Header from '../../components/Header';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -20,6 +21,9 @@ const SharedGallery = () => {
   const [error, setError] = useState(null);
   const [downloading, setDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const fileInputRef = useRef(null);
 
   // Keyboard navigation
   const handleKeyDown = useCallback((e) => {
@@ -104,6 +108,38 @@ const SharedGallery = () => {
     xhr.send();
   };
 
+  const handleFileSelect = async (e) => {
+    const files = Array.from(e.target.files);
+    if (files.length === 0) return;
+
+    setUploading(true);
+    setUploadProgress(0);
+    try {
+      const formData = new FormData();
+      files.forEach(file => {
+        formData.append('photos', file);
+      });
+
+      const response = await uploadToSharedAlbum(shareCode, formData, (progressEvent) => {
+        const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+        setUploadProgress(percentCompleted);
+      });
+      if (response.data.success) {
+        toast.success(`${files.length} foto(s) carregada(s) com sucesso`);
+        setAlbum(response.data.data);
+      }
+    } catch (error) {
+      console.error('Upload error:', error);
+      toast.error('Erro ao carregar fotos');
+    } finally {
+      setUploading(false);
+      setUploadProgress(0);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -151,6 +187,26 @@ const SharedGallery = () => {
         </div>
       )}
 
+      {/* Upload Progress */}
+      {uploading && (
+        <div className="fixed bottom-8 left-1/2 -translate-x-1/2 z-50 bg-white rounded-full shadow-lg border border-gray-200 px-6 py-3">
+          <div className="flex items-center gap-4">
+            <span className="text-sm font-medium text-gray-700">
+              A carregar fotos...
+            </span>
+            <div className="w-32 bg-gray-200 rounded-full h-2">
+              <div 
+                className="bg-[#9CAA8E] h-2 rounded-full transition-all duration-300"
+                style={{ width: `${uploadProgress}%` }}
+              ></div>
+            </div>
+            <span className="text-sm font-medium text-[#9CAA8E] w-10">
+              {uploadProgress}%
+            </span>
+          </div>
+        </div>
+      )}
+
       {/* Album Header */}
       <div className="bg-white shadow-md p-6">
         <div className="max-w-7xl mx-auto">
@@ -162,14 +218,35 @@ const SharedGallery = () => {
               </a>
             </div>
             <div className="text-center">
-              <h1 className="text-2xl font-serif font-bold text-black">{album?.name}</h1>
+              <h1 className="text-2xl font-serif font-bold text-black max-md:text-[18px]">{album?.name}</h1>
               {album?.createdBy && (
                 <p className="text-gray-500 text-sm">
                   Por {album.createdBy.name}
                 </p>
               )}
             </div>
-            <div className="w-24"></div>
+           {album?.allowUpload && ( <div className="w-24 flex justify-end">
+              
+                <>
+                  <input
+                    type="file"
+                    ref={fileInputRef}
+                    onChange={handleFileSelect}
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    id="shared-photo-upload"
+                  />
+                  <label
+                    htmlFor="shared-photo-upload"
+                    className={`inline-flex items-center gap-2 px-4 py-2 bg-[#9CAA8E] text-white rounded-full cursor-pointer hover:bg-[#8A9A7E] transition-colors ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                  >
+                    <Upload className="w-4 h-4" />
+                     <span className="max-md:hidden">{uploading ? 'Carregando...' : 'Adicionar'}</span>
+                  </label>
+                </>
+             
+            </div> )}
           </div>
         </div>
       </div>
@@ -219,6 +296,26 @@ const SharedGallery = () => {
           <div className="text-center py-16 bg-white rounded-2xl">
             <Image className="w-16 h-16 text-gray-300 mx-auto mb-4" />
             <p className="text-gray-500">Nenhuma foto neste álbum</p>
+            {album?.allowUpload && (
+              <>
+                <input
+                  type="file"
+                  ref={fileInputRef}
+                  onChange={handleFileSelect}
+                  accept="image/*"
+                  multiple
+                  className="hidden"
+                  id="shared-photo-upload-empty"
+                />
+                <label
+                  htmlFor="shared-photo-upload-empty"
+                  className={`inline-flex items-center gap-2 mt-4 px-6 py-3 bg-[#9CAA8E] text-white rounded-full cursor-pointer hover:bg-[#8A9A7E] transition-colors ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                >
+                  <Upload className="w-5 h-5" />
+                  {uploading ? 'Carregando...' : 'Adicionar Fotos'}
+                </label>
+              </>
+            )}
           </div>
         )}
       </div>

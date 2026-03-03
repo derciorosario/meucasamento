@@ -35,7 +35,7 @@ const Footer = () => {
               <h4 className="font-semibold mb-4">Fornecedores</h4>
               <ul className="space-y-2 text-gray-400 text-sm">
                 <li><button onClick={() => navigate('/signup?as=vendor')} className="hover:text-white !text-gray-400">Cadastre-se</button></li>
-                <li><button onClick={() => navigate('/vendors/plans')} className="hover:text-white !text-gray-400">Planos</button></li>
+                <li><button onClick={() => navigate('/vendors/plans')} className="hover:text-white hidden !text-gray-400">Planos</button></li>
                 <li><button onClick={() => navigate('/support')} className="hover:text-white !text-gray-400">Suporte</button></li>
               </ul>
             </div>

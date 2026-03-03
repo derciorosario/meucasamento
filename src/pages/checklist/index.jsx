@@ -766,7 +766,7 @@ const ChecklistPage = () => {
                       
                       if (filteredTasks.length > 0) {
                         return (
-                          <div className="border border-gray-200 rounded-xl overflow-hidden mb-4">
+                          <div className="border border-gray-200 rounded-xl mb-4">
                             <button
                               onClick={toggleThisWeekSection}
                               className="w-full p-4 sm:p-6 flex items-center justify-between hover:bg-gray-50 transition-colors bg-gradient-to-r from-blue-50 to-purple-50"
@@ -938,7 +938,7 @@ const ChecklistPage = () => {
                                                   className="fixed inset-0 z-40"
                                                   onClick={() => setMobileActionMenu(null)}
                                                 />
-                                                <div className="absolute right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-50 overflow-hidden">
+                                                <div className="absolute    right-0 top-full mt-1 w-48 bg-white rounded-lg shadow-xl border border-gray-200 z-50 overflow-hidden">
                                                   <button
                                                     onClick={() => {
                                                       handleEditTask(task);
@@ -998,7 +998,7 @@ const ChecklistPage = () => {
                       const completedCount = tasks.filter(t => t.status === 'completed').length;
                       
                       return (
-                        <div key={period} className="border border-gray-200 rounded-xl overflow-hidden">
+                        <div key={period} className="border border-gray-200 rounded-xl">
                           <button
                             onClick={() => toggleTimelineSection(period)}
                             className="w-full p-4 sm:p-6 flex items-center justify-between hover:bg-gray-50 transition-colors bg-white"
@@ -1234,7 +1234,7 @@ const ChecklistPage = () => {
                       
                       if (filteredTasks.length > 0) {
                         return (
-                          <div className="border border-gray-200 rounded-xl overflow-hidden mb-4">
+                          <div className="border border-gray-200 rounded-xl mb-4">
                             <button
                               onClick={toggleThisWeekSection}
                               className="w-full p-4 sm:p-6 flex items-center justify-between hover:bg-gray-50 transition-colors bg-gradient-to-r from-blue-50 to-purple-50"
@@ -1463,7 +1463,7 @@ const ChecklistPage = () => {
                       const completedCount = tasks.filter(t => t.status === 'completed').length;
                       
                       return (
-                        <div key={categoryType} className="border border-gray-200 rounded-xl overflow-hidden">
+                        <div key={categoryType} className="border border-gray-200 rounded-xl">
                           <button
                             onClick={() => toggleCategorySection(categoryType)}
                             className="w-full p-4 sm:p-6 flex items-center justify-between hover:bg-gray-50 transition-colors bg-white"
@@ -1769,7 +1769,7 @@ const ChecklistPage = () => {
 
               <button 
                 onClick={() => setIsModalOpen(true)}
-                className="w-full bg-primary-500 text-white py-3 rounded-full font-medium hover:bg-primary-600 transition"
+                className="w-full mt-4 bg-primary-500 text-white py-3 rounded-full font-medium hover:bg-primary-600 transition"
               >
                 Adicionar tarefa
               </button>

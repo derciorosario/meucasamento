@@ -448,6 +448,14 @@ export const updatePhotoCaption = (albumId, photoId, caption) =>
 // Get shared album
 export const getSharedAlbum = (shareCode) => client.get(`/gallery/shared/${shareCode}`);
 
+// Upload photos to shared album (public)
+export const uploadToSharedAlbum = (shareCode, formData, onUploadProgress) => {
+  return client.post(`/gallery/shared/${shareCode}/upload`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+    onUploadProgress
+  });
+};
+
 // Get all public galleries
 export const getAllPublicGalleries = (params) => client.get('/gallery/public/all', { params });
 

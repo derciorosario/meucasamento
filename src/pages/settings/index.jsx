@@ -348,7 +348,7 @@ const SettingsPage = () => {
                 </button>
               </div>
 
-              <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
+              <div className="hidden flex items-center justify-between p-4 bg-gray-50 rounded-xl">
                 <div>
                   <p className="font-medium text-gray-900">Notificações Push</p>
                   <p className="text-sm text-gray-500">Receba notificações no navegador</p>

@@ -453,7 +453,7 @@ const VendorsPage = () => {
 
   if (loading && vendors.length === 0) {
     return (
-      <DefaultLayout hero={{ title: "Fornecedores", subtitle: "Encontre os melhores fornecedores para o seu casamento" }}>
+      <DefaultLayout notSticky={true} hero={{ title: "Fornecedores", subtitle: "Encontre os melhores fornecedores para o seu casamento" }}>
         <div className="flex flex-col items-center justify-center min-h-[60vh]">
           <div className="relative">
             <div className="w-20 h-20 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin"></div>
@@ -466,7 +466,7 @@ const VendorsPage = () => {
   }
 
   return (
-    <DefaultLayout hero={{ 
+    <DefaultLayout notSticky={true} hero={{ 
       title: "Fornecedores", 
       subtitle: "Encontre os melhores fornecedores para tornar o seu casamento inesquecível",
       image: "https://images.unsplash.com/photo-1519167758481-83f29da8c1e8?w=1200&h=400&fit=crop"
@@ -684,7 +684,7 @@ const VendorsPage = () => {
                     </div>
 
                     {/* Price Range Filter */}
-                    <div className="p-5 border-b border-gray-100">
+                    <div className="p-5 border-b border-gray-100 hidden">
                       <label className="block text-sm font-medium text-gray-700 mb-3">
                         Orçamento
                       </label>
@@ -1214,7 +1214,7 @@ const VendorsPage = () => {
                   </div>
                 </div>
 
-                <div>
+                <div className="hidden">
                   <label className="block text-sm font-medium text-gray-700 mb-2">Orçamento</label>
                   <div className="space-y-2">
                     {[

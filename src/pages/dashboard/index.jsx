@@ -314,6 +314,8 @@ export default function WeddingDashboard() {
 
   // Handle opening vendor profile
   const handleVendorClick = async (vendorId) => {
+    navigate('/vendor/'+vendorId)
+    return
     try {
       const response = await getVendor(vendorId);
       setSelectedVendor(response.data);
@@ -477,7 +479,7 @@ export default function WeddingDashboard() {
                   <Heart className="w-5 h-5 text-primary-500" fill="currentColor" />
                   <span className="text-sm font-medium text-primary-600 uppercase tracking-wider">O Grande Dia</span>
                 </div>
-                <h1 className="text-4xl md:text-5xl font-light text-gray-800 mb-4" style={{ fontFamily: 'Georgia, serif' }}>
+                <h1 className="text-3xl md:text-4xl font-light text-gray-800 mb-4" style={{ fontFamily: 'Georgia, serif' }}>
                   {user?.name} & <span className="text-primary-600">{partnerName}</span>
                 </h1>
                 <div className="flex flex-wrap items-center gap-4 text-gray-600">
@@ -637,7 +639,7 @@ export default function WeddingDashboard() {
               <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 hover:shadow-md transition-shadow">
                 <h3 className="text-lg font-medium text-gray-800 mb-4">Melhorar o seu perfil</h3>
                 <p className="text-sm text-gray-600 mb-4">
-                  Um perfil completo atrai mais clientes. Adicione photos, descrição e preços.
+                  Um perfil completo atrai mais clientes. Adicione fotos, descrição e preços.
                 </p>
                 <button 
                   onClick={() => navigate('/profile')}

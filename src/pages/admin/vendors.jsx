@@ -161,6 +161,11 @@ const AdminVendors = () => {
   };
 
   const handleViewProfile = async (vendor) => {
+
+
+    navigate('/vendor/'+vendor._id)
+
+    return
     try {
       const response = await getVendor(vendor._id);
       setSelectedVendor(response.data);

@@ -422,7 +422,7 @@ const WeddingBudgetManager = () => {
                 {/* Budget Summary - Mobile friendly */}
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mt-4 gap-2">
                   <div className="text-sm text-gray-600">
-                    Total previsto: <span className="font-semibold text-gray-900">{formatCurrency(totalBudgeted)}</span>
+                    Total estimado: <span className="font-semibold text-gray-900">{formatCurrency(totalBudgeted)}</span>
                   </div>
                   <div className="text-sm text-gray-600">
                     Remanescente <span className="font-semibold text-gray-900">{formatCurrency(remaining)}</span>
@@ -509,7 +509,7 @@ const WeddingBudgetManager = () => {
                                           <div className="font-medium text-gray-900">{subcategory.name}</div>
                                           <div className="grid grid-cols-2 gap-3">
                                             <div>
-                                              <label className="text-xs text-gray-500 block mb-1">Previsto</label>
+                                              <label className="text-xs text-gray-500 block mb-1">Estimativa</label>
                                               <input
                                                 type="number"
                                                 value={editForm.estimatedCost ?? ''}
@@ -570,7 +570,7 @@ const WeddingBudgetManager = () => {
                                             </div>
                                             <div className="grid grid-cols-3 gap-2 text-sm">
                                               <div>
-                                                <span className="text-gray-500 text-xs">Previsto</span>
+                                                <span className="text-gray-500 text-xs">Estimativa</span>
                                                 <div className="font-medium text-gray-900">{formatCurrency(subcategory.estimatedCost)}</div>
                                               </div>
                                               <div>
@@ -634,7 +634,7 @@ const WeddingBudgetManager = () => {
                                   <thead>
                                     <tr className="border-b border-gray-100 bg-gray-25">
                                       <th className="text-left py-3 px-4 text-sm font-semibold text-gray-700">Item</th>
-                                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700">Previsto (MT)</th>
+                                      <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700">Estimativa (MT)</th>
                                       <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700">Real (MT)</th>
                                       <th className="text-right py-3 px-4 text-sm font-semibold text-gray-700">Diferença</th>
                                       <th className="text-center py-3 px-4 text-sm font-semibold text-gray-700">Estado</th>
@@ -771,7 +771,7 @@ const WeddingBudgetManager = () => {
                                 <div className="text-sm font-semibold text-gray-700 mb-2">Total {category.name}</div>
                                 <div className="grid grid-cols-3 gap-2">
                                   <div>
-                                    <span className="text-xs text-gray-500 block">Previsto</span>
+                                    <span className="text-xs text-gray-500 block">Estimativa</span>
                                     <span className="font-semibold text-gray-900">
                                       {formatCurrency(category.subcategories.reduce((sum, sub) => sum + (sub.estimatedCost || 0), 0))}
                                     </span>
@@ -805,7 +805,7 @@ const WeddingBudgetManager = () => {
                                   <span className="font-semibold text-gray-700">Total {category.name}:</span>
                                   <div className="flex space-x-4">
                                     <div className="text-right">
-                                      <span className="text-xs text-gray-500 block">Previsto</span>
+                                      <span className="text-xs text-gray-500 block">Estimativa</span>
                                       <span className="font-semibold text-gray-900">
                                         {formatCurrency(category.subcategories.reduce((sum, sub) => sum + (sub.estimatedCost || 0), 0))}
                                       </span>
@@ -940,7 +940,7 @@ const WeddingBudgetManager = () => {
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Resumo</h3>
                 <div className="space-y-3">
                   <div className="flex justify-between">
-                    <span className="text-gray-600">Total Previsto:</span>
+                    <span className="text-gray-600">Total Estimativa:</span>
                     <span className="font-semibold text-gray-900">{formatCurrency(totalBudgeted)}</span>
                   </div>
                   <div className="flex justify-between">
@@ -960,12 +960,12 @@ const WeddingBudgetManager = () => {
 
               {/* Comparison Cards */}
               <div className="border-t border-gray-200 pt-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Comparações</h3>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Análise do orçamento</h3>
                 <div className="space-y-3">
-                  {/* Previsto vs Orçamento */}
+                  {/* Estimativa vs Orçamento */}
                   <div className="bg-gray-50 rounded-lg p-3">
                     <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm text-gray-600">Previsto ● Orçamento</span>
+                      <span className="text-sm text-gray-600">Estimativa vs Orçamento</span>
                       <span className={`text-xs font-medium px-2 py-1 rounded-full ${
                         totalBudgeted <= totalBudget ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                       }`}>
@@ -986,15 +986,15 @@ const WeddingBudgetManager = () => {
                       </span>
                     </div>
                     <div className="flex justify-between text-xs text-gray-500 mt-1">
-                      <span>Previsto: {formatCurrency(totalBudgeted)}</span>
+                      <span>Estimativa: {formatCurrency(totalBudgeted)}</span>
                       <span>Orçamento: {formatCurrency(totalBudget)}</span>
                     </div>
                   </div>
 
-                  {/* Previsto vs Real */}
+                  {/* Estimativa vs Real */}
                   <div className="bg-gray-50 rounded-lg p-3">
                     <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm text-gray-600">Previsto ● Real</span>
+                      <span className="text-sm text-gray-600">Estimativa vs Real</span>
                       <span className={`text-xs font-medium px-2 py-1 rounded-full ${
                         totalActual <= totalBudgeted ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                       }`}>
@@ -1015,7 +1015,7 @@ const WeddingBudgetManager = () => {
                       </span>
                     </div>
                     <div className="flex justify-between text-xs text-gray-500 mt-1">
-                      <span>Previsto: {formatCurrency(totalBudgeted)}</span>
+                      <span>Estimativa: {formatCurrency(totalBudgeted)}</span>
                       <span>Real: {formatCurrency(totalActual)}</span>
                     </div>
                     <div className={`text-xs font-medium mt-1 ${totalActual - totalBudgeted > 0 ? 'text-red-600' : totalActual - totalBudgeted < 0 ? 'text-green-600' : 'text-gray-500'}`}>
@@ -1026,7 +1026,7 @@ const WeddingBudgetManager = () => {
                   {/* Real vs Orçamento */}
                   <div className="bg-gray-50 rounded-lg p-3">
                     <div className="flex justify-between items-center mb-2">
-                      <span className="text-sm text-gray-600">Real ● Orçamento</span>
+                      <span className="text-sm text-gray-600">Real vs Orçamento</span>
                       <span className={`text-xs font-medium px-2 py-1 rounded-full ${
                         totalActual <= totalBudget ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
                       }`}>
@@ -1059,7 +1059,7 @@ const WeddingBudgetManager = () => {
 
               <button 
                 onClick={openAddModalEmpty}
-                className="w-full bg-primary-500 text-white py-3 rounded-full font-medium hover:bg-primary-600 transition flex items-center justify-center space-x-2"
+                className="w-full mt-4 bg-primary-500 text-white py-3 rounded-full font-medium hover:bg-primary-600 transition flex items-center justify-center space-x-2"
               >
                 <Plus className="w-5 h-5" />
                 <span>Adicionar despesa</span>

@@ -151,6 +151,16 @@ export default function GuestsPage() {
   const [showTutorialDropdown, setShowTutorialDropdown] = useState(false);
   const [showTutorialDesktop, setShowTutorialDesktop] = useState(false);
 
+  // Default invitation message
+  const defaultInvitationMessage = "Olá! Estamos muito felizes em compartilhar este momento especial contigo. Confirmas a tua presença?";
+
+  // Set default message when invitation modal opens
+  useEffect(() => {
+    if (showInviteConfirm && !invitationMessage) {
+      setInvitationMessage(defaultInvitationMessage);
+    }
+  }, [showInviteConfirm]);
+
   // Form states
   const [guestForm, setGuestForm] = useState({
     name: "",
@@ -161,9 +171,23 @@ export default function GuestsPage() {
     menu: "",
     adults: 1,
     children: 0,
-    babies: 0,
     status: "pending",
+    kinship: "",
   });
+
+  const kinshipOptions = [
+    "Noivo(a)",
+    "Pai",
+    "Mãe",
+    "Irmão(ã)",
+    "Tio(a)",
+    "Avô(ó)",
+    "Primo(a)",
+    "Sobrinho(a)",
+    "Amigo(a)",
+    "Colega",
+    "Outro",
+  ];
 
   const [groupForm, setGroupForm] = useState({
     name: "",
@@ -303,8 +327,8 @@ export default function GuestsPage() {
         menu: guestForm.menu || null,
         adults: guestForm.adults ?? 1,
         children: guestForm.children ?? 0,
-        babies: guestForm.babies ?? 0,
         status: guestForm.status,
+        kinship: guestForm.kinship || null,
       };
       
       if (editingGuest) {
@@ -335,8 +359,8 @@ export default function GuestsPage() {
       menu: guest.menu?._id || "",
       adults: guest.adults ?? 1,
       children: guest.children ?? 0,
-      babies: guest.babies ?? 0,
       status: guest.status || "pending",
+      kinship: guest.kinship || "",
     });
     setShowGuestModal(true);
     setMobileActionMenu(null);
@@ -396,8 +420,8 @@ export default function GuestsPage() {
       menu: "",
       adults: 1,
       children: 0,
-      babies: 0,
       status: "pending",
+      kinship: "",
     });
   };
 
@@ -743,6 +767,42 @@ export default function GuestsPage() {
     setImportedGuests(prev => prev.filter(g => g.id !== id));
   };
 
+  const handleExportGuests = () => {
+    const exportData = guests.map(guest => ({
+      'Nome': guest.name,
+      'Email': guest.email || '',
+      'Telefone': guest.phone || '',
+      'Parentesco': guest.kinship || '',
+      'Grupo': guest.group?.name || '',
+      'Mesa': guest.table?.name || '',
+      'Cardápio': guest.menu?.name || '',
+      'Adultos': guest.adults,
+      'Crianças': guest.children,
+      'Status': guest.status === 'confirmed' ? 'Confirmado' : guest.status === 'pending' ? 'Pendente' : 'Recusou',
+    }));
+
+    const wb = XLSX.utils.book_new();
+    const ws = XLSX.utils.json_to_sheet(exportData);
+    
+    ws['!cols'] = [
+      { wch: 25 },
+      { wch: 30 },
+      { wch: 15 },
+      { wch: 15 },
+      { wch: 15 },
+      { wch: 15 },
+      { wch: 15 },
+      { wch: 10 },
+      { wch: 10 },
+      { wch: 10 },
+      { wch: 12 },
+    ];
+
+    XLSX.utils.book_append_sheet(wb, ws, 'Convidados');
+    XLSX.writeFile(wb, 'convidados.xlsx');
+    toast.success('Convidados exportados com sucesso!');
+  };
+
   const handleConfirmImport = async () => {
     setIsProcessing(true);
     try {
@@ -849,6 +909,13 @@ export default function GuestsPage() {
             >
               <Upload className="w-4 h-4" />
               <span>Importar</span>
+            </button>
+            <button
+              onClick={handleExportGuests}
+              className="bg-blue-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-blue-600 transition flex items-center space-x-2"
+            >
+              <Download className="w-4 h-4" />
+              <span>Exportar</span>
             </button>
            </div>
           </div>
@@ -1046,6 +1113,7 @@ export default function GuestsPage() {
                                 <p className="text-sm font-semibold text-gray-900">{guest.name}</p>
                                 <p className="text-xs text-gray-500">
                                   {guest.email || "Sem email"} • {guest.group?.name || "Sem grupo"}
+                                  {guest.kinship && <> • {guest.kinship}</>}
                                 </p>
                               </div>
 
@@ -1057,10 +1125,6 @@ export default function GuestsPage() {
                                 <div className="text-center">
                                   <p className="text-xs text-gray-400">Crianças</p>
                                   <p className="text-sm font-semibold text-gray-700">{guest.children}</p>
-                                </div>
-                                <div className="text-center">
-                                  <p className="text-xs text-gray-400">Bebês</p>
-                                  <p className="text-sm font-semibold text-gray-700">{guest.babies}</p>
                                 </div>
                               </div>
 
@@ -1492,10 +1556,7 @@ export default function GuestsPage() {
                       <span className="text-gray-600">Total de crianças:</span>
                       <span className="font-semibold text-gray-900">{stats.totalChildren}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Total de bebês:</span>
-                      <span className="font-semibold text-gray-900">{stats.totalBabies}</span>
-                    </div>
+                  
                     <div className="flex justify-between pt-2 border-t border-gray-100">
                       <span className="text-gray-600">Total de pessoas:</span>
                       <span className="font-semibold text-primary-600">
@@ -1542,6 +1603,12 @@ export default function GuestsPage() {
                   className="p-2 text-gray-600 hover:bg-gray-100 rounded-full"
                 >
                   <Upload className="w-5 h-5" />
+                </button>
+                <button 
+                  onClick={handleExportGuests}
+                  className="p-2 text-gray-600 hover:bg-gray-100 rounded-full"
+                >
+                  <Download className="w-5 h-5" />
                 </button>
               </div>
             </div>
@@ -1791,6 +1858,11 @@ export default function GuestsPage() {
                               {guest.email}
                             </p>
                           )}
+                          {guest.kinship && (
+                            <p className="text-xs text-primary-600 mt-1 font-medium">
+                              {guest.kinship}
+                            </p>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1902,7 +1974,7 @@ export default function GuestsPage() {
                         <span className="text-gray-600">Crianças</span>
                         <span className="font-medium text-gray-900">{stats.totalChildren}</span>
                       </div>
-                      <div className="flex justify-between text-sm">
+                      <div className="flex justify-between text-sm hidden">
                         <span className="text-gray-600">Bebês</span>
                         <span className="font-medium text-gray-900">{stats.totalBabies}</span>
                       </div>
@@ -2217,7 +2289,7 @@ export default function GuestsPage() {
                         <p className="text-xs text-gray-500 mb-1">Crianças</p>
                         <p className="text-2xl font-bold text-gray-900">{selectedGuest.children}</p>
                       </div>
-                      <div className="bg-gray-50 rounded-xl p-4 text-center">
+                      <div className="bg-gray-50 rounded-xl p-4 text-center hidden">
                         <p className="text-xs text-gray-500 mb-1">Bebês</p>
                         <p className="text-2xl font-bold text-gray-900">{selectedGuest.babies}</p>
                       </div>
@@ -2248,6 +2320,13 @@ export default function GuestsPage() {
                       <div className="bg-gray-50 rounded-xl p-4">
                         <p className="text-xs text-gray-500 mb-1">Cardápio</p>
                         <p className="text-gray-900">{selectedGuest.menu.name}</p>
+                      </div>
+                    )}
+
+                    {selectedGuest.kinship && (
+                      <div className="bg-gray-50 rounded-xl p-4">
+                        <p className="text-xs text-gray-500 mb-1">Parentesco</p>
+                        <p className="text-gray-900">{selectedGuest.kinship}</p>
                       </div>
                     )}
                   </div>
@@ -2348,7 +2427,7 @@ export default function GuestsPage() {
                       className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 text-black"
                     />
                   </div>
-                  <div>
+                  <div className="hidden">
                     <label className="block text-sm font-medium text-gray-900 mb-1">Bebês</label>
                     <input
                       type="number"
@@ -2415,6 +2494,21 @@ export default function GuestsPage() {
                     <option value="pending">Pendente</option>
                     <option value="confirmed">Confirmado</option>
                     <option value="declined">Recusou</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-900 mb-1">Parentesco</label>
+                  <select
+                    value={guestForm.kinship}
+                    onChange={(e) => setGuestForm({ ...guestForm, kinship: e.target.value })}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 text-black"
+                  >
+                    <option value="">Selecione...</option>
+                    {kinshipOptions.map((kinship) => (
+                      <option key={kinship} value={kinship}>
+                        {kinship}
+                      </option>
+                    ))}
                   </select>
                 </div>
                 <div className="flex gap-3 pt-4">
@@ -2685,8 +2779,14 @@ export default function GuestsPage() {
         {/* Send Invitation Confirmation Modal */}
         {showInviteConfirm && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-t-3xl sm:rounded-2xl p-6 w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
-              <div className="flex items-center justify-center w-16 h-16 mx-auto bg-green-100 rounded-full mb-4">
+            <div className="bg-white rounded-t-3xl sm:rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
+              <button 
+                onClick={() => { setShowInviteConfirm(false); setInvitationMessage(''); }}
+                className="absolute top-4 right-4 p-2 hover:bg-gray-100 rounded-full"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+              <div className="flex items-center justify-center w-16 h-16 mx-auto bg-green-100 rounded-full mb-4 mt-2">
                 <Mail className="w-8 h-8 text-green-500" />
               </div>
               <h3 className="text-lg font-semibold text-gray-900 text-center mb-2">Enviar Convites</h3>
@@ -2735,7 +2835,7 @@ export default function GuestsPage() {
         {/* Import Guests Modal */}
         {showImportModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-t-3xl sm:rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col">
+            <div className="bg-white rounded-t-3xl sm:rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold text-black">
                   {importStep === 1 ? 'Importar Convidados' : 'Revisar Convidados'}

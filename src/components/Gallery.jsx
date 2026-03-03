@@ -50,7 +50,7 @@ const Gallery = ({ userId = null, isOwner = false, isPublicView = false }) => {
   const [showProfileShareModal, setShowProfileShareModal] = useState(false);
   const [showAlbumMenu, setShowAlbumMenu] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState({ show: false, type: null, id: null, name: '' });
-  const [newAlbum, setNewAlbum] = useState({ name: '', description: '', isPublic: false });
+  const [newAlbum, setNewAlbum] = useState({ name: '', description: '', isPublic: false, allowUpload: true });
   const [selectedPhotos, setSelectedPhotos] = useState([]);
   const [lightboxIndex, setLightboxIndex] = useState(-1);
   const [albumViewMode, setAlbumViewMode] = useState('grid'); // 'grid' or 'list' - only affects mobile
@@ -137,7 +137,7 @@ const Gallery = ({ userId = null, isOwner = false, isPublicView = false }) => {
       if (response.data.success) {
         toast.success('Álbum criado com sucesso');
         setShowNewAlbumModal(false);
-        setNewAlbum({ name: '', description: '', isPublic: false });
+        setNewAlbum({ name: '', description: '', isPublic: false, allowUpload: true });
         fetchAlbums();
       }
     } catch (error) {
@@ -154,6 +154,7 @@ const Gallery = ({ userId = null, isOwner = false, isPublicView = false }) => {
         isPublic: selectedAlbum.isPublic,
         allowShare: selectedAlbum.allowShare,
         allowDownload: selectedAlbum.allowDownload,
+        allowUpload: selectedAlbum.allowUpload,
       });
       if (response.data.success) {
         toast.success('Álbum atualizado com sucesso');
@@ -860,6 +861,17 @@ const Gallery = ({ userId = null, isOwner = false, isPublicView = false }) => {
                     </button>
                   </div>
                   
+                  <div className="flex items-center justify-between">
+                    <span className="text-gray-700">Permitir upload</span>
+                    <button
+                      type="button"
+                      onClick={() => setSelectedAlbum({...selectedAlbum, allowUpload: !selectedAlbum.allowUpload})}
+                      className={`p-2 rounded-full transition-colors ${selectedAlbum.allowUpload ? 'bg-[#9CAA8E] text-white' : 'bg-gray-200 text-gray-500'}`}
+                    >
+                      <Upload className="w-5 h-5" />
+                    </button>
+                  </div>
+                  
                   <div className="flex gap-3 pt-4">
                     <button
                       type="button"
@@ -967,6 +979,19 @@ const Gallery = ({ userId = null, isOwner = false, isPublicView = false }) => {
                         }`}
                       >
                         <Download className="w-5 h-5" />
+                      </button>
+                    </div>
+                    
+                    <div className="flex items-center justify-between py-2">
+                      <span className="text-gray-700">Permitir upload</span>
+                      <button
+                        type="button"
+                        onClick={() => setSelectedAlbum({...selectedAlbum, allowUpload: !selectedAlbum.allowUpload})}
+                        className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
+                          selectedAlbum.allowUpload ? 'bg-[#9CAA8E] text-white' : 'bg-gray-200 text-gray-500'
+                        }`}
+                      >
+                        <Upload className="w-5 h-5" />
                       </button>
                     </div>
                     
@@ -1827,6 +1852,17 @@ const Gallery = ({ userId = null, isOwner = false, isPublicView = false }) => {
                   </button>
                 </div>
                 
+                <div className="flex items-center justify-between">
+                  <span className="text-gray-700">Permitir upload</span>
+                  <button
+                    type="button"
+                    onClick={() => setNewAlbum({...newAlbum, allowUpload: !newAlbum.allowUpload})}
+                    className={`p-2 rounded-full transition-colors ${newAlbum.allowUpload ? 'bg-[#9CAA8E] text-white' : 'bg-gray-200 text-gray-500'}`}
+                  >
+                    <Upload className="w-5 h-5" />
+                  </button>
+                </div>
+                
                 <button
                   type="submit"
                   className="w-full py-3 bg-[#9CAA8E] text-white rounded-lg hover:bg-[#8A9A7E] transition-colors"
@@ -1902,6 +1938,19 @@ const Gallery = ({ userId = null, isOwner = false, isPublicView = false }) => {
                       }`}
                     >
                       {newAlbum.isPublic ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
+                    </button>
+                  </div>
+                  
+                  <div className="flex items-center justify-between py-2">
+                    <span className="text-gray-700">Permitir upload</span>
+                    <button
+                      type="button"
+                      onClick={() => setNewAlbum({...newAlbum, allowUpload: !newAlbum.allowUpload})}
+                      className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${
+                        newAlbum.allowUpload ? 'bg-[#9CAA8E] text-white' : 'bg-gray-200 text-gray-500'
+                      }`}
+                    >
+                      <Upload className="w-5 h-5" />
                     </button>
                   </div>
                   

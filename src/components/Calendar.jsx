@@ -26,6 +26,7 @@ import {
   XCircle,
   List,
   Grid,
+  AlertTriangle,
 } from 'lucide-react';
 
 // Event categories with colors
@@ -63,6 +64,8 @@ const Calendar = ({ userId, vendorId }) => {
   const [sharePermission, setSharePermission] = useState('read');
   const [loading, setLoading] = useState(false);
   const [viewMode, setViewMode] = useState('month'); // 'month', 'list'
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [eventToDelete, setEventToDelete] = useState(null);
 
   // Event form state
   const [eventForm, setEventForm] = useState({
@@ -312,14 +315,18 @@ const Calendar = ({ userId, vendorId }) => {
     }
   };
 
-  // Delete event
-  const handleDeleteEvent = async (eventId) => {
-    if (!window.confirm('Tem certeza que deseja eliminar este evento?')) {
-      return;
-    }
+  // Delete event - show confirmation dialog
+  const handleDeleteEvent = (eventId) => {
+    setEventToDelete(eventId);
+    setShowDeleteConfirm(true);
+  };
+
+  // Confirm delete event
+  const confirmDeleteEvent = async () => {
+    if (!eventToDelete) return;
     
     try {
-      const response = await deleteCalendarEvent(eventId);
+      const response = await deleteCalendarEvent(eventToDelete);
       if (response.data.success) {
         toast.success('Evento eliminado com sucesso');
         loadEvents();
@@ -327,6 +334,13 @@ const Calendar = ({ userId, vendorId }) => {
     } catch (error) {
       console.error('Error deleting event:', error);
       toast.error('Erro ao eliminar evento');
+    } finally {
+      setShowDeleteConfirm(false);
+      setEventToDelete(null);
+      setShowEventDetails(false);
+      setSelectedEvent(null);
+      setEditingEvent(null)
+      setShowEventModal(false)
     }
   };
 
@@ -983,6 +997,16 @@ const Calendar = ({ userId, vendorId }) => {
                     <Edit3 className="w-4 h-4" />
                     Editar
                   </button>
+
+                   <button
+                          type="button"
+                          onClick={() => handleDeleteEvent(selectedEvent._id)}
+                          className="flex items-center gap-2 px-4 py-2 border border-red-300 text-red-600 rounded-lg hover:bg-red-50"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          Eliminar
+                        </button>
+
                   <button
                     onClick={() => {
                       setShareEventId(selectedEvent._id);
@@ -1073,6 +1097,63 @@ const Calendar = ({ userId, vendorId }) => {
                   </button>
                 </div>
               </form>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Delete Confirmation Dialog */}
+      <AnimatePresence>
+        {showDeleteConfirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+            onClick={() => {
+              setShowDeleteConfirm(false);
+              setEventToDelete(null);
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, y: 20 }}
+              className="bg-white rounded-2xl max-w-sm w-full p-6"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="text-center">
+                {/* Warning Icon */}
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <AlertTriangle className="w-8 h-8 text-red-600" />
+                </div>
+                
+                <h3 className="text-lg font-semibold text-black mb-2">
+                  Eliminar Evento
+                </h3>
+                
+                <p className="text-gray-600 mb-6">
+                  Tem certeza que deseja eliminar este evento? Esta ação não pode ser desfeita.
+                </p>
+                
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => {
+                      setShowDeleteConfirm(false);
+                      setEventToDelete(null);
+                    }}
+                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={confirmDeleteEvent}
+                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                  >
+                    Eliminar
+                  </button>
+                </div>
+              </div>
             </motion.div>
           </motion.div>
         )}

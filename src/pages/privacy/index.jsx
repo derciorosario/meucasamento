@@ -134,17 +134,32 @@ export default function Privacy() {
         </div>
 
         {/* Updates History */}
-        <div className="bg-white rounded-2xl p-8 shadow-md">
-          <h2 className="text-xl font-bold text-gray-900 mb-6">Histórico de Atualizações</h2>
-          <div className="space-y-4">
-            {updates.map((update, idx) => (
-              <div key={idx} className="flex items-start gap-4 p-4 border-l-2 border-[#9CAA8E]">
-                <span className="text-sm text-gray-500 whitespace-nowrap">{update.date}</span>
-                <p className="text-gray-700">{update.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
+       
+       
+       <div className="bg-white rounded-2xl p-4 sm:p-6 md:p-8 shadow-md">
+  <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-4 sm:mb-6">
+    Histórico de Atualizações
+  </h2>
+
+  <div className="space-y-4">
+    {updates.map((update, idx) => (
+      <div
+        key={idx}
+        className="flex flex-col sm:flex-row sm:items-start gap-2 sm:gap-4 p-4 border-l-2 border-[#9CAA8E]"
+      >
+        <span className="text-xs sm:text-sm text-gray-500 whitespace-nowrap">
+          {update.date}
+        </span>
+
+        <p className="text-sm sm:text-base text-gray-700">
+          {update.description}
+        </p>
+      </div>
+    ))}
+  </div>
+</div>
+
+
       </div>
     </DefaultLayout>
   );
