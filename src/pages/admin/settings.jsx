@@ -27,7 +27,8 @@ const AdminSettings = () => {
       checklist: '',
       budget: '',
       vendors: '',
-      gallery: ''
+      gallery: '',
+      gifts: ''
     },
     siteSettings: {
       maintenanceMode: false,
@@ -108,7 +109,8 @@ const AdminSettings = () => {
     { key: 'checklist', label: 'Checklist Page', placeholder: 'Enter YouTube URL for checklist tutorial', color: 'blue' },
     { key: 'budget', label: 'Budget Page', placeholder: 'Enter YouTube URL for budget tutorial', color: 'yellow' },
     { key: 'vendors', label: 'Vendors Page', placeholder: 'Enter YouTube URL for vendors tutorial', color: 'purple' },
-    { key: 'gallery', label: 'Gallery Page', placeholder: 'Enter YouTube URL for gallery tutorial', color: 'pink' }
+    { key: 'gallery', label: 'Gallery Page', placeholder: 'Enter YouTube URL for gallery tutorial', color: 'pink' },
+    { key: 'gifts', label: 'Gifts Page', placeholder: 'Enter YouTube URL for gifts tutorial', color: 'red' }
   ];
 
   const getColorClasses = (color) => {
@@ -117,7 +119,8 @@ const AdminSettings = () => {
       blue: 'border-gray-300 focus:ring-[#9CAA8E] focus:border-[#9CAA8E]',
       yellow: 'border-gray-300 focus:ring-[#9CAA8E] focus:border-[#9CAA8E]',
       purple: 'border-gray-300 focus:ring-[#9CAA8E] focus:border-[#9CAA8E]',
-      pink: 'border-gray-300 focus:ring-[#9CAA8E] focus:border-[#9CAA8E]'
+      pink: 'border-gray-300 focus:ring-[#9CAA8E] focus:border-[#9CAA8E]',
+      red: 'border-gray-300 focus:ring-[#9CAA8E] focus:border-[#9CAA8E]'
     };
     return colors[color] || colors.green;
   };
@@ -128,7 +131,8 @@ const AdminSettings = () => {
       blue: 'text-[#9CAA8E]',
       yellow: 'text-[#9CAA8E]',
       purple: 'text-[#9CAA8E]',
-      pink: 'text-[#9CAA8E]'
+      pink: 'text-[#9CAA8E]',
+      red: 'text-[#9CAA8E]'
     };
     return colors[color] || colors.green;
   };

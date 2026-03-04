@@ -846,12 +846,12 @@ export default function WeddingDashboard() {
                   </p>
                 </div>
                 
-                <div className="flex gap-4 overflow-x-auto pb-2 px-1 md:overflow-visible md:px-0 md:grid md:grid-cols-3 md:gap-4 lg:grid-cols-5">
+                <div className="flex gap-4 overflow-x-auto pb-2 px-1">
                   {tutorials.map((tutorial) => (
                     <button
                       key={tutorial.key}
                       onClick={() => setPlayingTutorial(tutorial)}
-                      className="group flex-shrink-0 w-40 md:w-auto relative bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all text-left"
+                      className="group flex-shrink-0 w-40 relative bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all text-left"
                     >
                       <div className="relative aspect-video bg-gray-100">
                         <img
@@ -872,6 +872,7 @@ export default function WeddingDashboard() {
                           {tutorial.key === 'budget' && 'Orçamento'}
                           {tutorial.key === 'vendors' && 'Fornecedores'}
                           {tutorial.key === 'gallery' && 'Galeria'}
+                          {tutorial.key === 'gifts' && 'Presentes'}
                         </div>
                         <div className="text-xs text-gray-500 mt-1">Tutorial</div>
                       </div>
@@ -887,7 +888,7 @@ export default function WeddingDashboard() {
                 <div className="bg-white rounded-xl overflow-hidden max-w-4xl w-full" onClick={e => e.stopPropagation()}>
                   <div className="flex items-center justify-between px-4 py-3 bg-gray-100">
                     <h3 className="text-lg font-semibold text-gray-900 capitalize">
-                      Tutorial: {playingTutorial.key === 'guests' ? 'Convidados' : playingTutorial.key === 'checklist' ? 'Agenda' : playingTutorial.key === 'budget' ? 'Orçamento' : playingTutorial.key === 'vendors' ? 'Fornecedores' : playingTutorial.key === 'gallery' ? 'Galeria' : playingTutorial.key}
+                      Tutorial: {playingTutorial.key === 'guests' ? 'Convidados' : playingTutorial.key === 'checklist' ? 'Agenda' : playingTutorial.key === 'budget' ? 'Orçamento' : playingTutorial.key === 'vendors' ? 'Fornecedores' : playingTutorial.key === 'gallery' ? 'Galeria' : playingTutorial.key === 'gifts' ? 'Presentes' : playingTutorial.key}
                     </h3>
                     <button
                       onClick={() => setPlayingTutorial(null)}

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Calendar, Users, Mail, Globe, CheckSquare, DollarSign, Star, Check, Instagram, Facebook, Youtube, Camera, MapIcon, MapPin, Phone, X, ChevronLeft, ChevronRight, Send, MessageCircle } from 'lucide-react';
+import { Calendar, Users, Mail, Globe, CheckSquare, DollarSign, Star, Check, Instagram, Facebook, Youtube, Camera, MapIcon, MapPin, Phone, X, ChevronLeft, ChevronRight, Send, MessageCircle, Gift } from 'lucide-react';
 import { useData } from '../../contexts/DataContext';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
@@ -520,7 +520,7 @@ export default function WeddingLanding() {
         <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-[70%] max-md:translate-y-[75%]  w-[95%] max-w-6xl bg-white rounded-3xl shadow-2xl z-20 p-8 md:p-12">
           <h2 className="text-3xl md:text-4xl font-serif text-center mb-12 text-black">{t('features.title')}</h2>
           
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-6 md:gap-8 mb-8">
+          <div className="grid grid-cols-2 md:grid-cols-6 gap-6 md:gap-8 mb-8">
             <button onClick={() => navigate('/checklist')} className="text-center cursor-pointer">
               <div className="text-center">
               <div className="w-14 h-14 md:w-16 md:h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3 hover:bg-primary-100 transition-colors">
@@ -558,6 +558,16 @@ export default function WeddingLanding() {
               </div>
               <h3 className="font-semibold text-sm md:text-base mb-1 text-black">{t('features.invitations.title')}</h3>
               <p className="text-xs md:text-sm text-gray-600">{t('features.invitations.description')}</p>
+              </div>
+            </button>
+            
+            <button onClick={() => navigate('/gifts')} className="text-center cursor-pointer">
+              <div className="text-center">
+              <div className="w-14 h-14 md:w-16 md:h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3 hover:bg-primary-100 transition-colors">
+                <Gift className="w-7 h-7 md:w-8 md:h-8 text-[#9CAA8E]" />
+              </div>
+              <h3 className="font-semibold text-sm md:text-base mb-1 text-black">Lista de Presentes</h3>
+              <p className="text-xs md:text-sm text-gray-600">Gerencie seus presentes de casamento</p>
               </div>
             </button>
             

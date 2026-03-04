@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DefaultLayout from '../../layout/DefaultLayout';
-import { API_URL } from '../../api/client';
-import { Plus, Gift, Search, Share2, QrCode, Trash2, Edit2, Check, X, Image, DollarSign, LayoutGrid, List, Table, Loader2, Download, Copy } from 'lucide-react';
+import { API_URL, getTutorials } from '../../api/client';
+import { Plus, Gift, Search, Share2, QrCode, Trash2, Edit2, Check, X, Image, DollarSign, LayoutGrid, List, Table, Loader2, Download, Copy, Play, ChevronDown } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 const categories = ['Todos', 'Cozinha', 'Quarto', 'Sala', 'Casa', 'Eletrodomésticos', 'Outros'];
@@ -29,6 +29,11 @@ const WeddingGifts = () => {
   const [shareCode, setShareCode] = useState(null);
   const fileInputRef = useRef(null);
   
+  // Tutorial video state
+  const [giftsTutorial, setGiftsTutorial] = useState(null);
+  const [showTutorialDropdown, setShowTutorialDropdown] = useState(false);
+  const [showTutorialDesktop, setShowTutorialDesktop] = useState(false);
+  
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -44,7 +49,32 @@ const WeddingGifts = () => {
   // Fetch gifts from API
   useEffect(() => {
     fetchGifts();
+    fetchTutorial();
   }, [selectedCategory, searchTerm]);
+
+  // Helper function to extract YouTube video ID
+  const extractYouTubeId = (url) => {
+    if (!url) return null;
+    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+    const match = url.match(regExp);
+    return (match && match[2].length === 11) ? match[2] : null;
+  };
+
+  // Fetch tutorial video
+  const fetchTutorial = async () => {
+    try {
+      const tutorialsRes = await getTutorials();
+      if (tutorialsRes.data?.tutorialVideos?.gifts) {
+        const videoId = extractYouTubeId(tutorialsRes.data.tutorialVideos.gifts);
+        setGiftsTutorial({
+          url: tutorialsRes.data.tutorialVideos.gifts,
+          videoId
+        });
+      }
+    } catch (tutError) {
+      console.log('No tutorial videos available for gifts');
+    }
+  };
 
   const fetchGifts = async () => {
     try {
@@ -646,6 +676,35 @@ const WeddingGifts = () => {
             </div>
           </div>
 
+          {/* Tutorial Video - Desktop Only */}
+          {giftsTutorial && (
+            <div className="mb-6">
+              <button
+                onClick={() => setShowTutorialDesktop(!showTutorialDesktop)}
+                className="w-full flex items-center justify-between p-3 bg-primary-50 rounded-lg border border-primary-100 hover:bg-primary-100 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <Play className="w-5 h-5 text-primary-500" fill="currentColor" />
+                  <span className="text-sm font-medium text-primary-700">Ver tutorial</span>
+                  <span className="text-xs text-primary-600 ml-1">(como usar esta página)</span>
+                </div>
+                <ChevronDown className={`w-4 h-4 text-primary-500 transition-transform ${showTutorialDesktop ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {showTutorialDesktop && (
+                <div className="mt-2 rounded-lg overflow-hidden">
+                  <iframe
+                    src={`https://www.youtube.com/embed/${giftsTutorial.videoId}`}
+                    title="Tutorial Video"
+                    className="w-full aspect-video"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  ></iframe>
+                </div>
+              )}
+            </div>
+          )}
+
           {/* Category Filter and View Toggle */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
             {/* Category Filter */}
@@ -765,6 +824,35 @@ const WeddingGifts = () => {
               className="w-full pl-10 pr-4 py-3 bg-white border border-gray-200 text-gray-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent"
             />
           </div>
+
+          {/* Tutorial Video - Mobile Only */}
+          {giftsTutorial && (
+            <div className="lg:hidden mb-4">
+              <button
+                onClick={() => setShowTutorialDropdown(!showTutorialDropdown)}
+                className="w-full flex items-center justify-between p-3 bg-primary-50 rounded-lg border border-primary-100 hover:bg-primary-100 transition-colors"
+              >
+                <div className="flex items-center gap-2">
+                  <Play className="w-5 h-5 text-primary-500" fill="currentColor" />
+                  <span className="text-sm font-medium text-primary-700">Ver tutorial</span>
+                  <span className="text-xs text-primary-600 ml-1">(como usar esta página)</span>
+                </div>
+                <ChevronDown className={`w-4 h-4 text-primary-500 transition-transform ${showTutorialDropdown ? 'rotate-180' : ''}`} />
+              </button>
+              
+              {showTutorialDropdown && (
+                <div className="mt-2 rounded-lg overflow-hidden">
+                  <iframe
+                    src={`https://www.youtube.com/embed/${giftsTutorial.videoId}`}
+                    title="Tutorial Video"
+                    className="w-full aspect-video"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  ></iframe>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Mobile Category Filter */}
           <div className="flex flex-wrap gap-2 mb-4">
