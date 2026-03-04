@@ -5,7 +5,7 @@ import {
   Edit2, Trash2, X, MoreVertical, Filter, ChevronDown, Users, 
   Check, Clock, AlertCircle, Plus, Search, Mail, UserPlus, 
   UsersRound, Utensils, Table2, Menu, ChevronRight, Home,
-  Settings, Bell, Calendar, MessageSquare, Upload, Download, FileSpreadsheet, Play
+  Settings, Bell, Calendar, MessageSquare, Upload, Download, FileSpreadsheet, Play, CheckSquare
 } from 'lucide-react';
 import {
   getGuests,
@@ -145,6 +145,10 @@ export default function GuestsPage() {
   const [sendingInvites, setSendingInvites] = useState(false);
   const [showInviteConfirm, setShowInviteConfirm] = useState(false);
   const [invitationMessage, setInvitationMessage] = useState('');
+  
+  // Guest selection dialog state
+  const [showGuestSelect, setShowGuestSelect] = useState(false);
+  const [guestSearch, setGuestSearch] = useState('');
 
   // Tutorial video state
   const [guestsTutorial, setGuestsTutorial] = useState(null);
@@ -1035,7 +1039,7 @@ export default function GuestsPage() {
                 </select>
                 <div className="ml-auto flex gap-2">
                   <button
-                    onClick={() => setShowInviteConfirm(true)}
+                    onClick={() => setShowGuestSelect(true)}
                     disabled={sendingInvites}
                     className="flex items-center justify-center gap-1.5 bg-green-500 text-white text-sm px-4 py-2.5 rounded-lg hover:bg-green-600 transition-colors disabled:opacity-50"
                   >
@@ -1589,7 +1593,7 @@ export default function GuestsPage() {
               <h1 className="text-xl font-semibold text-gray-900">Meus convidados</h1>
               <div className="flex items-center gap-2">
                 <button 
-                  onClick={() => setShowInviteConfirm(true)}
+                  onClick={() => setShowGuestSelect(true)}
                   className="p-2 text-gray-600 hover:bg-gray-100 rounded-full"
                 >
                   <Mail className="w-5 h-5" />
@@ -2826,6 +2830,125 @@ export default function GuestsPage() {
                   className="flex-1 px-4 py-3 bg-green-500 text-white rounded-xl hover:bg-green-600 font-medium disabled:opacity-50"
                 >
                   {sendingInvites ? 'Enviando...' : 'Enviar'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Guest Selection Modal */}
+        {showGuestSelect && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-t-3xl sm:rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold text-black">Selecionar Convidados</h2>
+                <button 
+                  onClick={() => { setShowGuestSelect(false); setGuestSearch(''); }}
+                  className="p-2 hover:bg-gray-100 rounded-full"
+                >
+                  <X className="w-5 h-5 text-gray-500" />
+                </button>
+              </div>
+              
+              {/* Search and Select All */}
+              <div className="mb-4 space-y-3">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                  <input
+                    type="text"
+                    value={guestSearch}
+                    onChange={(e) => setGuestSearch(e.target.value)}
+                    placeholder="Buscar convidado..."
+                    className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 text-black text-sm"
+                  />
+                </div>
+                <div className="flex items-center justify-between">
+                  <button
+                    onClick={toggleSelectAll}
+                    className="flex items-center gap-2 text-sm text-gray-600 hover:text-gray-900"
+                  >
+                    <CheckSquare className="w-4 h-4" />
+                    {selectedGuests.length === guests.length ? 'Desmarcar todos' : 'Selecionar todos'}
+                  </button>
+                  <span className="text-sm text-gray-500">
+                    {selectedGuests.length} selecionado(s)
+                  </span>
+                </div>
+              </div>
+              
+              {/* Guest List */}
+              <div className="flex-1 overflow-y-auto border border-gray-200 rounded-xl max-h-[40vh]">
+                {filteredGuests
+                  .filter(g => g.email || g.phone)
+                  .filter(g => !guestSearch || g.name.toLowerCase().includes(guestSearch.toLowerCase()))
+                  .map((guest) => (
+                    <div 
+                      key={guest._id}
+                      onClick={() => toggleGuestSelection(guest._id)}
+                      className={`flex items-center gap-3 p-3 cursor-pointer hover:bg-gray-50 border-b border-gray-100 last:border-b-0 ${
+                        selectedGuests.includes(guest._id) ? 'bg-green-50' : ''
+                      }`}
+                    >
+                      <div className={`w-5 h-5 rounded border-2 flex items-center justify-center transition-colors ${
+                        selectedGuests.includes(guest._id) 
+                          ? 'bg-green-500 border-green-500' 
+                          : 'border-gray-300'
+                      }`}>
+                        {selectedGuests.includes(guest._id) && (
+                          <Check className="w-3 h-3 text-white" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-gray-900 truncate">{guest.name}</p>
+                        <p className="text-xs text-gray-500">{guest.email && guest.phone ? `${guest.email} • ${guest.phone}` : guest.email || guest.phone || 'Sem contacto'}</p>
+                      </div>
+                      {guest.status === 'confirmed' && (
+                        <span className="text-xs bg-emerald-100 text-emerald-600 px-2 py-0.5 rounded-full">
+                          Confirmado
+                        </span>
+                      )}
+                      {guest.status === 'pending' && (
+                        <span className="text-xs bg-amber-100 text-amber-600 px-2 py-0.5 rounded-full">
+                          Pendente
+                        </span>
+                      )}
+                      {guest.status === 'declined' && (
+                        <span className="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full">
+                          Recusou
+                        </span>
+                      )}
+                    </div>
+                  ))}
+              </div>
+              
+              {/* Action Buttons */}
+              <div className="mt-4 pt-4 border-t border-gray-200 flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowGuestSelect(false);
+                    setGuestSearch('');
+                  }}
+                  className="flex-1 text-gray-500 px-4 py-3 border border-gray-300 rounded-xl hover:bg-gray-50 font-medium"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={() => {
+                    if (selectedGuests.length === 0) {
+                      // If no guests selected, send to all
+                      setShowGuestSelect(false);
+                      setShowInviteConfirm(true);
+                    } else {
+                      setShowGuestSelect(false);
+                      setShowInviteConfirm(true);
+                    }
+                    setGuestSearch('');
+                  }}
+                  className="flex-1 px-4 py-3 bg-green-500 text-white rounded-xl hover:bg-green-600 font-medium"
+                >
+                  {selectedGuests.length > 0 
+                    ? `Enviar para ${selectedGuests.length} selecionado(s)` 
+                    : 'Enviar para todos'}
                 </button>
               </div>
             </div>

@@ -103,7 +103,9 @@ export default function GuestConfirm() {
 
   // Ask for confirmation
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#f8f6f3] p-4">
+     <>
+      <Header/>
+       <div className="min-h-screen flex items-center justify-center bg-[#f8f6f3] p-4">
       <div className="max-w-md w-full bg-white rounded-2xl shadow-lg p-8">
         <div className="text-center mb-8">
           <div className="w-16 h-16 bg-[#9CAF88] rounded-full flex items-center justify-center mx-auto mb-4">
@@ -152,5 +154,7 @@ export default function GuestConfirm() {
         </p>
       </div>
     </div>
+      <Footer/>
+     </>
   );
 }
