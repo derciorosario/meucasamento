@@ -874,7 +874,7 @@ export default function GuestsPage() {
   if (loading) {
     return (
       <DefaultLayout hero={{title:"Convidados",subtitle:"Gerencie sua lista de convidados e acompanhe as confirmações"}}>
-        <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="h-[50vh] bg-gray-50 flex items-center justify-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
         </div>
       </DefaultLayout>

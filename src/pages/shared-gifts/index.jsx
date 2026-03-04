@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { API_URL } from '../../api/client';
-import { Gift, Search, Check, Heart, ChevronLeft } from 'lucide-react';
+import { Gift, Search, Check, Heart, ChevronLeft, Store, Link as LinkIcon, XCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Header from '../../components/Header';
 
@@ -15,10 +15,13 @@ const SharedGifts = () => {
   const [error, setError] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Todos');
+  const [allCategories, setAllCategories] = useState(categories);
   const [showClaimModal, setShowClaimModal] = useState(false);
   const [selectedGift, setSelectedGift] = useState(null);
   const [guestName, setGuestName] = useState('');
   const [claiming, setClaiming] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [showImageModal, setShowImageModal] = useState(false);
 
   // Fetch shared gifts
   useEffect(() => {
@@ -30,6 +33,13 @@ const SharedGifts = () => {
         if (data.success) {
           setGifts(data.data.gifts);
           setOwner(data.data.owner);
+          
+          // Extract unique categories from gifts and combine with default categories
+          // Always include 'Todos' as the first option
+          const giftCategories = [...new Set(data.data.gifts.map(g => g.category))];
+          const defaultCats = categories.filter(c => c !== 'Todos');
+          const uniqueCategories = ['Todos', ...defaultCats, ...giftCategories.filter(c => !defaultCats.includes(c))];
+          setAllCategories(uniqueCategories);
         } else {
           setError(data.message);
         }
@@ -97,6 +107,14 @@ const SharedGifts = () => {
   const openClaimModal = (gift) => {
     setSelectedGift(gift);
     setShowClaimModal(true);
+  };
+
+  // Handle image click for slideshow
+  const handleImageClick = (imageUrl) => {
+    if (imageUrl) {
+      setSelectedImage(`${API_URL}${imageUrl}`);
+      setShowImageModal(true);
+    }
   };
 
   if (loading) {
@@ -175,7 +193,7 @@ const SharedGifts = () => {
 
           {/* Category Filter */}
           <div className="flex flex-wrap gap-2">
-            {categories.map((category) => (
+            {allCategories.map((category) => (
               <button
                 key={category}
                 onClick={() => setSelectedCategory(category)}
@@ -197,31 +215,34 @@ const SharedGifts = () => {
             {filteredGifts.map((gift) => (
               <div
                 key={gift._id}
-                className={`bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden ${
+                className={`bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col h-full ${
                   gift.status === 'claimed' ? 'opacity-75' : ''
                 }`}
               >
-                {/* Gift Image */}
-                <div className="relative aspect-square bg-gray-100 flex items-center justify-center">
+                {/* Gift Image - Clickable */}
+                <div 
+                  className="relative aspect-square bg-gray-100 flex items-center justify-center cursor-pointer overflow-hidden flex-shrink-0"
+                  onClick={() => handleImageClick(gift.image?.url)}
+                >
                   {gift.image?.url ? (
                     <img 
                       src={`${API_URL}${gift.image.url}`} 
                       alt={gift.name} 
-                      className="w-full h-full object-cover" 
+                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300" 
                     />
                   ) : (
                     <Gift className="w-16 h-16 text-gray-300" />
                   )}
                   {/* Status Badge */}
                   {gift.status === 'claimed' && (
-                    <div className="absolute top-2 right-2 px-2 py-1 rounded-full text-xs font-medium bg-green-100 text-green-700">
+                    <div className="absolute top-2 right-2 px-2 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700">
                       Reservado
                     </div>
                   )}
                 </div>
 
-                {/* Gift Info */}
-                <div className="p-4">
+                {/* Gift Info - Flex grow to fill space */}
+                <div className="p-4 flex flex-col flex-grow">
                   <h3 className="text-lg font-semibold text-gray-900 mb-1 line-clamp-1">{gift.name}</h3>
                   <p className="text-xs text-gray-500 mb-2">{gift.category}</p>
                   
@@ -237,9 +258,29 @@ const SharedGifts = () => {
                     </p>
                   )}
 
-                  {/* Claimed By or Claim Button */}
+                  {/* Store Info - Improved layout */}
+                  {(gift.storeName || gift.storeLink) && (
+                    <div className="flex items-center gap-2 mb-3 p-2 bg-[#9CAA8E]/10 rounded-lg">
+                      <Store className="w-4 h-4 text-[#9CAA8E] flex-shrink-0" />
+                      <span className="text-sm text-[#9CAA8E] truncate">
+                        {gift.storeName}
+                      </span>
+                      {gift.storeLink && (
+                        <a 
+                          href={gift.storeLink} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-sm text-[#9CAA8E] hover:text-[#8A9A7E] underline ml-auto flex-shrink-0"
+                        >
+                          Ver loja
+                        </a>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Claimed By or Claim Button - Always at bottom */}
                   {gift.status === 'claimed' ? (
-                    <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                    <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg mt-auto">
                       <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
                       <span className="text-xs text-gray-600 font-medium truncate">
                         Reservado por {gift.claimedBy}
@@ -248,7 +289,7 @@ const SharedGifts = () => {
                   ) : (
                     <button
                       onClick={() => openClaimModal(gift)}
-                      className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-[#9CAA8E] text-white rounded-lg hover:bg-[#8A9A7E] transition-colors text-sm font-medium"
+                      className="w-full flex items-center justify-center gap-2 px-3 py-2 bg-[#9CAA8E] text-white rounded-lg hover:bg-[#8A9A7E] transition-colors text-sm font-medium mt-auto"
                     >
                       <Heart className="w-4 h-4" />
                       Reservar Presente
@@ -319,6 +360,27 @@ const SharedGifts = () => {
               </div>
             </form>
           </div>
+        </div>
+      )}
+
+      {/* Image Slideshow Modal */}
+      {showImageModal && selectedImage && (
+        <div 
+          className="fixed inset-0 bg-black/90 flex items-center justify-center z-[100] p-4"
+          onClick={() => setShowImageModal(false)}
+        >
+          <button
+            onClick={() => setShowImageModal(false)}
+            className="absolute top-4 right-4 text-white/80 hover:text-white z-10"
+          >
+            <XCircle className="w-10 h-10" />
+          </button>
+          <img
+            src={selectedImage}
+            alt="Presente"
+            className="max-w-full max-h-[90vh] object-contain rounded-lg"
+            onClick={(e) => e.stopPropagation()}
+          />
         </div>
       )}
     </div>

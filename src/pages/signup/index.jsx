@@ -386,7 +386,7 @@ export default function WeddingSignUp() {
 
   return (
     <GoogleOAuthProvider clientId={clientId}>
-      <div className="min-h-[100vh] flex flex-col lg:flex-row-reverse font-serif">
+      <div className="min-h-[100vh] flex flex-col lg:flex-row-reverse font-serif bg-[#f8f6f3]">
         {/* Right Panel - Sign Up Form */}
         <div className="w-full h-[100vh]  overflow-y-auto lg:w-2/5 bg-[#f8f6f3] px-6 py-12 lg:px-16 lg:py-20 ">
           <div className="max-w-md mx-auto h- w-full">

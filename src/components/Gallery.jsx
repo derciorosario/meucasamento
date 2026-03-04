@@ -907,7 +907,7 @@ const Gallery = ({ userId = null, isOwner = false, isPublicView = false }) => {
                   animate={{ y: 0 }}
                   exit={{ y: "100%" }}
                   transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                  className="bg-white rounded-t-2xl w-full max-w-md mx-auto overflow-hidden"
+                  className="bg-white rounded-t-2xl w-full max-w-md mx-auto max-h-[90vh] overflow-y-auto"
                   onClick={e => e.stopPropagation()}
                 >
                   <div className="p-4 border-b border-gray-200">
@@ -1103,7 +1103,7 @@ const Gallery = ({ userId = null, isOwner = false, isPublicView = false }) => {
                   animate={{ y: 0 }}
                   exit={{ y: "100%" }}
                   transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                  className="bg-white rounded-t-2xl w-full max-w-md mx-auto overflow-hidden"
+                  className="bg-white rounded-t-2xl w-full max-w-md mx-auto max-h-[90vh] overflow-y-auto"
                   onClick={e => e.stopPropagation()}
                 >
                   <div className="p-4 border-b border-gray-200">
@@ -1889,7 +1889,7 @@ const Gallery = ({ userId = null, isOwner = false, isPublicView = false }) => {
                 animate={{ y: 0 }}
                 exit={{ y: "100%" }}
                 transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                className="bg-white rounded-t-2xl w-full max-w-md mx-auto overflow-hidden"
+                className="bg-white rounded-t-2xl w-full max-w-md mx-auto max-h-[90vh] overflow-y-auto"
                 onClick={e => e.stopPropagation()}
               >
                 <div className="p-4 border-b border-gray-200">
@@ -2033,7 +2033,7 @@ const Gallery = ({ userId = null, isOwner = false, isPublicView = false }) => {
                 animate={{ y: 0 }}
                 exit={{ y: "100%" }}
                 transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                className="bg-white rounded-t-2xl w-full max-w-md mx-auto overflow-hidden"
+                className="bg-white rounded-t-2xl w-full max-w-md mx-auto max-h-[90vh] overflow-y-auto"
                 onClick={e => e.stopPropagation()}
               >
                 <div className="p-4 border-b border-gray-200">

@@ -2,15 +2,31 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DefaultLayout from '../../layout/DefaultLayout';
 import { API_URL, getTutorials } from '../../api/client';
-import { Plus, Gift, Search, Share2, QrCode, Trash2, Edit2, Check, X, Image, DollarSign, LayoutGrid, List, Table, Loader2, Download, Copy, Play, ChevronDown } from 'lucide-react';
+import { Plus, Gift, Search, Share2, QrCode, Trash2, Edit2, Check, X, Image, DollarSign, LayoutGrid, Table, Loader2, Download, Copy, Play, ChevronDown, Store, Link as LinkIcon, MoreHorizontal, XCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-const categories = ['Todos', 'Cozinha', 'Quarto', 'Sala', 'Casa', 'Eletrodomésticos', 'Outros'];
+const DEFAULT_CATEGORIES = ['Todos', 'Cozinha', 'Quarto', 'Sala', 'Casa', 'Eletrodomésticos', 'Outros'];
 
 const WeddingGifts = () => {
   const navigate = useNavigate();
   const [gifts, setGifts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [categories, setCategories] = useState(DEFAULT_CATEGORIES);
+  const [userCategories, setUserCategories] = useState([]);
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [editingCategory, setEditingCategory] = useState(null);
+  const [deleteCategoryConfirm, setDeleteCategoryConfirm] = useState({ show: false, categoryId: null, categoryName: '' });
+  const [showCategoryMenu, setShowCategoryMenu] = useState(null);
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [showImageModal, setShowImageModal] = useState(false);
+
+  // Close category menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = () => setShowCategoryMenu(null);
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Todos');
   const [showAddModal, setShowAddModal] = useState(false);
@@ -18,15 +34,10 @@ const WeddingGifts = () => {
   const [deleteConfirm, setDeleteConfirm] = useState({ show: false, giftId: null, giftName: '' });
   const [editingGift, setEditingGift] = useState(null);
   const [viewMode, setViewMode] = useState('grid');
+  const [shareCode, setShareCode] = useState('');
+  const [stats, setStats] = useState({ totalGifts: 0, claimedGifts: 0, totalValue: 0, claimedValue: 0 });
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [stats, setStats] = useState({
-    totalGifts: 0,
-    claimedGifts: 0,
-    totalValue: 0,
-    claimedValue: 0,
-  });
-  const [shareCode, setShareCode] = useState(null);
   const fileInputRef = useRef(null);
   
   // Tutorial video state
@@ -44,13 +55,39 @@ const WeddingGifts = () => {
     isPublic: false,
     claimedBy: '',
     status: 'available',
+    storeName: '',
+    storeLink: '',
   });
 
   // Fetch gifts from API
   useEffect(() => {
     fetchGifts();
+    fetchCategories();
     fetchTutorial();
   }, [selectedCategory, searchTerm]);
+
+  // Fetch categories from API
+  const fetchCategories = async () => {
+    try {
+      const response = await fetch(`${API_URL}/gifts/categories`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+      const data = await response.json();
+
+      if (data.success) {
+        // Always keep 'Todos' as the first option
+        const apiCategories = data.data.categories.filter(c => c !== 'Todos');
+        setCategories(['Todos', ...apiCategories]);
+        setUserCategories(data.data.userCategories || []);
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      // Fall back to default categories on error
+      setCategories(DEFAULT_CATEGORIES);
+    }
+  };
 
   // Helper function to extract YouTube video ID
   const extractYouTubeId = (url) => {
@@ -179,6 +216,8 @@ const WeddingGifts = () => {
           category: formData.category,
           isPublic: formData.isPublic,
           image: formData.image,
+          storeName: formData.storeName || null,
+          storeLink: formData.storeLink || null,
         }),
       });
 
@@ -197,6 +236,8 @@ const WeddingGifts = () => {
           isPublic: false,
           claimedBy: '',
           status: 'available',
+          storeName: '',
+          storeLink: '',
         });
         fetchGifts();
       } else {
@@ -221,6 +262,8 @@ const WeddingGifts = () => {
       isPublic: gift.isPublic,
       claimedBy: gift.claimedBy || '',
       status: gift.status || 'available',
+      storeName: gift.storeName || '',
+      storeLink: gift.storeLink || '',
     });
     setShowAddModal(true);
   };
@@ -245,6 +288,8 @@ const WeddingGifts = () => {
           image: formData.image,
           claimedBy: formData.claimedBy || null,
           status: formData.status,
+          storeName: formData.storeName || null,
+          storeLink: formData.storeLink || null,
         }),
       });
 
@@ -264,6 +309,8 @@ const WeddingGifts = () => {
           isPublic: false,
           claimedBy: '',
           status: 'available',
+          storeName: '',
+          storeLink: '',
         });
         fetchGifts();
       } else {
@@ -321,10 +368,128 @@ const WeddingGifts = () => {
     }
   };
 
+  // Create new category
+  const handleCreateCategory = async (e) => {
+    e.preventDefault();
+    
+    if (!newCategoryName.trim()) {
+      toast.error('Nome da categoria é obrigatório');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/gifts/categories`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify({
+          name: newCategoryName.trim()
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success('Categoria criada com sucesso!');
+        setNewCategoryName('');
+        setShowCategoryModal(false);
+        fetchCategories();
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      console.error('Error creating category:', error);
+      toast.error('Erro ao criar categoria');
+    }
+  };
+
+  // Update category
+  const handleUpdateCategory = async (e) => {
+    e.preventDefault();
+    
+    if (!newCategoryName.trim()) {
+      toast.error('Nome da categoria é obrigatório');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_URL}/gifts/categories/${editingCategory._id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+        body: JSON.stringify({
+          name: newCategoryName.trim()
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success('Categoria atualizada com sucesso!');
+        setNewCategoryName('');
+        setEditingCategory(null);
+        setShowCategoryModal(false);
+        fetchCategories();
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      console.error('Error updating category:', error);
+      toast.error('Erro ao atualizar categoria');
+    }
+  };
+
+  // Delete category
+  const handleDeleteCategory = async () => {
+    if (!deleteCategoryConfirm.categoryId) return;
+
+    try {
+      const response = await fetch(`${API_URL}/gifts/categories/${deleteCategoryConfirm.categoryId}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        toast.success('Categoria excluída com sucesso!');
+        fetchCategories();
+      } else {
+        toast.error(data.message);
+      }
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      toast.error('Erro ao excluir categoria');
+    } finally {
+      setDeleteCategoryConfirm({ show: false, categoryId: null, categoryName: '' });
+    }
+  };
+
+  // Open edit category modal
+  const openEditCategoryModal = (category) => {
+    setEditingCategory(category);
+    setNewCategoryName(category.name);
+    setShowCategoryModal(true);
+  };
+
   // Generate share URL
   const shareUrl = shareCode 
     ? `${window.location.origin}/gifts/shared/${shareCode}` 
     : `${window.location.origin}/gifts/shared/demo`;
+
+  // Handle image click for slideshow
+  const handleImageClick = (imageUrl) => {
+    if (imageUrl) {
+      setSelectedImage(`${API_URL}${imageUrl}`);
+      setShowImageModal(true);
+    }
+  };
 
   // Render grid view
   const renderGridView = () => (
@@ -332,36 +497,43 @@ const WeddingGifts = () => {
       {gifts.map((gift) => (
         <div
           key={gift._id}
-          className={`bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden ${
+          className={`bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col h-full ${
             gift.status === 'claimed' ? 'opacity-75' : ''
           }`}
         >
-          {/* Gift Image */}
-          <div className="h-48 bg-gray-100 flex items-center justify-center relative">
+          {/* Gift Image - Clickable */}
+          <div 
+            className="h-48 bg-gray-100 flex items-center justify-center relative cursor-pointer overflow-hidden flex-shrink-0"
+            onClick={() => handleImageClick(gift.image?.url)}
+          >
             {gift.image?.url ? (
-              <img src={`${API_URL}${gift.image.url}`} alt={gift.name} className="w-full h-full object-cover" />
+              <img 
+                src={`${API_URL}${gift.image.url}`} 
+                alt={gift.name} 
+                className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+              />
             ) : (
               <Gift className="w-16 h-16 text-gray-300" />
             )}
             {/* Status Badge */}
-            <div className={`absolute top-3 right-3 px-3 py-1 rounded-full text-sm font-medium ${
+            <div className={`absolute top-3 right-3 px-3 py-1 rounded-full text-sm font-bold ${
               gift.status === 'claimed'
-                ? 'bg-green-100 text-green-700'
+                ? 'bg-red-100 text-red-700'
                 : 'bg-[#9CAA8E]/10 text-[#9CAA8E]'
             }`}>
               {gift.status === 'claimed' ? 'Reservado' : 'Disponível'}
             </div>
           </div>
 
-          {/* Gift Info */}
-          <div className="p-5">
+          {/* Gift Info - Flex grow to fill space */}
+          <div className="p-5 flex flex-col flex-grow">
             <div className="flex items-start justify-between mb-2">
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">{gift.name}</h3>
                 <p className="text-sm text-gray-500">{gift.category}</p>
               </div>
               {gift.price > 0 && (
-                <p className="text-lg font-bold text-[#9CAA8E]">
+                <p className="text-lg font-bold text-[#9CAA8E] whitespace-nowrap ml-2">
                   {gift.price.toLocaleString('pt-MZ')} MT
                 </p>
               )}
@@ -371,18 +543,39 @@ const WeddingGifts = () => {
               {gift.description}
             </p>
 
+            {/* Store Info - Improved layout */}
+            {(gift.storeName || gift.storeLink) && (
+              <div className="flex items-center gap-2 mb-4 p-2 bg-[#9CAA8E]/10 rounded-lg">
+                <Store className="w-4 h-4 text-[#9CAA8E] flex-shrink-0" />
+                <span className="text-sm text-[#9CAA8E] truncate">
+                  {gift.storeName}
+                </span>
+                {gift.storeLink && (
+                  <a 
+                    href={gift.storeLink} 
+                    target="_blank" 
+                    rel="noopener noreferrer"
+                    className="text-sm text-[#9CAA8E] hover:text-[#8A9A7E] font-medium underline ml-auto flex-shrink-0"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    Ver loja
+                  </a>
+                )}
+              </div>
+            )}
+
             {/* Claimed By */}
             {gift.claimedBy && (
               <div className="flex items-center gap-2 mb-4 p-2 bg-gray-50 rounded-lg">
-                <Check className="w-4 h-4 text-green-500" />
-                <span className="text-sm text-gray-600">
+                <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
+                <span className="text-sm text-gray-600 truncate">
                   Reservado por: <span className="font-medium">{gift.claimedBy}</span>
                 </span>
               </div>
             )}
 
-            {/* Actions */}
-            <div className="flex gap-2">
+            {/* Actions - Always at bottom */}
+            <div className="flex gap-2 mt-auto pt-2">
               <button
                 onClick={() => handleEditGift(gift)}
                 className="flex-1 flex items-center justify-center gap-2 px-3 py-2 border border-gray-200 text-gray-700 bg-white rounded-lg hover:bg-gray-50 transition-colors text-sm"
@@ -396,81 +589,6 @@ const WeddingGifts = () => {
               >
                 <Trash2 className="w-4 h-4" />
               </button>
-            </div>
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-
-  // Render list view
-  const renderListView = () => (
-    <div className="space-y-4">
-      {gifts.map((gift) => (
-        <div
-          key={gift._id}
-          className={`bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden ${
-            gift.status === 'claimed' ? 'opacity-75' : ''
-          }`}
-        >
-          <div className="flex">
-            {/* Gift Image */}
-            <div className="w-28 h-28 md:w-32 md:h-32 bg-gray-100 flex items-center justify-center flex-shrink-0 overflow-hidden">
-              {gift.image?.url ? (
-                <img src={`${API_URL}${gift.image.url}`} alt={gift.name} className="w-full h-full object-cover" />
-              ) : (
-                <Gift className="w-10 h-10 text-gray-300" />
-              )}
-            </div>
-
-            {/* Gift Info */}
-            <div className="flex-1 p-4 min-w-0">
-              <div className="flex items-start justify-between gap-2">
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <h3 className="font-semibold text-gray-900 truncate">{gift.name}</h3>
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium flex-shrink-0 ${
-                      gift.status === 'claimed'
-                        ? 'bg-green-100 text-green-700'
-                        : 'bg-[#9CAA8E]/10 text-[#9CAA8E]'
-                    }`}>
-                      {gift.status === 'claimed' ? 'Reservado' : 'Disponível'}
-                    </span>
-                  </div>
-                  <p className="text-xs text-gray-500">{gift.category}</p>
-                </div>
-                {gift.price > 0 && (
-                  <p className="text-lg font-bold text-[#9CAA8E] flex-shrink-0">
-                    {gift.price.toLocaleString('pt-MZ')} MT
-                  </p>
-                )}
-              </div>
-
-              <p className="text-sm text-gray-600 mb-2 line-clamp-2">
-                {gift.description}
-              </p>
-
-              <div className="flex items-center justify-between gap-2">
-                {gift.claimedBy && (
-                  <span className="text-xs text-green-600 font-medium truncate">
-                    ✓ Reservado por {gift.claimedBy}
-                  </span>
-                )}
-                <div className="flex gap-1 ml-auto flex-shrink-0">
-                  <button
-                    onClick={() => handleEditGift(gift)}
-                    className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    <Edit2 className="w-4 h-4" />
-                  </button>
-                  <button
-                    onClick={() => setDeleteConfirm({ show: true, giftId: gift._id, giftName: gift.name })}
-                    className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
-                </div>
-              </div>
             </div>
           </div>
         </div>
@@ -498,9 +616,16 @@ const WeddingGifts = () => {
               <tr key={gift._id} className={`hover:bg-gray-50 ${gift.status === 'claimed' ? 'opacity-75' : ''}`}>
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <div 
+                      className="w-10 h-10 bg-gray-100 rounded-lg flex items-center justify-center flex-shrink-0 cursor-pointer overflow-hidden"
+                      onClick={() => handleImageClick(gift.image?.url)}
+                    >
                       {gift.image?.url ? (
-                        <img src={`${API_URL}${gift.image.url}`} alt={gift.name} className="w-full h-full object-cover rounded-lg" />
+                        <img 
+                          src={`${API_URL}${gift.image.url}`} 
+                          alt={gift.name} 
+                          className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                        />
                       ) : (
                         <Gift className="w-5 h-5 text-gray-300" />
                       )}
@@ -508,6 +633,22 @@ const WeddingGifts = () => {
                     <div>
                       <p className="font-medium text-gray-900">{gift.name}</p>
                       <p className="text-sm text-gray-500 line-clamp-1">{gift.description}</p>
+                      {(gift.storeName || gift.storeLink) && (
+                        <p className="text-xs text-[#9CAA8E] flex items-center gap-1 mt-1 flex-wrap">
+                          <Store className="w-3 h-3 flex-shrink-0" />
+                          <span>{gift.storeName}</span>
+                          {gift.storeLink && (
+                            <a 
+                              href={gift.storeLink} 
+                              target="_blank" 
+                              rel="noopener noreferrer"
+                              className="underline hover:text-[#8A9A7E] ml-1"
+                            >
+                              Ver loja
+                            </a>
+                          )}
+                        </p>
+                      )}
                     </div>
                   </div>
                 </td>
@@ -522,7 +663,7 @@ const WeddingGifts = () => {
                 <td className="px-6 py-4">
                   <span className={`px-3 py-1 rounded-full text-sm font-medium ${
                     gift.status === 'claimed'
-                      ? 'bg-green-100 text-green-700'
+                      ? 'bg-red-100 text-red-700 font-bold'
                       : 'bg-[#9CAA8E]/10 text-[#9CAA8E]'
                   }`}>
                     {gift.status === 'claimed' ? 'Reservado' : 'Disponível'}
@@ -665,6 +806,8 @@ const WeddingGifts = () => {
                     isPublic: false,
                     claimedBy: '',
                     status: 'available',
+                    storeName: '',
+                    storeLink: '',
                   });
                   setShowAddModal(true);
                 }}
@@ -708,20 +851,70 @@ const WeddingGifts = () => {
           {/* Category Filter and View Toggle */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
             {/* Category Filter */}
-            <div className="flex flex-wrap gap-2">
-              {categories.map((category) => (
-                <button
-                  key={category}
-                  onClick={() => setSelectedCategory(category)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                    selectedCategory === category
-                      ? 'bg-[#9CAA8E] text-white'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                  }`}
-                >
-                  {category}
-                </button>
-              ))}
+            <div className="flex flex-wrap gap-2 items-center">
+              {categories.map((category) => {
+                const userCat = userCategories.find(uc => uc.name === category);
+                const isUserCategory = !!userCat;
+                
+                return (
+                  <div key={category} className="relative">
+                    <button
+                      onClick={() => setSelectedCategory(category)}
+                      className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
+                        selectedCategory === category
+                          ? 'bg-[#9CAA8E] text-white'
+                          : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      }`}
+                    >
+                      {category}
+                      {isUserCategory && (
+                        <span 
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowCategoryMenu(showCategoryMenu === category ? null : category);
+                          }}
+                          className="ml-1 inline-flex items-center justify-center w-4 h-4"
+                        >
+                          <MoreHorizontal className="w-3 h-3" />
+                        </span>
+                      )}
+                    </button>
+                    
+                    {/* Dropdown menu for user-created categories */}
+                    {isUserCategory && showCategoryMenu === category && (
+                      <div className="absolute top-full left-0 mt-1 bg-white shadow-lg rounded-lg border border-gray-200 py-1 z-10 min-w-[120px]">
+                        <button
+                          onClick={() => {
+                            openEditCategoryModal(userCat);
+                            setShowCategoryMenu(null);
+                          }}
+                          className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                        >
+                          <Edit2 className="w-4 h-4" />
+                          Editar
+                        </button>
+                        <button
+                          onClick={() => {
+                            setDeleteCategoryConfirm({ show: true, categoryId: userCat._id, categoryName: userCat.name });
+                            setShowCategoryMenu(null);
+                          }}
+                          className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                          Excluir
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+              <button
+                onClick={() => setShowCategoryModal(true)}
+                className="px-3 py-2 rounded-full text-sm font-medium transition-colors bg-[#9CAA8E]/10 text-[#9CAA8E] hover:bg-[#9CAA8E]/20 flex items-center gap-1"
+              >
+                <Plus className="w-4 h-4" />
+                Nova
+              </button>
             </div>
 
             {/* View Toggle */}
@@ -735,16 +928,6 @@ const WeddingGifts = () => {
                 }`}
               >
                 <LayoutGrid className="w-5 h-5" />
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`p-2 rounded-lg transition-colors ${
-                  viewMode === 'list' 
-                    ? 'bg-white text-[#9CAA8E] shadow-sm' 
-                    : 'text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                <List className="w-5 h-5" />
               </button>
               <button
                 onClick={() => setViewMode('table')}
@@ -761,7 +944,6 @@ const WeddingGifts = () => {
 
           {/* Gift Content based on view mode */}
           {viewMode === 'grid' && renderGridView()}
-          {viewMode === 'list' && renderListView()}
           {viewMode === 'table' && renderTableView()}
 
           {/* Empty State */}
@@ -854,21 +1036,71 @@ const WeddingGifts = () => {
             </div>
           )}
 
-          {/* Mobile Category Filter */}
+          {/* Mobile Category Filter - Fixed padding */}
           <div className="flex flex-wrap gap-2 mb-4">
-            {categories.map((category) => (
-              <button
-                key={category}
-                onClick={() => setSelectedCategory(category)}
-                className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
-                  selectedCategory === category
-                    ? 'bg-[#9CAA8E] text-white'
-                    : 'bg-gray-100 text-gray-600'
-                }`}
-              >
-                {category}
-              </button>
-            ))}
+            {categories.map((category) => {
+              const userCat = userCategories.find(uc => uc.name === category);
+              const isUserCategory = !!userCat;
+              
+              return (
+                <div key={category} className="relative">
+                  <button
+                    onClick={() => setSelectedCategory(category)}
+                    className={`px-3 py-1.5 rounded-full text-xs font-medium transition-colors ${
+                      selectedCategory === category
+                        ? 'bg-[#9CAA8E] text-white'
+                        : 'bg-gray-100 text-gray-600'
+                    }`}
+                  >
+                    {category}
+                    {isUserCategory && (
+                      <span 
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowCategoryMenu(showCategoryMenu === category ? null : category);
+                        }}
+                        className="ml-1 inline-flex items-center justify-center w-3 h-3"
+                      >
+                        <MoreHorizontal className="w-2.5 h-2.5" />
+                      </span>
+                    )}
+                  </button>
+                  
+                  {/* Dropdown menu for user-created categories */}
+                  {isUserCategory && showCategoryMenu === category && (
+                    <div className="absolute top-full left-0 mt-1 bg-white shadow-lg rounded-lg border border-gray-200 py-1 z-10 min-w-[100px]">
+                      <button
+                        onClick={() => {
+                          openEditCategoryModal(userCat);
+                          setShowCategoryMenu(null);
+                        }}
+                        className="w-full px-3 py-1.5 text-left text-xs text-gray-700 hover:bg-gray-100 flex items-center gap-1"
+                      >
+                        <Edit2 className="w-3 h-3" />
+                        Editar
+                      </button>
+                      <button
+                        onClick={() => {
+                          setDeleteCategoryConfirm({ show: true, categoryId: userCat._id, categoryName: userCat.name });
+                          setShowCategoryMenu(null);
+                        }}
+                        className="w-full px-3 py-1.5 text-left text-xs text-red-600 hover:bg-red-50 flex items-center gap-1"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        Excluir
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+            <button
+              onClick={() => setShowCategoryModal(true)}
+              className="px-2.5 py-1.5 rounded-full text-xs font-medium transition-colors bg-[#9CAA8E]/10 text-[#9CAA8E] flex items-center gap-1"
+            >
+              <Plus className="w-3 h-3" />
+              Nova
+            </button>
           </div>
 
           {/* Mobile Action Buttons */}
@@ -891,6 +1123,10 @@ const WeddingGifts = () => {
                   imageUrl: '',
                   category: 'Cozinha',
                   isPublic: false,
+                  claimedBy: '',
+                  status: 'available',
+                  storeName: '',
+                  storeLink: '',
                 });
                 setShowAddModal(true);
               }}
@@ -901,64 +1137,103 @@ const WeddingGifts = () => {
             </button>
           </div>
 
-          {/* Mobile Gift List */}
-          <div className="space-y-4">
+          {/* Mobile Gift List - Card Style */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {gifts.map((gift) => (
               <div
                 key={gift._id}
-                className={`bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden ${
+                className={`bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col ${
                   gift.status === 'claimed' ? 'opacity-75' : ''
                 }`}
               >
-                <div className="flex">
-                  {/* Gift Image */}
-                  <div className="w-24 h-24 bg-gray-100 flex items-center justify-center flex-shrink-0">
-                    {gift.image?.url ? (
-                      <img src={`${API_URL}${gift.image.url}`} alt={gift.name} className="w-full h-full object-cover" />
-                    ) : (
-                      <Gift className="w-10 h-10 text-gray-300" />
+                {/* Gift Image - Clickable */}
+                <div 
+                  className="h-40 bg-gray-100 flex items-center justify-center relative cursor-pointer overflow-hidden"
+                  onClick={() => handleImageClick(gift.image?.url)}
+                >
+                  {gift.image?.url ? (
+                    <img 
+                      src={`${API_URL}${gift.image.url}`} 
+                      alt={gift.name} 
+                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                    />
+                  ) : (
+                    <Gift className="w-12 h-12 text-gray-300" />
+                  )}
+                  {/* Status Badge */}
+                  <div className={`absolute top-2 right-2 px-2 py-1 rounded-full text-xs font-bold ${
+                    gift.status === 'claimed'
+                      ? 'bg-red-100 text-red-700'
+                      : 'bg-[#9CAA8E]/10 text-[#9CAA8E]'
+                  }`}>
+                    {gift.status === 'claimed' ? 'Reservado' : 'Disponível'}
+                  </div>
+                </div>
+
+                {/* Gift Info */}
+                <div className="p-3 flex flex-col flex-grow">
+                  <div className="flex items-start justify-between mb-1">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-gray-900 text-sm truncate">{gift.name}</h3>
+                      <p className="text-xs text-gray-500">{gift.category}</p>
+                    </div>
+                    {gift.price > 0 && (
+                      <p className="text-sm font-bold text-[#9CAA8E] whitespace-nowrap ml-2">
+                        {gift.price.toLocaleString('pt-MZ')} MT
+                      </p>
                     )}
                   </div>
 
-                  {/* Gift Info */}
-                  <div className="flex-1 p-3">
-                    <div className="flex items-start justify-between mb-1">
-                      <div>
-                        <h3 className="font-semibold text-gray-900 text-sm">{gift.name}</h3>
-                        <p className="text-xs text-gray-500">{gift.category}</p>
-                      </div>
-                      {gift.price > 0 && (
-                        <p className="text-sm font-bold text-[#9CAA8E]">
-                          {gift.price.toLocaleString('pt-MZ')} MT
-                        </p>
+                  <p className="text-xs text-gray-600 mb-2 line-clamp-2">
+                    {gift.description}
+                  </p>
+
+                  {/* Store Info - Mobile */}
+                  {(gift.storeName || gift.storeLink) && (
+                    <div className="flex items-center gap-1 mb-2 flex-wrap">
+                      <Store className="w-3 h-3 text-[#9CAA8E] flex-shrink-0" />
+                      <span className="text-xs text-[#9CAA8E] truncate">
+                        {gift.storeName}
+                      </span>
+                      {gift.storeLink && (
+                        <a 
+                          href={gift.storeLink} 
+                          target="_blank" 
+                          rel="noopener noreferrer"
+                          className="text-xs text-[#9CAA8E] underline ml-1"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          Ver loja
+                        </a>
                       )}
                     </div>
+                  )}
 
-                    <p className="text-xs text-gray-600 mb-2 line-clamp-1">
-                      {gift.description}
-                    </p>
-
-                    <div className="flex items-center gap-2">
-                      {gift.status === 'claimed' && (
-                        <span className="text-xs text-green-600 font-medium">
-                          ✓ {gift.claimedBy}
-                        </span>
-                      )}
-                      <div className="flex gap-1 ml-auto">
-                        <button
-                          onClick={() => handleEditGift(gift)}
-                          className="p-1.5 text-gray-500 hover:text-gray-700"
-                        >
-                          <Edit2 className="w-4 h-4" />
-                        </button>
-                        <button
-                          onClick={() => setDeleteConfirm({ show: true, giftId: gift._id, giftName: gift.name })}
-                          className="p-1.5 text-red-500 hover:text-red-700"
-                        >
-                          <Trash2 className="w-4 h-4" />
-                        </button>
-                      </div>
+                  {/* Claimed by info */}
+                  {gift.claimedBy && (
+                    <div className="flex items-center gap-1 mb-2">
+                      <Check className="w-3 h-3 text-green-500 flex-shrink-0" />
+                      <span className="text-xs text-green-600 font-medium truncate">
+                        {gift.claimedBy}
+                      </span>
                     </div>
+                  )}
+
+                  {/* Actions */}
+                  <div className="flex gap-2 mt-auto pt-2">
+                    <button
+                      onClick={() => handleEditGift(gift)}
+                      className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 border border-gray-200 text-gray-700 bg-white rounded-lg hover:bg-gray-50 transition-colors text-xs"
+                    >
+                      <Edit2 className="w-3 h-3" />
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => setDeleteConfirm({ show: true, giftId: gift._id, giftName: gift.name })}
+                      className="flex items-center justify-center px-2 py-1.5 border border-red-200 text-red-600 bg-white rounded-lg hover:bg-red-50 transition-colors"
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </button>
                   </div>
                 </div>
               </div>
@@ -982,7 +1257,7 @@ const WeddingGifts = () => {
 
       {/* Add/Edit Gift Modal */}
       {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50">
           <div className="bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-100">
@@ -1110,6 +1385,38 @@ const WeddingGifts = () => {
                 </div>
               </div>
 
+              {/* Store Name and Link */}
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <Store className="w-4 h-4 inline mr-1" />
+                    Loja
+                  </label>
+                  <input
+                    type="text"
+                    name="storeName"
+                    value={formData.storeName}
+                    onChange={handleInputChange}
+                    placeholder="Ex: Shoprite"
+                    className="w-full px-4 py-3 bg-white border border-gray-200 text-gray-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <LinkIcon className="w-4 h-4 inline mr-1" />
+                    Link
+                  </label>
+                  <input
+                    type="url"
+                    name="storeLink"
+                    value={formData.storeLink}
+                    onChange={handleInputChange}
+                    placeholder="https://..."
+                    className="w-full px-4 py-3 bg-white border border-gray-200 text-gray-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent"
+                  />
+                </div>
+              </div>
+
               {/* Public Toggle */}
               <div className="flex items-center gap-3">
                 <input
@@ -1190,7 +1497,7 @@ const WeddingGifts = () => {
 
       {/* QR Code Modal */}
       {showQrModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50">
           <div className="bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-md max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-6 border-b border-gray-100">
@@ -1267,9 +1574,133 @@ const WeddingGifts = () => {
         </div>
       )}
 
+      {/* Image Slideshow Modal */}
+      {showImageModal && selectedImage && (
+        <div 
+          className="fixed inset-0 bg-black/90 flex items-center justify-center z-[100] p-4"
+          onClick={() => setShowImageModal(false)}
+        >
+          <button
+            onClick={() => setShowImageModal(false)}
+            className="absolute top-4 right-4 text-white/80 hover:text-white z-10"
+          >
+            <XCircle className="w-10 h-10" />
+          </button>
+          <img
+            src={selectedImage}
+            alt="Presente"
+            className="max-w-full max-h-[90vh] object-contain rounded-lg"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
+      )}
+
+      {/* Category Creation Modal */}
+      {showCategoryModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50">
+          <div className="bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-sm">
+            {/* Modal Header */}
+            <div className="flex items-center justify-between p-6 border-b border-gray-100">
+              <h2 className="text-xl font-serif font-bold text-gray-900">
+                {editingCategory ? 'Editar Categoria' : 'Nova Categoria'}
+              </h2>
+              <button
+                onClick={() => {
+                  setShowCategoryModal(false);
+                  setNewCategoryName('');
+                  setEditingCategory(null);
+                }}
+                className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+              >
+                <X className="w-5 h-5 text-gray-500" />
+              </button>
+            </div>
+
+            {/* Modal Form */}
+            <form onSubmit={editingCategory ? handleUpdateCategory : handleCreateCategory} className="p-6">
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Nome da Categoria
+                </label>
+                <input
+                  type="text"
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                  placeholder="Ex: Decoração"
+                  className="w-full px-4 py-3 bg-white border border-gray-200 text-gray-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent"
+                  autoFocus
+                />
+               
+              </div>
+
+              {/* Buttons */}
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCategoryModal(false);
+                    setNewCategoryName('');
+                    setEditingCategory(null);
+                  }}
+                  className="flex-1 px-4 py-3 border border-gray-200 text-gray-700 bg-white rounded-xl hover:bg-gray-50 transition-colors font-medium"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  className="flex-1 px-4 py-3 bg-[#9CAA8E] text-white rounded-xl hover:bg-[#8A9A7E] transition-colors font-medium"
+                >
+                  {editingCategory ? 'Atualizar' : 'Criar'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Category Confirmation Modal */}
+      {deleteCategoryConfirm.show && (
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50">
+          <div className="bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-sm p-6 text-center">
+            {/* Icon */}
+            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+              <Trash2 className="w-8 h-8 text-red-500" />
+            </div>
+
+            {/* Title */}
+            <h2 className="text-xl font-serif font-bold text-gray-900 mb-2">
+              Confirmar Exclusão
+            </h2>
+
+            {/* Message */}
+            <p className="text-gray-600 mb-6">
+              Tem certeza que deseja excluir a categoria "{deleteCategoryConfirm.categoryName}"?
+              <br />
+              <span className="text-sm text-gray-500">Os presentes desta categoria não serão excluídos.</span>
+            </p>
+
+            {/* Buttons */}
+            <div className="flex gap-3">
+              <button
+                onClick={() => setDeleteCategoryConfirm({ show: false, categoryId: null, categoryName: '' })}
+                className="flex-1 px-4 py-3 border border-gray-200 text-gray-700 bg-white rounded-xl hover:bg-gray-50 transition-colors font-medium"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleDeleteCategory}
+                className="flex-1 px-4 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors font-medium"
+              >
+                Excluir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Delete Confirmation Modal */}
       {deleteConfirm.show && (
-        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 flex items-end sm:items-center justify-center z-50">
           <div className="bg-white rounded-t-3xl sm:rounded-3xl w-full max-w-sm p-6 text-center">
             {/* Icon */}
             <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">

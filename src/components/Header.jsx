@@ -64,7 +64,7 @@ const Header = ({notSticky}) => {
             onClick={() => navigate('/')} 
             className={`transition-colors font-medium ${location.pathname === '/' ? 'text-[#9CAA8E] font-bold' : 'hover:text-[#9CAA8E]'}`}
           >
-            {user ? 'Painel' : 'Inicio'}
+            Inicio
           </button>
 
           {user?.role == "vendor" &&  <button 
@@ -276,7 +276,7 @@ const Header = ({notSticky}) => {
                 onClick={() => { navigate('/'); setIsMenuOpen(false); }} 
                 className={`py-2 border-b border-gray-100 text-left font-medium ${location.pathname === '/' ? 'text-[#9CAA8E]' : 'text-gray-600 hover:text-[#9CAA8E]'}`}
               >
-                {user ? 'Painel' : 'Início'}
+                Início
               </button>
 
               {user?.role === "vendor" && <button 

@@ -62,7 +62,7 @@ export default function ResetPassword() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col lg:flex-row font-serif">
+    <div className="min-h-screen flex flex-col lg:flex-row font-serif bg-[#f8f6f3]">
       {/* Left Panel - Reset Password Form */}
       <div className="w-full lg:w-2/5 bg-[#f8f6f3] px-6 py-12 lg:px-16 lg:py-20 flex flex-col justify-center">
         <div className="max-w-md mx-auto w-full">

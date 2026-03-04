@@ -453,7 +453,7 @@ const VendorsPage = () => {
 
   if (loading && vendors.length === 0) {
     return (
-      <DefaultLayout notSticky={true} hero={{ title: "Fornecedores", subtitle: "Encontre os melhores fornecedores para o seu casamento" }}>
+      <DefaultLayout  hero={{ title: "Fornecedores", subtitle: "Encontre os melhores fornecedores para o seu casamento" }}>
         <div className="flex flex-col items-center justify-center min-h-[60vh]">
           <div className="relative">
             <div className="w-20 h-20 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin"></div>
@@ -466,7 +466,7 @@ const VendorsPage = () => {
   }
 
   return (
-    <DefaultLayout notSticky={true} hero={{ 
+    <DefaultLayout  hero={{ 
       title: "Fornecedores", 
       subtitle: "Encontre os melhores fornecedores para tornar o seu casamento inesquecível",
       image: "https://images.unsplash.com/photo-1519167758481-83f29da8c1e8?w=1200&h=400&fit=crop"
@@ -534,7 +534,7 @@ const VendorsPage = () => {
         <div className="flex flex-col lg:flex-row gap-8">
           {/* Left Sidebar - Filters */}
           <div className="hidden lg:block lg:w-80 flex-shrink-0">
-            <div className="sticky top-4">
+            <div className="sticky top-[90px]">
               <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
                 {/* Filter Header */}
                 <div 

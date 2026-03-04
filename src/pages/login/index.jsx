@@ -262,7 +262,7 @@ export default function WeddingLogin() {
 
   return (
     <GoogleOAuthProvider clientId={clientId}>
-      <div className="h-[100vh] flex flex-col lg:flex-row font-serif">
+      <div className="h-[100vh] flex flex-col lg:flex-row font-serif bg-[#f8f6f3]">
         {/* Left Panel - Login Form */}
         <div className="w-full overflow-y-auto lg:w-2/5 bg-[#f8f6f3] px-6 py-12 lg:px-16 lg:py-20">
           <div className="max-w-md mx-auto w-full">
