@@ -276,7 +276,7 @@ const AdminSettings = () => {
         </div>
 
         {/* Site Settings Section */}
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-8">
+        <div className="bg-white hidden rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-8">
           <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
             <h2 className="text-lg font-semibold text-gray-900">Site Settings</h2>
             <p className="text-sm text-gray-600 mt-1">

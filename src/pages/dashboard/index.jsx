@@ -851,7 +851,7 @@ export default function WeddingDashboard() {
                     <button
                       key={tutorial.key}
                       onClick={() => setPlayingTutorial(tutorial)}
-                      className="group flex-shrink-0 w-40 relative bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all text-left"
+                      className="group flex-shrink-0 w-48 relative bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all text-left"
                     >
                       <div className="relative aspect-video bg-gray-100">
                         <img
