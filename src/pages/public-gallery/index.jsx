@@ -18,6 +18,7 @@ import {
 import DefaultLayout from '../../layout/DefaultLayout';
 import { motion, AnimatePresence } from 'framer-motion';
 import { API_URL } from '../../api/client';
+import { useData } from '../../contexts/DataContext';
 
 const PublicGallery = () => {
   const navigate = useNavigate();
@@ -30,6 +31,25 @@ const PublicGallery = () => {
   const [viewMode, setViewMode] = useState('slides'); // 'slides' or 'grid'
   const [downloading, setDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
+
+
+  const data=useData()
+      
+      useEffect(()=>{
+          if(!data.postDialogOpen){
+              setLightboxIndex(-1)
+              setLightboxGallery(null);
+    
+          }
+      },[data.postDialogOpen])
+    
+      useEffect(()=>{
+    
+        if(lightboxIndex>=0){
+              data.setPostDialogOpen(true)
+        }
+    
+      },[lightboxIndex])
 
   useEffect(() => {
     fetchGalleries();
@@ -61,6 +81,7 @@ const PublicGallery = () => {
   const openLightbox = (gallery) => {
     setLightboxGallery(gallery);
     setLightboxIndex(0);
+
   };
 
   const closeLightbox = () => {

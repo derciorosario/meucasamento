@@ -2,22 +2,72 @@ import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 import { API_URL } from '../api/client';
-import { User, LogOut, Settings, X, Menu, Shield } from 'lucide-react';
+import { 
+  User, LogOut, Settings, X, Menu, Shield, 
+  Home, Calendar, CheckSquare, Users, Gift, Image, 
+  DollarSign, Briefcase, Heart, Bell, ChevronDown,
+  MapPin, MessageSquare, Star, ShoppingBag, Users2, Wallet, List
+} from 'lucide-react';
+import { useData } from '../contexts/DataContext';
 
-const Header = ({notSticky}) => {
+const Header = ({notSticky, returnEmpty}) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAuthed, user, signOut } = useAuth();
+  const { isAuthed, user, profile, signOut } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
   const profileMenuRef = useRef(null);
+  const moreMenuRef = useRef(null);
+
+
+  const data=useData()
+
+    useEffect(() => {
+
+    let backListener;
+
+    // -------------------------
+    // BROWSER BACK BUTTON
+    // -------------------------
+    const handlePopState = (e) => {
+      if (data.postDialogOpen) {
+        // Close dialog instead of going back
+        e.preventDefault();
+        data.setPostDialogOpen(false);
+
+        // Push the state back to prevent actual navigation
+        window.history.pushState(null, "", window.location.href);
+      }
+    };
+
+    if (data.postDialogOpen) {
+      // Trap browser back
+      window.history.pushState(null, "", window.location.href);
+      window.addEventListener("popstate", handlePopState);
+    }
+
+    // Cleanup
+    return () => {
+      if (backListener) backListener.remove();
+      window.removeEventListener("popstate", handlePopState);
+    };
+  }, [data.postDialogOpen, location.pathname]);
+
+
+  
+  console.log({postOpen:data.postDialogOpen})
+
 
   // Close profile menu when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
         setIsProfileMenuOpen(false);
+      }
+      if (moreMenuRef.current && !moreMenuRef.current.contains(event.target)) {
+        setIsMoreMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -27,6 +77,8 @@ const Header = ({notSticky}) => {
   // Scroll to top when pathname changes
   useEffect(() => {
     window.scrollTo(0, 0);
+    setIsMoreMenuOpen(false);
+    setIsMenuOpen(false);
   }, [location.pathname]);
 
   const handleLogout = async () => {
@@ -37,18 +89,126 @@ const Header = ({notSticky}) => {
 
   const handleProfileClick = () => {
     setIsProfileMenuOpen(false);
+    setIsMenuOpen(false);
     navigate('/profile');
   };
 
   const handleSettingsClick = () => {
     setIsProfileMenuOpen(false);
+    setIsMenuOpen(false);
     navigate('/settings');
   };
+
+  // Helper function to get navigation items based on user role - using WeddingDashboard icons
+  const getNavigationItems = () => {
+    const items = [];
+    
+    // Home is always first
+    items.push({
+      label: 'Início',
+      path: '/',
+      icon: Home,
+      show: true
+    });
+
+    if (user?.role === "vendor") {
+      items.push({
+        label: 'Calendário',
+        path: '/calendar',
+        icon: Calendar,
+        show: true
+      });
+    }
+
+    if (user?.role === "couple") {
+      items.push(
+        {
+          label: 'Agenda e Tarefas',
+          short_label: 'Agenda',
+          path: '/checklist',
+          icon: List,
+          show: true
+        },
+        {
+          label: 'Fornecedores',
+          path: '/vendors',
+          icon: ShoppingBag,
+          show: true
+        },
+        {
+          label: 'Orçamento',
+          path: '/budget',
+          icon: Wallet,
+          show: true
+        },
+        {
+          label: 'Convidados',
+          path: '/guests',
+          icon: Users2,
+          show: true
+        },
+        {
+          label: 'Galeria',
+          path: '/gallery',
+          icon: Image,
+          show: true
+        },
+        {
+          label: 'Presentes',
+          path: '/gifts',
+          icon: Gift,
+          show: true
+        }
+      );
+    }
+
+    if (!user) {
+      items.push(
+        {
+          label: 'Fornecedores',
+          path: '/vendors',
+          icon: Briefcase,
+          show: true
+        },
+        {
+          label: 'Gallery',
+          path: '/public-gallery',
+          icon: Image,
+          show: true
+        },
+        {
+          label: 'Contacto',
+          path: '/contact',
+          icon: User,
+          show: true
+        }
+      );
+    }
+
+    if (user?.role === 'admin') {
+      items.push({
+        label: 'Admin',
+        path: '/admin',
+        icon: Shield,
+        show: true
+      });
+    }
+
+    return items;
+  };
+
+  const navigationItems = getNavigationItems();
+  
+  // For mobile bottom nav: show first 4 items, rest go in "Mais" menu
+  const mainNavItems = navigationItems.slice(0, 4);
+  const moreNavItems = navigationItems.slice(4);
+
+  if(returnEmpty) return
 
   return (
     <>
       <nav className={`flex items-center justify-between px-4 sm:px-6 lg:px-8 py-4 border-b border-gray-200 bg-white ${!notSticky ? 'sticky':''} top-0 z-50 shadow-sm`}>
-        {/* Left side: Logo/Brand */}
+        {/* Left side: Logo/Brand - Original format */}
         <div onClick={() => navigate('/')} className="flex items-center gap-2 cursor-pointer">
           <div className="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center">
             <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 20 20">
@@ -58,102 +218,21 @@ const Header = ({notSticky}) => {
           <button className="text-lg sm:text-xl font-serif font-bold text-black">Meu Casamento</button>
         </div>
         
-        {/* Desktop Navigation - Hidden on mobile/tablet */}
+        {/* Desktop Navigation - Hidden on mobile/tablet - NO ICONS */}
         <div className="hidden lg:flex gap-6 xl:gap-8 text-gray-600">
-          <button 
-            onClick={() => navigate('/')} 
-            className={`transition-colors font-medium ${location.pathname === '/' ? 'text-[#9CAA8E] font-bold' : 'hover:text-[#9CAA8E]'}`}
-          >
-            Inicio
-          </button>
-
-          {user?.role == "vendor" &&  <button 
-            onClick={() => navigate('/calendar')} 
-            className={`transition-colors font-medium ${location.pathname === '/calendar' ? 'text-[#9CAA8E] font-bold' : 'hover:text-[#9CAA8E]'}`}
-          >
-            Calendário
-          </button>
-          }
-          {user?.role === "couple" && (
-            <>
-              <button 
-                onClick={() => navigate('/checklist')} 
-                className={`transition-colors font-medium ${location.pathname === '/checklist' ? 'text-[#9CAA8E] font-bold' : 'hover:text-[#9CAA8E]'}`}
-              >
-                Agenda e Tarefas
-              </button>
-
-              <button 
-                onClick={() => navigate('/vendors')} 
-                className={`transition-colors font-medium ${location.pathname === '/vendors' ? 'text-[#9CAA8E] font-bold' : 'hover:text-[#9CAA8E]'}`}
-              >
-                Fornecedores
-              </button>
-
-              <button 
-                onClick={() => navigate('/budget')} 
-                className={`transition-colors font-medium ${location.pathname === '/budget' ? 'text-[#9CAA8E] font-bold' : 'hover:text-[#9CAA8E]'}`}
-              >
-                Orçamento
-              </button>
-
-              <button 
-                onClick={() => navigate('/guests')} 
-                className={`transition-colors font-medium ${location.pathname === '/guests' ? 'text-[#9CAA8E] font-bold' : 'hover:text-[#9CAA8E]'}`}
-              >
-                Convidados
-              </button>
-
-              <button 
-                onClick={() => navigate('/gallery')} 
-                className={`transition-colors font-medium ${location.pathname === '/gallery' ? 'text-[#9CAA8E] font-bold' : 'hover:text-[#9CAA8E]'}`}
-              >
-                Galeria
-              </button>
-
-              <button 
-                onClick={() => navigate('/gifts')} 
-                className={`transition-colors font-medium ${location.pathname === '/gifts' ? 'text-[#9CAA8E] font-bold' : 'hover:text-[#9CAA8E]'}`}
-              >
-                Presentes
-              </button>
-            </>
-          )}
-
-          {!user && (
-            <>
-              <button 
-                onClick={() => navigate('/vendors')} 
-                className={`transition-colors font-medium ${location.pathname === '/vendors' ? 'text-[#9CAA8E] font-bold' : 'hover:text-[#9CAA8E]'}`}
-              >
-                Fornecedores
-              </button>
-
-              <button 
-                onClick={() => navigate('/public-gallery')} 
-                className={`transition-colors font-medium ${location.pathname === '/public-gallery' ? 'text-[#9CAA8E] font-bold' : 'hover:text-[#9CAA8E]'}`}
-              >
-                Gallery
-              </button>
-
-              <button 
-                onClick={() => navigate('/contact')} 
-                className={`transition-colors font-medium ${location.pathname === '/contact' ? 'text-[#9CAA8E] font-bold' : 'hover:text-[#9CAA8E]'}`}
-              >
-                Contacto
-              </button>
-            </>
-          )}
-
-          {user?.role === 'admin' && (
-            <button 
-              onClick={() => navigate('/admin')} 
-              className={`transition-colors font-medium flex items-center gap-1 ${location.pathname.startsWith('/admin') ? 'text-[#9CAA8E] font-bold' : 'hover:text-[#9CAA8E]'}`}
+          {navigationItems.map((item) => (
+            <button
+              key={item.path}
+              onClick={() => navigate(item.path)}
+              className={`transition-colors font-medium ${
+                (item.path === '/' ? location.pathname === item.path : location.pathname.startsWith(item.path))
+                  ? 'text-[#9CAA8E] font-bold' 
+                  : 'hover:text-[#9CAA8E]'
+              }`}
             >
-              <Shield className="w-4 h-4" />
-              Admin
+              {item.label}
             </button>
-          )}
+          ))}
         </div>
         
         {/* Right side: Auth buttons and mobile menu */}
@@ -162,7 +241,7 @@ const Header = ({notSticky}) => {
           <div className="hidden lg:flex gap-3">
             {isAuthed ? (
               <div className="relative" ref={profileMenuRef}>
-                {/* Profile Button with Avatar */}
+                {/* Profile Button with Avatar - Original style */}
                 <button 
                   onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
                   className="flex items-center gap-2 px-3 py-2 rounded-full hover:bg-gray-100 transition-colors"
@@ -197,6 +276,11 @@ const Header = ({notSticky}) => {
                     <div className="px-4 py-3 border-b border-gray-100">
                       <p className="font-medium text-gray-900 truncate">{user?.name}</p>
                       <p className="text-sm text-gray-500 truncate">{user?.email}</p>
+                      {user?.role === 'vendor' && (
+                        <span className="inline-block mt-1 text-xs font-medium text-[#9CAA8E] bg-[#9CAA8E]/10 px-2 py-0.5 rounded-full">
+                          Fornecedor
+                        </span>
+                      )}
                     </div>
                     <button 
                       onClick={handleProfileClick}
@@ -267,164 +351,131 @@ const Header = ({notSticky}) => {
           </button>
         </div>
         
-        {/* Mobile/Tablet Menu - Hidden on desktop */}
+        {/* Mobile/Tablet Menu - Hidden on desktop - SHOWS PROFILE DETAILS */}
         {isMenuOpen && (
-          <div className="lg:hidden absolute top-16 left-0 right-0 bg-white border-b shadow-lg z-50">
-            <div className="flex flex-col px-6 py-4 space-y-4">
-              {/* Mobile Navigation Links - Same conditions as desktop */}
-              <button 
-                onClick={() => { navigate('/'); setIsMenuOpen(false); }} 
-                className={`py-2 border-b border-gray-100 text-left font-medium ${location.pathname === '/' ? 'text-[#9CAA8E]' : 'text-gray-600 hover:text-[#9CAA8E]'}`}
-              >
-                Início
-              </button>
-
-              {user?.role === "vendor" && <button 
-                onClick={() => { navigate('/calendar'); setIsMenuOpen(false); }} 
-                className={`py-2 border-b border-gray-100 text-left font-medium ${location.pathname === '/calendar' ? 'text-[#9CAA8E]' : 'text-gray-600 hover:text-[#9CAA8E]'}`}
-              >
-                Calendário
-              </button>}
-
-
-              {user?.role === "couple" && (
-                <>
-                  <button 
-                    onClick={() => { navigate('/checklist'); setIsMenuOpen(false); }} 
-                    className={`py-2 border-b border-gray-100 text-left font-medium ${location.pathname === '/checklist' ? 'text-[#9CAA8E]' : 'text-gray-600 hover:text-[#9CAA8E]'}`}
-                  >
-                    Agenda e Tarefas
-                  </button>
-
-                  <button 
-                    onClick={() => { navigate('/vendors'); setIsMenuOpen(false); }} 
-                    className={`py-2 border-b border-gray-100 text-left font-medium ${location.pathname === '/vendors' ? 'text-[#9CAA8E]' : 'text-gray-600 hover:text-[#9CAA8E]'}`}
-                  >
-                    Fornecedores
-                  </button>
-
-                  <button 
-                    onClick={() => { navigate('/budget'); setIsMenuOpen(false); }} 
-                    className={`py-2 border-b border-gray-100 text-left font-medium ${location.pathname === '/budget' ? 'text-[#9CAA8E]' : 'text-gray-600 hover:text-[#9CAA8E]'}`}
-                  >
-                    Orçamento
-                  </button>
-
-                  <button 
-                    onClick={() => { navigate('/guests'); setIsMenuOpen(false); }} 
-                    className={`py-2 border-b border-gray-100 text-left font-medium ${location.pathname === '/guests' ? 'text-[#9CAA8E]' : 'text-gray-600 hover:text-[#9CAA8E]'}`}
-                  >
-                    Convidados
-                  </button>
-
-                  <button 
-                    onClick={() => { navigate('/gallery'); setIsMenuOpen(false); }} 
-                    className={`py-2 border-b border-gray-100 text-left font-medium ${location.pathname === '/gallery' ? 'text-[#9CAA8E]' : 'text-gray-600 hover:text-[#9CAA8E]'}`}
-                  >
-                    Galeria
-                  </button>
-
-                  <button 
-                    onClick={() => { navigate('/gifts'); setIsMenuOpen(false); }} 
-                    className={`py-2 border-b border-gray-100 text-left font-medium ${location.pathname === '/gifts' ? 'text-[#9CAA8E]' : 'text-gray-600 hover:text-[#9CAA8E]'}`}
-                  >
-                    Presentes
-                  </button>
-                </>
-              )}
-
-              {!user && (
-                <>
-                  <button 
-                    onClick={() => { navigate('/vendors'); setIsMenuOpen(false); }} 
-                    className={`py-2 border-b border-gray-100 text-left font-medium ${location.pathname === '/vendors' ? 'text-[#9CAA8E]' : 'text-gray-600 hover:text-[#9CAA8E]'}`}
-                  >
-                    Fornecedores
-                  </button>
-
-                  <button 
-                    onClick={() => { navigate('/public-gallery'); setIsMenuOpen(false); }} 
-                    className={`py-2 border-b border-gray-100 text-left font-medium ${location.pathname === '/public-gallery' ? 'text-[#9CAA8E]' : 'text-gray-600 hover:text-[#9CAA8E]'}`}
-                  >
-                    Gallery
-                  </button>
-
-                  <button 
-                    onClick={() => { navigate('/contact'); setIsMenuOpen(false); }} 
-                    className={`py-2 border-b border-gray-100 text-left font-medium ${location.pathname === '/contact' ? 'text-[#9CAA8E]' : 'text-gray-600 hover:text-[#9CAA8E]'}`}
-                  >
-                    Contacto
-                  </button>
-                </>
-              )}
-
-              {user?.role === 'admin' && (
-                <button 
-                  onClick={() => { navigate('/admin'); setIsMenuOpen(false); }} 
-                  className={`py-2 border-b border-gray-100 text-left font-medium flex items-center gap-2 ${location.pathname.startsWith('/admin') ? 'text-[#9CAA8E]' : 'text-gray-600 hover:text-[#9CAA8E]'}`}
-                >
-                  <Shield className="w-4 h-4" />
-                  Admin
-                </button>
-              )}
-              
-              {/* Mobile/Tablet Auth Buttons */}
-              <div className="flex flex-col gap-3 pt-4">
+          <div className="lg:hidden fixed inset-0 top-[73px] bg-white z-50 overflow-y-auto">
+            
+            <div className="flex flex-col px-6 py-4 min-h-full">
+              {/* Scrollable content - Profile Section First */}
+              <div className="flex-1">
                 {isAuthed ? (
                   <>
-                    {/* User Info */}
-                    <div className="flex items-center gap-3 pb-4 border-b border-gray-100">
+                    {/* User Info - Prominent at top of mobile menu */}
+                    <div className="flex items-center gap-4 pb-6 border-b border-gray-100 mb-4">
                       {user?.avatar ? (
                         <img 
                           src={user.avatar.startsWith('http') ? user.avatar : `${API_URL}${user.avatar}`} 
                           alt={user?.name || 'Profile'}
-                          className="w-10 h-10 rounded-full object-cover border-2 border-[#9CAA8E]"
+                          className="w-16 h-16 rounded-full object-cover border-2 border-[#9CAA8E]"
                         />
                       ) : (
-                        <div className="w-10 h-10 rounded-full bg-[#9CAA8E] flex items-center justify-center">
-                          <span className="text-white font-medium">
+                        <div className="w-16 h-16 rounded-full bg-[#9CAA8E] flex items-center justify-center">
+                          <span className="text-white text-2xl font-medium">
                             {user?.name?.charAt(0)?.toUpperCase() || '?'}
                           </span>
                         </div>
                       )}
                       <div>
-                        <p className="font-medium text-gray-900">{user?.name}</p>
+                        <p className="font-medium text-gray-900 text-lg">{user?.name}</p>
                         <p className="text-sm text-gray-500">{user?.email}</p>
+                        {user?.role === 'vendor' && (
+                          <span className="inline-block mt-1 text-xs font-medium text-[#9CAA8E] bg-[#9CAA8E]/10 px-2 py-0.5 rounded-full">
+                            Fornecedor
+                          </span>
+                        )}
+                        {user?.role === 'couple' && profile?.wedding?.date && (
+                          <div className="flex items-center gap-1 mt-1 text-xs text-gray-500">
+                            <Calendar className="w-3 h-3" />
+                            <span>Casamento: {new Date(profile.wedding.date).toLocaleDateString('pt-PT')}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
-                    <button 
-                      onClick={() => {
-                        navigate('/profile');
-                        setIsMenuOpen(false);
-                      }} 
-                      className="w-full py-3 text-center text-gray-700 hover:bg-gray-50 border border-gray-300 rounded-lg transition-colors flex items-center justify-center gap-2"
-                    >
-                      <User className="w-5 h-5" />
-                      Meu Perfil
-                    </button>
-                    <button 
-                      onClick={() => {
-                        navigate('/settings');
-                        setIsMenuOpen(false);
-                      }} 
-                      className="w-full py-3 text-center text-gray-700 hover:bg-gray-50 border border-gray-300 rounded-lg transition-colors flex items-center justify-center gap-2"
-                    >
-                      <Settings className="w-5 h-5" />
-                      Configurações
-                    </button>
-                    <button 
-                      onClick={() => {
-                        setShowLogoutModal(true);
-                        setIsMenuOpen(false);
-                      }} 
-                      className="w-full py-3 text-center text-red-600 hover:bg-red-50 border border-red-300 rounded-lg transition-colors flex items-center justify-center gap-2"
-                    >
-                      <LogOut className="w-5 h-5" />
-                      Sair
-                    </button>
+
+                    {/* Profile Actions */}
+                    <div className="space-y-2 mb-6">
+                      <button 
+                        onClick={handleProfileClick}
+                        className="w-full py-3 px-4 text-left text-gray-700 hover:bg-gray-50 rounded-lg transition-colors flex items-center gap-3"
+                      >
+                        <User className="w-5 h-5 text-gray-500" />
+                        <span className="font-medium">Meu Perfil</span>
+                      </button>
+                      <button 
+                        onClick={handleSettingsClick}
+                        className="w-full py-3 px-4 text-left text-gray-700 hover:bg-gray-50 rounded-lg transition-colors flex items-center gap-3"
+                      >
+                        <Settings className="w-5 h-5 text-gray-500" />
+                        <span className="font-medium">Configurações</span>
+                      </button>
+                      <button 
+                        onClick={() => {
+                          setShowLogoutModal(true);
+                          setIsMenuOpen(false);
+                        }} 
+                        className="w-full py-3 px-4 text-left text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-3"
+                      >
+                        <LogOut className="w-5 h-5" />
+                        <span className="font-medium">Sair da Conta</span>
+                      </button>
+                    </div>
+
+                    {/* Quick Stats for Couples */}
+                    {user?.role === 'couple' && profile?.wedding?.date && (
+                      <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                        <h3 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+                          <Heart className="w-4 h-4 text-[#9CAA8E]" fill="currentColor" />
+                          O Grande Dia
+                        </h3>
+                        <div className="space-y-2">
+                          {profile?.wedding?.date && (
+                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                              <Calendar className="w-4 h-4 text-gray-400" />
+                              <span>{new Date(profile.wedding.date).toLocaleDateString('pt-PT', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
+                            </div>
+                          )}
+                          {profile?.wedding?.venue && (
+                            <div className="flex items-center gap-2 text-sm text-gray-600">
+                              <MapPin className="w-4 h-4 text-gray-400" />
+                              <span className="truncate">{profile.wedding.venue}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Quick Stats for Vendors */}
+                    {user?.role === 'vendor' && (
+                      <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                        <h3 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
+                          <Briefcase className="w-4 h-4 text-[#9CAA8E]" />
+                          Estatísticas
+                        </h3>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div className="bg-white rounded-lg p-3 text-center">
+                            <MessageSquare className="w-4 h-4 text-[#9CAA8E] mx-auto mb-1" />
+                            <div className="text-lg font-medium text-gray-800">0</div>
+                            <div className="text-xs text-gray-500">Pedidos</div>
+                          </div>
+                          <div className="bg-white rounded-lg p-3 text-center">
+                            <Star className="w-4 h-4 text-[#9CAA8E] mx-auto mb-1" />
+                            <div className="text-lg font-medium text-gray-800">0</div>
+                            <div className="text-xs text-gray-500">Avaliações</div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </>
                 ) : (
-                  <>
+                  /* Non-authenticated user view */
+                  <div className="flex flex-col gap-4 pt-4">
+                    <div className="text-center py-8">
+                      <div className="w-16 h-16 bg-[#9CAA8E] rounded-full flex items-center justify-center mx-auto mb-3">
+                        <Heart className="w-8 h-8 text-white" fill="white" />
+                      </div>
+                      <h3 className="text-lg font-medium text-gray-800 mb-1">Bem-vindo ao Meu Casamento</h3>
+                      <p className="text-sm text-gray-500">Faça login para aceder ao seu painel</p>
+                    </div>
                     <button 
                       onClick={() => {
                         navigate('/login');
@@ -443,13 +494,91 @@ const Header = ({notSticky}) => {
                     >
                       Cadastrar
                     </button>
-                  </>
+                  </div>
                 )}
               </div>
             </div>
+
           </div>
         )}
       </nav>
+
+      {/* Mobile Bottom Navigation - Only visible on mobile/tablet - WITH ICONS from WeddingDashboard */}
+      <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 shadow-lg">
+        <div className="flex items-center justify-around px-2 py-1">
+          {mainNavItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = item.path === '/' 
+              ? location.pathname === item.path 
+              : location.pathname.startsWith(item.path);
+            
+            return (
+              <button
+                key={item.path}
+                onClick={() => {
+                  navigate(item.path);
+                  setIsMoreMenuOpen(false);
+                }}
+                className={`flex flex-col items-center py-2 px-3 rounded-lg transition-colors ${
+                  isActive 
+                    ? 'text-[#9CAA8E] font-bold' 
+                    : 'text-gray-500 hover:text-[#9CAA8E]'
+                }`}
+              >
+                <Icon className={`w-5 h-5 ${isActive ? 'stroke-2' : ''}`} />
+                <span className="text-xs mt-1 font-medium">{item.short_label || item.label}</span>
+              </button>
+            );
+          })}
+          
+          {/* More Menu Button */}
+          {moreNavItems.length > 0 && (
+            <div className="relative" ref={moreMenuRef}>
+              <button
+                onClick={() => setIsMoreMenuOpen(!isMoreMenuOpen)}
+                className={`flex flex-col items-center py-2 px-3 rounded-lg transition-colors ${
+                  isMoreMenuOpen ? 'text-[#9CAA8E] font-bold' : 'text-gray-500 hover:text-[#9CAA8E]'
+                }`}
+              >
+                <Menu className="w-5 h-5" />
+                <span className="text-xs mt-1 font-medium">Mais</span>
+              </button>
+
+              {/* More Menu Dropdown */}
+              {isMoreMenuOpen && (
+                <div className="absolute bottom-full right-0 mb-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50">
+                  {moreNavItems.map((item) => {
+                    const Icon = item.icon;
+                    const isActive = item.path === '/' 
+                      ? location.pathname === item.path 
+                      : location.pathname.startsWith(item.path);
+                    
+                    return (
+                      <button
+                        key={item.path}
+                        onClick={() => {
+                          navigate(item.path);
+                          setIsMoreMenuOpen(false);
+                        }}
+                        className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors ${
+                          isActive 
+                            ? 'text-[#9CAA8E] bg-[#9CAA8E]/10 font-bold' 
+                            : 'text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        <Icon className={`w-5 h-5 ${isActive ? 'text-[#9CAA8E] stroke-2' : 'text-gray-500'}`} />
+                        <span className="font-medium">{item.label}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+     
 
       {/* Logout Confirmation Modal */}
       {showLogoutModal && (

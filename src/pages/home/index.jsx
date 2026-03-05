@@ -26,6 +26,41 @@ export default function WeddingLanding() {
   const [currentSlide, setCurrentSlide] = useState(0);
 
 
+
+  
+      useEffect(() => {
+  
+      let backListener;
+  
+      // -------------------------
+      // BROWSER BACK BUTTON
+      // -------------------------
+      const handlePopState = (e) => {
+        if (data.postDialogOpen) {
+          // Close dialog instead of going back
+          e.preventDefault();
+          data.setPostDialogOpen(false);
+  
+          // Push the state back to prevent actual navigation
+          window.history.pushState(null, "", window.location.href);
+        }
+      };
+  
+      if (data.postDialogOpen) {
+        // Trap browser back
+        window.history.pushState(null, "", window.location.href);
+        window.addEventListener("popstate", handlePopState);
+      }
+  
+      // Cleanup
+      return () => {
+        if (backListener) backListener.remove();
+        window.removeEventListener("popstate", handlePopState);
+      };
+    }, [data.postDialogOpen, location.pathname]);
+  
+
+
     // Scroll to top when pathname changes
     useEffect(() => {
       window.scrollTo(0, 0);
@@ -34,6 +69,13 @@ export default function WeddingLanding() {
   // Inspiration gallery lightbox state
   const [showInspirationModal, setShowInspirationModal] = useState(false);
   const [currentInspirationSlide, setCurrentInspirationSlide] = useState(0);
+
+  
+        useEffect(()=>{
+            if(!data.postDialogOpen){
+               setShowInspirationModal(false)
+            }
+        },[data.postDialogOpen])
 
   useEffect(() => {
     fetchVendors();
@@ -171,6 +213,7 @@ export default function WeddingLanding() {
   const openInspirationModal = (index) => {
     setCurrentInspirationSlide(index);
     setShowInspirationModal(true);
+     data.setPostDialogOpen(true)
   };
 
   const testimonials = [

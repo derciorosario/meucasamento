@@ -26,6 +26,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../contexts/AuthContext';
 import VendorProfileModal from '../../components/VendorProfileModal';
 import { useNavigate } from 'react-router-dom';
+import { useData } from '../../contexts/DataContext';
 
 // Category icons mapping
 const categoryIcons = {
@@ -49,6 +50,16 @@ const VendorsPage = () => {
   const navigate=useNavigate()
 
   const {user} = useAuth()
+
+  const data=useData()
+  
+  useEffect(()=>{
+  
+      if(!data.postDialogOpen){
+        setShowMobileFilters(false)
+      }
+  
+  },[data.postDialogOpen])
   
   // Multi-select filter states
   const [selectedCategories, setSelectedCategories] = useState([]);
@@ -453,7 +464,7 @@ const VendorsPage = () => {
 
   if (loading && vendors.length === 0) {
     return (
-      <DefaultLayout  hero={{ title: "Fornecedores", subtitle: "Encontre os melhores fornecedores para o seu casamento" }}>
+      <DefaultLayout largerPadding={true}  hero={{ title: "Fornecedores", subtitle: "Encontre os melhores fornecedores para o seu casamento" }}>
         <div className="flex flex-col items-center justify-center min-h-[60vh]">
           <div className="relative">
             <div className="w-20 h-20 border-4 border-primary-200 border-t-primary-600 rounded-full animate-spin"></div>
@@ -466,7 +477,7 @@ const VendorsPage = () => {
   }
 
   return (
-    <DefaultLayout  hero={{ 
+    <DefaultLayout  largerPadding={true} hero={{ 
       title: "Fornecedores", 
       subtitle: "Encontre os melhores fornecedores para tornar o seu casamento inesquecível",
       image: "https://images.unsplash.com/photo-1519167758481-83f29da8c1e8?w=1200&h=400&fit=crop"
@@ -781,7 +792,10 @@ const VendorsPage = () => {
           <div className="flex-1">
             {/* Mobile Filter Button */}
             <button
-              onClick={() => setShowMobileFilters(true)}
+              onClick={() => {
+                 setShowMobileFilters(true)
+                 data.setPostDialogOpen(true)
+              }}
               className="lg:hidden w-full mb-6 px-4 py-3 bg-white border-2 border-gray-200 rounded-xl flex items-center justify-between"
             >
               <div className="flex items-center gap-2">

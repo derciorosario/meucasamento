@@ -1,7 +1,7 @@
 import axios from "axios";
 const env = "pro";
 ///import { Capacitor, CapacitorHttp } from '@capacitor/core';
-export const isNative = false/// Capacitor.isNativePlatform();
+export const isNative = false /// Capacitor.isNativePlatform();
 
 
 export const API_URL = 

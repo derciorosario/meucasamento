@@ -5,20 +5,22 @@ import {
   ChevronRight, Camera, UtensilsCrossed, Music, Flower2, 
   User, LogOut, Settings, X, ChevronDown, Plus, Loader2,
   TrendingUp, MessageSquare, Star, Eye, Briefcase, DollarSign,
-  Play
+  Play, Home, List, ShoppingBag, Users2, Calendar as CalendarIcon, Wallet, Image, Gift, Menu
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { API_URL, getTasks, getGuests, getGuestStats, getBudget, getCategories, updateBudget, getVendorQuoteRequests, getVendors, toggleTaskCompletion, getMyQuoteRequests, getVendor, getTutorials } from '../../api/client';
 import VendorProfileModal from '../../components/VendorProfileModal';
 import WelcomeDialog from '../../components/WelcomeDialog';
 import { toast } from 'react-hot-toast';
+import { useData } from '../../contexts/DataContext';
 
 export default function WeddingDashboard() {
-  const [activeTab, setActiveTab] = useState('resumo');
+  const [activeTab, setActiveTab] = useState('inicio');
   const { user, profile, signOut, refreshAuth } = useAuth();
   const navigate = useNavigate();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const profileMenuRef = useRef(null);
   
   // Data states
@@ -34,6 +36,59 @@ export default function WeddingDashboard() {
   // Tutorial videos state
   const [tutorials, setTutorials] = useState([]);
   const [playingTutorial, setPlayingTutorial] = useState(null);
+
+  
+
+    const data=useData()
+  
+      useEffect(() => {
+  
+      let backListener;
+  
+      // -------------------------
+      // BROWSER BACK BUTTON
+      // -------------------------
+      const handlePopState = (e) => {
+        if (data.postDialogOpen) {
+          // Close dialog instead of going back
+          e.preventDefault();
+          data.setPostDialogOpen(false);
+  
+          // Push the state back to prevent actual navigation
+          window.history.pushState(null, "", window.location.href);
+        }
+      };
+  
+      if (data.postDialogOpen) {
+        // Trap browser back
+        window.history.pushState(null, "", window.location.href);
+        window.addEventListener("popstate", handlePopState);
+      }
+  
+      // Cleanup
+      return () => {
+        if (backListener) backListener.remove();
+        window.removeEventListener("popstate", handlePopState);
+      };
+    }, [data.postDialogOpen, location.pathname]);
+  
+
+
+    useEffect(()=>{
+        if(!data.postDialogOpen){
+            setPlayingTutorial(null)
+  
+        }
+    },[data.postDialogOpen])
+  
+    useEffect(()=>{
+  
+      if(playingTutorial){
+            data.setPostDialogOpen(true)
+      }
+  
+     
+    },[playingTutorial])
   
   // Vendor Profile Modal states
   const [showProfile, setShowProfile] = useState(false);
@@ -176,6 +231,17 @@ export default function WeddingDashboard() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  // Close mobile menu when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (showMobileMenu && !event.target.closest('.mobile-menu-container')) {
+        setShowMobileMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [showMobileMenu]);
+
   // Show welcome dialog on first load (after data is loaded)
   useEffect(() => {
     if (!loading && user) {
@@ -204,26 +270,30 @@ export default function WeddingDashboard() {
     navigate('/settings');
   };
 
-  // Couple tabs
+  // Couple tabs with icons
   const coupleTabs = [
-    { id: 'resumo', label: 'Resumo', path: '/' },
-    { id: 'agenda', label: 'Agenda de Tarefas', path: '/checklist' },
-    { id: 'fornecedores', label: 'Fornecedores', path: '/vendors' },
-    { id: 'convidados', label: 'Convidados', path: '/guests' },
-    { id: 'orcamento', label: 'Orçamento', path: '/budget' },
-    { id: 'gallery', label: 'Galeria', path: '/gallery' },
-    { id: 'gifts', label: 'Presentes', path: '/gifts' },
+    { id: 'inicio', label: 'Inicio', path: '/', icon: Home },
+    { id: 'agenda', label: 'Agenda', path: '/checklist', icon: List },
+    { id: 'fornecedores', label: 'Fornecedores', path: '/vendors', icon: ShoppingBag },
+    { id: 'orcamento', label: 'Orçamento', path: '/budget', icon: Wallet },
+    { id: 'convidados', label: 'Convidados', path: '/guests', icon: Users2 },
+    { id: 'gallery', label: 'Galeria', path: '/gallery', icon: Image },
+    { id: 'gifts', label: 'Presentes', path: '/gifts', icon: Gift },
   ];
 
-  // Vendor tabs
+  // Vendor tabs with icons
   const vendorTabs = [
-    { id: 'resumo', label: 'Painel', path: '/' },
-    { id: 'calendar', label: 'Calendário', path: '/calendar' },
-    { id: 'pedidos', label: 'Pedidos de Orçamento', path: '/profile?tab=quotes' },
-    { id: 'perfil', label: 'Meu Perfil', path: '/profile' },
+    { id: 'inicio', label: 'Painel', path: '/', icon: Home },
+    { id: 'calendar', label: 'Calendário', path: '/calendar', icon: CalendarIcon },
+    { id: 'pedidos', label: 'Pedidos', path: '/profile?tab=quotes', icon: MessageSquare },
+    { id: 'perfil', label: 'Perfil', path: '/profile', icon: User },
   ];
 
   const tabs = isVendor ? vendorTabs : coupleTabs;
+
+  // Get first 4 tabs for mobile bottom navigation
+  const mobileMainTabs = tabs.slice(0, 4);
+  const mobileMoreTabs = tabs.slice(4);
 
   const getPriorityColor = (priority) => {
     switch (priority) {
@@ -356,15 +426,16 @@ export default function WeddingDashboard() {
   }
 
   return (
-    <div className={`min-h-screen ${!user ? 'hidden' : ''} bg-gray-50`}>
+    <div className={`min-h-screen ${!user ? 'hidden' : ''} bg-gray-50 pb-16 md:pb-0`}>
       {/* Header */}
+
       <header className="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2 group">
             <div className="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center shadow-sm group-hover:shadow transition-all">
               <Heart className="w-5 h-5 text-white" fill="white" />
             </div>
-            <span className="text-gray-700 font-light">Meu Casamento</span>
+            <button className="text-lg sm:text-xl font-serif font-bold text-black">Meu Casamento</button>
           </Link>
           
           <div className="flex items-center gap-4">
@@ -507,8 +578,8 @@ export default function WeddingDashboard() {
         </div>
       </div>
 
-      {/* Navigation Tabs */}
-      <div className="bg-white border-b border-gray-200 px-6 sticky top-[73px] z-40">
+      {/* Desktop Navigation Tabs - Hidden on mobile */}
+      <div className="hidden md:block bg-white border-b border-gray-200 px-6 sticky top-[73px] z-40">
         <div className="max-w-7xl mx-auto">
           <div className="flex gap-8 overflow-x-auto">
             {tabs.map((tab) => (
@@ -530,7 +601,7 @@ export default function WeddingDashboard() {
       </div>
 
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-6 py-8 mb-16 md:mb-0">
         {loading ? (
           <div className="flex items-center justify-center py-12">
             <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
@@ -850,7 +921,10 @@ export default function WeddingDashboard() {
                   {tutorials.map((tutorial) => (
                     <button
                       key={tutorial.key}
-                      onClick={() => setPlayingTutorial(tutorial)}
+                      onClick={() => {
+                        setPlayingTutorial(tutorial)
+                        data.setPostDialogOpen(true)
+                      }}
                       className="group flex-shrink-0 w-48 relative bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-all text-left"
                     >
                       <div className="relative aspect-video bg-gray-100">
@@ -923,7 +997,7 @@ export default function WeddingDashboard() {
                       Orçamento de Fornecedores
                     </h2>
                   </div>
-                  <span className="text-xs font-medium text-purple-600 bg-purple-50 px-2 py-1 rounded-full">
+                  <span className="text-xs font-medium text-center text-purple-600 bg-purple-50 px-2 py-1 rounded-full">
                     {myQuoteRequests.length} orçamentos
                   </span>
                 </div>
@@ -1034,20 +1108,75 @@ export default function WeddingDashboard() {
 
             {/* Quick Actions */}
             <div className="mt-8 flex justify-end">
-              <button 
-                onClick={() => navigate('/checklist')}
-                className="flex items-center gap-2 bg-primary-500 text-white px-6 py-3 rounded-lg hover:bg-primary-600 transition-colors shadow-sm"
-              >
-                <Plus className="w-5 h-5" />
-                <span>Adicionar tarefa</span>
-              </button>
+            
             </div>
           </>
         )}
       </div>
 
-      {/* Footer */}
-      <footer className="bg-white border-t border-gray-200 mt-12 px-6 py-6">
+      {/* Mobile Bottom Navigation */}
+      <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50">
+        <div className="flex items-center justify-around px-2 py-1">
+          {mobileMainTabs.map((tab) => {
+            const Icon = tab.icon;
+            return (
+              <Link
+                key={tab.id}
+                to={tab.path}
+                onClick={() => setActiveTab(tab.id)}
+                className={`flex flex-col items-center py-2 px-3 rounded-lg transition-colors ${
+                  activeTab === tab.id
+                    ? 'text-primary-600'
+                    : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <Icon className="w-5 h-5 text-gray-600" />
+                <span className="text-xs text-gray-600 font-medium mt-1">{tab.label}</span>
+              </Link>
+            );
+          })}
+          
+          {mobileMoreTabs.length > 0 && (
+            <div className="relative mobile-menu-container">
+              <button
+                onClick={() => setShowMobileMenu(!showMobileMenu)}
+                className={`flex flex-col items-center py-2 px-3 rounded-lg transition-colors ${
+                  showMobileMenu ? 'text-primary-600' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                <Menu className="w-5 h-5" />
+                <span className="text-xs mt-1">Mais</span>
+              </button>
+              
+              {/* Mobile More Menu */}
+              {showMobileMenu && (
+                <div className="absolute bottom-full right-0 mb-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 py-2">
+                  {mobileMoreTabs.map((tab) => {
+                    const Icon = tab.icon;
+                    return (
+                      <Link
+                        key={tab.id}
+                        to={tab.path}
+                        onClick={() => {
+                          setActiveTab(tab.id);
+                          setShowMobileMenu(false);
+                        }}
+                        className="flex items-center gap-3 px-4 py-3 text-gray-700 hover:bg-gray-50 transition-colors"
+                      >
+                        <Icon className="w-5 h-5 text-gray-500" />
+                        <span className="text-sm">{tab.label}</span>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Footer - Hidden on mobile */}
+      <footer className="hidden md:block bg-white border-t border-gray-200 mt-12 px-6 py-6">
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-4 text-sm text-gray-500">
           <div>© 2025 Meu Casamento. Todos os direitos reservados.</div>
           <div className="flex gap-6">

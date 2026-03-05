@@ -6,6 +6,8 @@ import { ChevronDown, Check, Heart, Lightbulb, Loader2, Edit2, Trash2, X, Plus, 
 import { getTasksByTimeline, getTasksByCategory, updateTask, createTask, deleteTask, toggleTaskCompletion, initDefaultTasks, getTutorials } from '../../api/client';
 import { toast } from '../../lib/toast';
 import { useAuth } from '../../contexts/AuthContext';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useData } from '../../contexts/DataContext';
 
 // Category labels mapping
 const categoryLabels = {
@@ -111,6 +113,15 @@ const ChecklistPage = () => {
   const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   const {profile} = useAuth()
+  const data=useData()
+
+  useEffect(()=>{
+
+    if(!data.postDialogOpen){
+       setIsModalOpen(false)
+    }
+
+  },[data.postDialogOpen])
   
  
   // Tasks data
@@ -582,7 +593,7 @@ const ChecklistPage = () => {
 
   if (loading) {
     return (
-      <DefaultLayout hero={{title:"Seu Checklist de Casamento",subtitle:"Organize e acompanhe todas as tarefas passo a passo"}}>
+      <DefaultLayout largerPadding={true} hero={{title:"Seu Checklist de Casamento",subtitle:"Organize e acompanhe todas as tarefas passo a passo"}}>
         <div className="flex items-center justify-center min-h-[400px]">
           <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
         </div>
@@ -591,9 +602,9 @@ const ChecklistPage = () => {
   }
 
   return (
-    <DefaultLayout hero={{title:"Seu Checklist de Casamento",subtitle:"Organize e acompanhe todas as tarefas passo a passo"}}>
+    <DefaultLayout largerPadding={true} hero={{title:"Seu Checklist de Casamento",subtitle:"Organize e acompanhe todas as tarefas passo a passo"}}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:-translate-y-[70px] bg-gray-50 p-3 rounded-2xl">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:-translate-y-[70px] bg-gray-50 py-3 rounded-2xl">
           {/* Left Column - Checklist */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 mb-6">
@@ -681,7 +692,10 @@ const ChecklistPage = () => {
                     <span>para concluir 🎉</span>
                   </div>
                   <button 
-                    onClick={() => setIsModalOpen(true)}
+                    onClick={() => {
+                      setIsModalOpen(true)
+                      data.setPostDialogOpen(true)
+                    }}
                     className="w-full sm:w-auto bg-primary-500 hover:bg-primary-600 text-white px-6 py-2.5 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
                   >
                     <Plus className="w-4 h-4" />
@@ -1786,7 +1800,10 @@ const ChecklistPage = () => {
               </div>
 
               <button 
-                onClick={() => setIsModalOpen(true)}
+                onClick={() => {
+                  setIsModalOpen(true)
+                  data.setPostDialogOpen(true)
+                }}
                 className="w-full mt-4 bg-primary-500 text-white py-3 rounded-full font-medium hover:bg-primary-600 transition"
               >
                 Adicionar tarefa
@@ -1797,56 +1814,216 @@ const ChecklistPage = () => {
 
         {/* Mobile FAB for adding tasks */}
         <button
-          onClick={() => setIsModalOpen(true)}
-          className="lg:hidden fixed bottom-6 right-6 w-14 h-14 bg-primary-500 rounded-full shadow-lg flex items-center justify-center text-white hover:bg-primary-600 transition-colors z-40"
+          onClick={() => {
+            setIsModalOpen(true)
+            data.setPostDialogOpen(true)
+          }}
+          className="lg:hidden fixed bottom-20 right-6 w-14 h-14 bg-primary-500 rounded-full shadow-lg flex items-center justify-center text-white hover:bg-primary-600 transition-colors z-40"
           aria-label="Adicionar tarefa"
         >
           <Plus className="w-6 h-6" />
         </button>
 
-        {/* Add Task Modal */}
+        {/* Add Task Modal - Mobile Optimized */}
+        <AnimatePresence>
+          {isModalOpen && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="lg:hidden fixed inset-0 bg-black/50 z-50 flex items-end"
+              onClick={() => setIsModalOpen(false)}
+            >
+              <motion.div
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                exit={{ y: "100%" }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                className="bg-white rounded-t-2xl w-full max-w-md mx-auto max-h-[90vh] overflow-y-auto"
+                onClick={e => e.stopPropagation()}
+              >
+                <div className="p-4 border-b border-gray-200 sticky top-0 bg-white z-10">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-gray-800">Adicionar Tarefa</h3>
+                    <button 
+                      onClick={() => setIsModalOpen(false)}
+                      className="w-10 h-10 flex items-center justify-center rounded-full active:bg-gray-100"
+                      aria-label="Fechar"
+                    >
+                      <X className="w-5 h-5 text-gray-500" />
+                    </button>
+                  </div>
+                </div>
+                
+                <form onSubmit={handleSaveTask} className="p-4 space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Título da tarefa</label>
+                    <input
+                      type="text"
+                      value={newTask.title}
+                      onChange={(e) => setNewTask({...newTask, title: e.target.value})}
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-black focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      required
+                      placeholder="Ex: Reservar buffet"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Categoria</label>
+                    <select
+                      value={newTask.categoryType}
+                      onChange={(e) => setNewTask({...newTask, categoryType: e.target.value})}
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-black focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    >
+                      {Object.entries(categoryLabels).map(([key, label]) => (
+                        <option key={key} value={key}>{label}</option>
+                      ))}
+                    </select>
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">Tipo de data</label>
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDateType('dueDate');
+                          setNewTask({...newTask, timelinePeriod: '12_months_before'});
+                        }}
+                        className={`flex-1 py-3 px-3 rounded-xl font-medium transition-colors text-sm ${
+                          dateType === 'dueDate'
+                            ? 'bg-primary-500 text-white'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                      >
+                        Data de vencimento
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDateType('period');
+                          setNewTask({...newTask, dueDate: null});
+                        }}
+                        className={`flex-1 py-3 px-3 rounded-xl font-medium transition-colors text-sm ${
+                          dateType === 'period'
+                            ? 'bg-primary-500 text-white'
+                            : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                        }`}
+                      >
+                        Período
+                      </button>
+                    </div>
+                  </div>
+                  
+                  {dateType === 'period' ? (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Período</label>
+                      <select
+                        value={newTask.timelinePeriod}
+                        onChange={(e) => setNewTask({...newTask, timelinePeriod: e.target.value})}
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-black focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      >
+                        {Object.entries(timelineLabels).map(([key, label]) => (
+                          <option key={key} value={key}>{label}</option>
+                        ))}
+                      </select>
+                    </div>
+                  ) : dateType === 'dueDate' ? (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Data de vencimento</label>
+                      <div className="relative w-full">
+                        <DatePicker
+                          selected={newTask.dueDate}
+                          onChange={(date) => {
+                            const period = getTimelinePeriodFromDate(date);
+                            setNewTask({...newTask, dueDate: date, timelinePeriod: period});
+                          }}
+                          minDate={new Date()}
+                          dateFormat="dd/MM/yyyy"
+                          placeholderText="Selecione uma data"
+                          className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-black focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        />
+                        <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                      </div>
+                    </div>
+                  ) : null}
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Prioridade</label>
+                    <select
+                      value={newTask.priority}
+                      onChange={(e) => setNewTask({...newTask, priority: e.target.value})}
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-black focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    >
+                      <option value="low">Baixa</option>
+                      <option value="medium">Média</option>
+                      <option value="high">Alta</option>
+                      <option value="urgent">Urgente</option>
+                    </select>
+                  </div>
+                  
+                  <div className="flex gap-3 pt-4">
+                    <button
+                      type="button"
+                      onClick={() => setIsModalOpen(false)}
+                      className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium active:bg-gray-50"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      className="flex-1 px-4 py-3 bg-primary-500 text-white rounded-xl font-medium active:bg-primary-600"
+                    >
+                      Adicionar
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Add Task Modal - Desktop */}
         {isModalOpen && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
-              <div className="flex items-center justify-between mb-4  top-0 bg-white">
-                <h3 className="text-lg font-semibold text-gray-800">Adicionar Tarefa</h3>
-                <button 
-                  onClick={() => setIsModalOpen(false)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                  aria-label="Fechar"
-                >
-                  <X className="w-5 h-5 text-gray-500" />
+          <div className="hidden lg:flex fixed inset-0 bg-black/50 items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl p-6 max-w-md w-full">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-serif font-bold text-black">Adicionar Tarefa</h3>
+                <button onClick={() => setIsModalOpen(false)}>
+                  <X className="w-6 h-6 text-gray-400" />
                 </button>
               </div>
-              <form onSubmit={handleSaveTask}>
-                <div className="mb-4">
+              
+              <form onSubmit={handleSaveTask} className="space-y-4">
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Título da tarefa</label>
                   <input
                     type="text"
                     value={newTask.title}
                     onChange={(e) => setNewTask({...newTask, title: e.target.value})}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg text-black"
                     required
                     placeholder="Ex: Reservar buffet"
                   />
                 </div>
-                <div className="mb-4">
+                
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Categoria</label>
                   <select
                     value={newTask.categoryType}
                     onChange={(e) => setNewTask({...newTask, categoryType: e.target.value})}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg text-black"
                   >
                     {Object.entries(categoryLabels).map(([key, label]) => (
                       <option key={key} value={key}>{label}</option>
                     ))}
                   </select>
                 </div>
-                <div className="mb-4">
+                
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Tipo de data</label>
                   <div className="flex gap-2">
-
-                     <button
+                    <button
                       type="button"
                       onClick={() => {
                         setDateType('dueDate');
@@ -1860,7 +2037,6 @@ const ChecklistPage = () => {
                     >
                       Data de vencimento
                     </button>
-
                     <button
                       type="button"
                       onClick={() => {
@@ -1875,25 +2051,24 @@ const ChecklistPage = () => {
                     >
                       Período
                     </button>
-                   
                   </div>
                 </div>
                 
                 {dateType === 'period' ? (
-                  <div className="mb-4">
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Período</label>
                     <select
                       value={newTask.timelinePeriod}
                       onChange={(e) => setNewTask({...newTask, timelinePeriod: e.target.value})}
-                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg text-black"
                     >
                       {Object.entries(timelineLabels).map(([key, label]) => (
                         <option key={key} value={key}>{label}</option>
                       ))}
                     </select>
                   </div>
-                ) : (
-                  <div className="mb-4">
+                ) : dateType === 'dueDate' ? (
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Data de vencimento</label>
                     <div className="relative w-full">
                       <DatePicker
@@ -1905,19 +2080,19 @@ const ChecklistPage = () => {
                         minDate={new Date()}
                         dateFormat="dd/MM/yyyy"
                         placeholderText="Selecione uma data"
-                        popperPlacement="bottom-start"
-                        showPopperArrow={false}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg text-black"
                       />
                       <Calendar className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
                     </div>
                   </div>
-                )}
-                <div className="mb-6">
+                ) : null}
+                
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Prioridade</label>
                   <select
                     value={newTask.priority}
                     onChange={(e) => setNewTask({...newTask, priority: e.target.value})}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg text-black"
                   >
                     <option value="low">Baixa</option>
                     <option value="medium">Média</option>
@@ -1925,17 +2100,18 @@ const ChecklistPage = () => {
                     <option value="urgent">Urgente</option>
                   </select>
                 </div>
-                <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
+                
+                <div className="flex gap-3 pt-4">
                   <button
                     type="button"
                     onClick={() => setIsModalOpen(false)}
-                    className="w-full sm:flex-1 text-gray-500 px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium order-2 sm:order-1"
+                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
-                    className="w-full sm:flex-1 px-4 py-2.5 bg-primary-500 text-white rounded-lg hover:bg-primary-600 font-medium order-1 sm:order-2"
+                    className="flex-1 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600"
                   >
                     Adicionar
                   </button>
@@ -1945,15 +2121,72 @@ const ChecklistPage = () => {
           </div>
         )}
 
-        {/* Delete Confirmation Modal */}
+        {/* Delete Confirmation Modal - Mobile Optimized */}
+        <AnimatePresence>
+          {deleteConfirm && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="lg:hidden fixed inset-0 bg-black/50 z-50 flex items-end"
+              onClick={() => setDeleteConfirm(null)}
+            >
+              <motion.div
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                exit={{ y: "100%" }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                className="bg-white rounded-t-2xl w-full max-w-md mx-auto"
+                onClick={e => e.stopPropagation()}
+              >
+                <div className="p-4 border-b border-gray-200">
+                  <div className="flex items-center justify-end">
+                    <button 
+                      onClick={() => setDeleteConfirm(null)}
+                      className="w-10 h-10 flex items-center justify-center rounded-full active:bg-gray-100"
+                      aria-label="Fechar"
+                    >
+                      <X className="w-5 h-5 text-gray-500" />
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="p-6 text-center">
+                  <div className="w-16 h-16 mx-auto bg-red-100 rounded-full flex items-center justify-center mb-4">
+                    <Trash2 className="w-8 h-8 text-red-500" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Confirmar exclusão</h3>
+                  <p className="text-gray-600 mb-6">
+                    Tem certeza que deseja excluir esta tarefa? Esta ação não pode ser desfeita.
+                  </p>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setDeleteConfirm(null)}
+                      className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium active:bg-gray-50"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={handleDeleteTask}
+                      className="flex-1 px-4 py-3 bg-red-500 text-white rounded-xl font-medium active:bg-red-600"
+                    >
+                      Excluir
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Delete Confirmation Modal - Desktop */}
         {deleteConfirm && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl p-6 w-full max-w-sm mx-4">
-              <div className="flex items-center justify-end mb-2">
+          <div className="hidden lg:flex fixed inset-0 bg-black/50 items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl p-6 max-w-sm w-full">
+              <div className="flex justify-end mb-2">
                 <button 
                   onClick={() => setDeleteConfirm(null)}
                   className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                  aria-label="Fechar"
                 >
                   <X className="w-5 h-5 text-gray-500" />
                 </button>
@@ -1965,16 +2198,16 @@ const ChecklistPage = () => {
               <p className="text-gray-600 text-center mb-6">
                 Tem certeza que deseja excluir esta tarefa? Esta ação não pode ser desfeita.
               </p>
-              <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
+              <div className="flex gap-3">
                 <button
                   onClick={() => setDeleteConfirm(null)}
-                  className="w-full sm:flex-1 text-gray-500 px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium order-2 sm:order-1"
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={handleDeleteTask}
-                  className="w-full sm:flex-1 px-4 py-2.5 bg-red-500 text-white rounded-lg hover:bg-red-600 font-medium order-1 sm:order-2"
+                  className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
                 >
                   Excluir
                 </button>
@@ -1983,15 +2216,81 @@ const ChecklistPage = () => {
           </div>
         )}
 
-        {/* Clear All Confirmation Modal */}
+        {/* Clear All Confirmation Modal - Mobile Optimized */}
+        <AnimatePresence>
+          {clearAllConfirm && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="lg:hidden fixed inset-0 bg-black/50 z-50 flex items-end"
+              onClick={() => { setClearAllConfirm(false); setDeleteCustomOnly(true); }}
+            >
+              <motion.div
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                exit={{ y: "100%" }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                className="bg-white rounded-t-2xl w-full max-w-md mx-auto"
+                onClick={e => e.stopPropagation()}
+              >
+                <div className="p-4 border-b border-gray-200">
+                  <div className="flex items-center justify-end">
+                    <button 
+                      onClick={() => { setClearAllConfirm(false); setDeleteCustomOnly(true); }}
+                      className="w-10 h-10 flex items-center justify-center rounded-full active:bg-gray-100"
+                      aria-label="Fechar"
+                    >
+                      <X className="w-5 h-5 text-gray-500" />
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="p-6">
+                  <div className="flex items-center justify-center w-16 h-16 mx-auto bg-red-100 rounded-full mb-4">
+                    <Trash2 className="w-8 h-8 text-red-500" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 text-center mb-2">Limpar tarefas personalizadas</h3>
+                  <p className="text-gray-600 text-center mb-6">
+                    Isso irá excluir todas as tarefas personalizadas que você criou. As tarefas padrão do sistema serão mantidas. Continuar?
+                  </p>
+                  <label className="flex items-center gap-2 mb-6 cursor-pointer justify-center">
+                    <input 
+                      type="checkbox" 
+                      checked={deleteCustomOnly}
+                      onChange={(e) => setDeleteCustomOnly(e.target.checked)}
+                      className="w-4 h-4 rounded border-gray-300 text-primary-500 focus:ring-primary-500"
+                    />
+                    <span className="text-gray-700 text-sm">Excluir apenas tarefas personalizadas</span>
+                  </label>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => { setClearAllConfirm(false); setDeleteCustomOnly(true); }}
+                      className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium active:bg-gray-50"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={handleClearAll}
+                      className="flex-1 px-4 py-3 bg-red-500 text-white rounded-xl font-medium active:bg-red-600"
+                    >
+                      Limpar
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Clear All Confirmation Modal - Desktop */}
         {clearAllConfirm && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl p-6 w-full max-w-sm mx-4">
-              <div className="flex items-center justify-end mb-2">
+          <div className="hidden lg:flex fixed inset-0 bg-black/50 items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl p-6 max-w-sm w-full">
+              <div className="flex justify-end mb-2">
                 <button 
                   onClick={() => { setClearAllConfirm(false); setDeleteCustomOnly(true); }}
                   className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                  aria-label="Fechar"
                 >
                   <X className="w-5 h-5 text-gray-500" />
                 </button>
@@ -2012,16 +2311,16 @@ const ChecklistPage = () => {
                 />
                 <span className="text-gray-700 text-sm">Excluir apenas tarefas personalizadas</span>
               </label>
-              <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
+              <div className="flex gap-3">
                 <button
                   onClick={() => { setClearAllConfirm(false); setDeleteCustomOnly(true); }}
-                  className="w-full sm:flex-1 text-gray-500 px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium order-2 sm:order-1"
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={handleClearAll}
-                  className="w-full sm:flex-1 px-4 py-2.5 bg-red-500 text-white rounded-lg hover:bg-red-600 font-medium order-1 sm:order-2"
+                  className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
                 >
                   Limpar
                 </button>

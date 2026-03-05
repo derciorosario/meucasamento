@@ -4,6 +4,7 @@ import { API_URL } from '../../api/client';
 import { Gift, Search, Check, Heart, ChevronLeft, Store, Link as LinkIcon, XCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Header from '../../components/Header';
+import { useData } from '../../contexts/DataContext';
 
 const categories = ['Todos', 'Cozinha', 'Quarto', 'Sala', 'Casa', 'Eletrodomésticos', 'Outros'];
 
@@ -22,6 +23,19 @@ const SharedGifts = () => {
   const [claiming, setClaiming] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const [showImageModal, setShowImageModal] = useState(false);
+
+  const data=useData()
+  
+  useEffect(()=>{
+      if(!data.postDialogOpen){
+          setShowClaimModal(false);
+          setShowImageModal(false);
+
+      }
+  },[data.postDialogOpen])
+
+
+
 
   // Fetch shared gifts
   useEffect(() => {
@@ -107,6 +121,7 @@ const SharedGifts = () => {
   const openClaimModal = (gift) => {
     setSelectedGift(gift);
     setShowClaimModal(true);
+    data.setPostDialogOpen(true)
   };
 
   // Handle image click for slideshow
@@ -114,6 +129,7 @@ const SharedGifts = () => {
     if (imageUrl) {
       setSelectedImage(`${API_URL}${imageUrl}`);
       setShowImageModal(true);
+      data.setPostDialogOpen(true)
     }
   };
 
@@ -141,7 +157,7 @@ const SharedGifts = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 pb-20">
       <Header />
 
       {/* Header */}

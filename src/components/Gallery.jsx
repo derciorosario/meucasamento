@@ -35,6 +35,7 @@ import {
   List
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useData } from '../contexts/DataContext';
 
 const Gallery = ({ userId = null, isOwner = false, isPublicView = false }) => {
   const [albums, setAlbums] = useState([]);
@@ -57,6 +58,32 @@ const Gallery = ({ userId = null, isOwner = false, isPublicView = false }) => {
   const [photoViewMode, setPhotoViewMode] = useState('grid'); // 'grid' or 'list' - for photos inside album
   const fileInputRef = useRef(null);
   const albumMenuRef = useRef(null);
+
+  const data=useData()
+  
+  useEffect(()=>{
+      if(!data.postDialogOpen){
+          setShowNewAlbumModal(false);
+          setShowSettingsModal(false);
+          setShowQRModal(false);
+          setShowProfileShareModal(false);
+          setShowAlbumMenu(false);
+          setLightboxIndex(-1)
+
+      }
+  },[data.postDialogOpen])
+
+  useEffect(()=>{
+
+    if(lightboxIndex>=0){
+          data.setPostDialogOpen(true)
+    }
+
+   
+  },[lightboxIndex])
+  
+  
+
 
   // Handle click outside for mobile menu
   useEffect(() => {
@@ -337,7 +364,7 @@ const Gallery = ({ userId = null, isOwner = false, isPublicView = false }) => {
   // Album detail view
   if (selectedAlbum) {
     return (
-      <div className="min-h-screen bg-gray-50 p-4 md:py-8">
+      <div className="min-h-screen bg-gray-50 p-4 md:py-8 pb-20">
         <div className="max-w-7xl mx-auto">
           {/* Header - Desktop */}
           <div className="hidden md:flex md:flex-row md:items-center justify-between gap-4 mb-6">
@@ -367,7 +394,10 @@ const Gallery = ({ userId = null, isOwner = false, isPublicView = false }) => {
                 </button>
                 {selectedAlbum.allowShare && (
                   <button
-                    onClick={() => setShowQRModal(true)}
+                    onClick={() =>{
+                       setShowQRModal(true)
+                       data.setPostDialogOpen(true)
+                      }}
                     className="flex items-center gap-2 px-4 py-2 bg-[#9CAA8E] text-white rounded-full hover:bg-[#8A9A7E] transition-colors"
                   >
                     <Share2 className="w-4 h-4" />
@@ -400,7 +430,12 @@ const Gallery = ({ userId = null, isOwner = false, isPublicView = false }) => {
               {isOwner && (
                 <div className="relative" ref={albumMenuRef}>
                   <button
-                    onClick={() => setShowAlbumMenu(!showAlbumMenu)}
+                    onClick={() =>{ 
+                      setShowAlbumMenu(!showAlbumMenu)
+                      if(!showAlbumMenu){
+                        data.setPostDialogOpen(true)
+                      }
+                    }}
                     className="w-10 h-10 flex items-center justify-center rounded-full active:bg-gray-100 transition-colors"
                     aria-label="Menu do álbum"
                   >
@@ -430,6 +465,7 @@ const Gallery = ({ userId = null, isOwner = false, isPublicView = false }) => {
                             onClick={() => {
                               setShowQRModal(true);
                               setShowAlbumMenu(false);
+                              data.setPostDialogOpen(true)
                             }}
                             className="w-full px-4 py-3 text-left text-sm text-gray-700 active:bg-gray-50 flex items-center gap-3 border-t border-gray-100"
                           >
@@ -1513,7 +1549,10 @@ const Gallery = ({ userId = null, isOwner = false, isPublicView = false }) => {
           <div className="flex items-center gap-2">
             {isOwner && (
               <button
-                onClick={() => setShowProfileShareModal(true)}
+                onClick={() =>{
+                   setShowProfileShareModal(true)
+                   data.setPostDialogOpen(true)
+                }}
                 className="flex items-center gap-2 px-4 py-2 bg-white rounded-full shadow hover:shadow-md transition-shadow text-gray-700"
               >
                 <Share2 className="w-4 h-4" />
@@ -1522,7 +1561,10 @@ const Gallery = ({ userId = null, isOwner = false, isPublicView = false }) => {
             )}
             {isOwner && (
               <button
-                onClick={() => setShowNewAlbumModal(true)}
+                onClick={() => {
+                  setShowNewAlbumModal(true)
+                  data.setPostDialogOpen(true)
+                }}
                 className="flex items-center gap-2 px-6 py-3 bg-[#9CAA8E] text-white rounded-full hover:bg-[#8A9A7E] transition-colors"
               >
                 <Plus className="w-5 h-5" />
@@ -1566,14 +1608,20 @@ const Gallery = ({ userId = null, isOwner = false, isPublicView = false }) => {
               {isOwner && (
                 <>
                   <button
-                    onClick={() => setShowProfileShareModal(true)}
+                    onClick={() =>{
+                       setShowProfileShareModal(true)
+                       data.setPostDialogOpen(true)
+                    }}
                     className="w-10 h-10 flex items-center justify-center rounded-full active:bg-gray-100 transition-colors"
                     aria-label="Compartilhar perfil"
                   >
                     <Share2 className="w-5 h-5 text-gray-700" />
                   </button>
                   <button
-                    onClick={() => setShowNewAlbumModal(true)}
+                    onClick={() => {
+                      setShowNewAlbumModal(true)
+                      data.setPostDialogOpen(true)
+                    }}
                     className="w-10 h-10 flex items-center justify-center rounded-full bg-[#9CAA8E] text-white active:bg-[#8A9A7E] transition-colors"
                     aria-label="Novo álbum"
                   >
@@ -1638,7 +1686,10 @@ const Gallery = ({ userId = null, isOwner = false, isPublicView = false }) => {
                 <p className="text-gray-500 mb-4">Nenhum álbum criado ainda</p>
                 {isOwner && (
                   <button
-                    onClick={() => setShowNewAlbumModal(true)}
+                    onClick={() => {
+                      setShowNewAlbumModal(true)
+                      data.setPostDialogOpen(true)
+                    }}
                     className="inline-flex items-center gap-2 px-6 py-3 bg-[#9CAA8E] text-white rounded-full hover:bg-[#8A9A7E] transition-colors"
                   >
                     <Plus className="w-5 h-5" />
@@ -1795,7 +1846,10 @@ const Gallery = ({ userId = null, isOwner = false, isPublicView = false }) => {
               <p className="text-gray-500 mb-4">Nenhum álbum criado ainda</p>
               {isOwner && (
                 <button
-                  onClick={() => setShowNewAlbumModal(true)}
+                  onClick={() =>{ 
+                    setShowNewAlbumModal(true)
+                    data.setPostDialogOpen(true)
+                  }}
                   className="inline-flex items-center gap-2 px-6 py-3 bg-[#9CAA8E] text-white rounded-xl font-medium active:bg-[#8A9A7E] transition-colors"
                 >
                   <Plus className="w-5 h-5" />

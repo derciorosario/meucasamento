@@ -2,13 +2,15 @@ import React from 'react';
 import { Instagram, Facebook, Youtube } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-const Footer = () => {
+const Footer = ({largerPadding}) => {
+  
   const navigate = useNavigate();
-
+  
   return (
-     <footer className="bg-[#1a2332] text-white py-12">
-        <div className="max-w-7xl mx-auto px-8">
-          <div className="grid md:grid-cols-4 gap-8 mb-8">
+     <footer className={`bg-[#1a2332]   py-12 text-white`}>
+        <div className={`max-w-7xl ${largerPadding ? 'max-md:mb-20':''} mx-auto px-8 `}>
+          <div className="grid max-md:hidden md:grid-cols-4 gap-8 mb-8">
+            
             <div>
               <div className="flex items-center gap-2 mb-4">
                 <div className="w-8 h-8 bg-primary-500 rounded-full flex items-center justify-center">
@@ -50,8 +52,8 @@ const Footer = () => {
             </div>
           </div>
           
-          <div className="border-t border-gray-700 pt-8 flex flex-col md:flex-row justify-between items-center">
-            <p className="text-gray-400 text-sm mb-4 md:mb-0">
+          <div className="md:border-t border-gray-700 md:pt-8 flex flex-col md:flex-row justify-between items-center">
+            <p className="text-gray-400 max-md:text-center text-sm mb-4 md:mb-0">
               © 2024 Meu Casamento. Todos os direitos reservados.
             </p>
             <div className="flex gap-4">
@@ -67,7 +69,7 @@ const Footer = () => {
             </div>
           </div>
         </div>
-      </footer>
+     </footer>
   );
 };
 

@@ -29,6 +29,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { toast } from 'react-hot-toast';
 import Header from '../../components/Header';
 import Footer from '../../components/Footer';
+import { useData } from '../../contexts/DataContext';
   
 const FAQ_QUESTIONS = [
   { id: 's1', question: 'Quais serviços estão incluídos no pacote?', type: 'multi-select', allowCustom: true, options: [], category: 'services' },
@@ -93,6 +94,27 @@ const VendorProfilePage = () => {
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [relatedVendors, setRelatedVendors] = useState([]);
   const [relatedVendorsLoading, setRelatedVendorsLoading] = useState(false);
+
+
+    const data=useData()
+        
+    useEffect(()=>{
+        if(!data.postDialogOpen){
+            setLightboxIndex(-1)
+            setShowQuoteModal(false);
+            setShowReviewModal(false);
+            setShowLightbox(false)
+  
+        }
+    },[data.postDialogOpen])
+  
+    useEffect(()=>{
+  
+      if(lightboxIndex>=0){
+            data.setPostDialogOpen(true)
+      }
+  
+    },[lightboxIndex])
 
   // Sticky state
   const [tabsSticky, setTabsSticky] = useState(false);
@@ -211,6 +233,7 @@ const VendorProfilePage = () => {
   const handleRequestQuote = () => {
     if (!user) { toast.error('Precisa fazer login para pedir orçamento'); return; }
     setShowQuoteModal(true);
+    data.setPostDialogOpen(true)
   };
 
   const submitQuote = async (e) => {
@@ -232,6 +255,7 @@ const VendorProfilePage = () => {
   const handleAddReview = () => {
     if (!user) { toast.error('Precisa fazer login para avaliar'); return; }
     setShowReviewModal(true);
+    data.setPostDialogOpen(true)
   };
 
   const submitReview = async (e) => {

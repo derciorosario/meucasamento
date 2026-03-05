@@ -31,6 +31,7 @@ import {
   getTutorials,
 } from "../../api/client";
 import { toast } from "react-hot-toast";
+import { useData } from "../../contexts/DataContext";
 
 const statusLabels = {
   pending: "Pendente",
@@ -129,6 +130,22 @@ export default function GuestsPage() {
   const [showTableModal, setShowTableModal] = useState(false);
   const [showMenuModal, setShowMenuModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+
+    const data=useData()
+    
+    useEffect(()=>{
+    
+        if(!data.postDialogOpen){
+             setShowGuestModal(false);
+             setShowGroupModal(false);
+             setShowTableModal(false);
+             setShowMenuModal(false);
+             setShowImportModal(false);
+        }
+    
+    },[data.postDialogOpen])
+
+
   const [importedGuests, setImportedGuests] = useState([]);
   const [importStep, setImportStep] = useState(1); // 1: upload, 2: review/edit
   const [isProcessing, setIsProcessing] = useState(false);
@@ -368,6 +385,7 @@ export default function GuestsPage() {
     });
     setShowGuestModal(true);
     setMobileActionMenu(null);
+     data.setPostDialogOpen(true)
   };
 
   const handleViewGuest = (guest) => {
@@ -458,6 +476,7 @@ export default function GuestsPage() {
     });
     setShowGroupModal(true);
     setMobileActionMenu(null);
+     data.setPostDialogOpen(true)
   };
 
   const handleDeleteGroup = async (id) => {
@@ -504,6 +523,7 @@ export default function GuestsPage() {
     });
     setShowTableModal(true);
     setMobileActionMenu(null);
+     data.setPostDialogOpen(true)
   };
 
   const handleDeleteTable = async (id) => {
@@ -530,6 +550,7 @@ export default function GuestsPage() {
       }
       setShowMenuModal(false);
       resetMenuForm();
+       data.setPostDialogOpen(true)
       await loadMenus();
     } catch (error) {
       console.error("Error saving menu:", error);
@@ -547,6 +568,7 @@ export default function GuestsPage() {
     });
     setShowMenuModal(true);
     setMobileActionMenu(null);
+    
   };
 
   const handleDeleteMenu = async (id) => {
@@ -873,7 +895,7 @@ export default function GuestsPage() {
 
   if (loading) {
     return (
-      <DefaultLayout hero={{title:"Convidados",subtitle:"Gerencie sua lista de convidados e acompanhe as confirmações"}}>
+      <DefaultLayout largerPadding={true} hero={{title:"Convidados",subtitle:"Gerencie sua lista de convidados e acompanhe as confirmações"}}>
         <div className="h-[50vh] bg-gray-50 flex items-center justify-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-500"></div>
         </div>
@@ -882,7 +904,7 @@ export default function GuestsPage() {
   }
 
   return (
-    <DefaultLayout hero={{title:"Convidados",subtitle:"Gerencie sua lista de convidados e acompanhe as confirmações"}}>
+    <DefaultLayout largerPadding={true} hero={{title:"Convidados",subtitle:"Gerencie sua lista de convidados e acompanhe as confirmações"}}>
       <div className="min-h-screen bg-gray-50">
         {/* Desktop View (hidden on mobile) */}
         <div className="hidden lg:block max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
@@ -897,6 +919,7 @@ export default function GuestsPage() {
               onClick={() => {
                 resetGuestForm();
                 setShowGuestModal(true);
+                 data.setPostDialogOpen(true)
               }}
               className="bg-primary-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-primary-600 transition flex items-center space-x-2"
             >
@@ -908,6 +931,7 @@ export default function GuestsPage() {
                 setImportStep(1);
                 setImportedGuests([]);
                 setShowImportModal(true);
+                 data.setPostDialogOpen(true)
               }}
               className="bg-green-500 text-white px-4 py-2 rounded-lg font-medium hover:bg-green-600 transition flex items-center space-x-2"
             >
@@ -1059,6 +1083,7 @@ export default function GuestsPage() {
                     onClick={() => {
                       resetGroupForm();
                       setShowGroupModal(true);
+                       data.setPostDialogOpen(true)
                     }}
                     className="flex items-center justify-center gap-1.5 bg-primary-500 text-white text-sm px-4 py-2.5 rounded-lg hover:bg-primary-600 transition-colors"
                   >
@@ -1175,6 +1200,7 @@ export default function GuestsPage() {
                           onClick={() => {
                             resetGroupForm();
                             setShowGroupModal(true);
+                             data.setPostDialogOpen(true)
                           }}
                           className="bg-primary-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-primary-600"
                         >
@@ -1243,6 +1269,7 @@ export default function GuestsPage() {
                           onClick={() => {
                             resetTableForm();
                             setShowTableModal(true);
+                             data.setPostDialogOpen(true)
                           }}
                           className="bg-primary-500 text-white px-4 py-2.5 rounded-lg text-sm hover:bg-primary-600 flex items-center justify-center gap-2"
                         >
@@ -1355,6 +1382,7 @@ export default function GuestsPage() {
                                 onClick={() => {
                                   resetTableForm();
                                   setShowTableModal(true);
+                                   data.setPostDialogOpen(true)
                                 }}
                                 className="bg-primary-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-primary-600 inline-flex items-center gap-2"
                               >
@@ -1376,6 +1404,7 @@ export default function GuestsPage() {
                           onClick={() => {
                             resetMenuForm();
                             setShowMenuModal(true);
+                             data.setPostDialogOpen(true)
                           }}
                           className="bg-primary-500 text-white px-4 py-2 rounded-lg text-sm hover:bg-primary-600"
                         >
@@ -1574,6 +1603,7 @@ export default function GuestsPage() {
                   onClick={() => {
                     resetGuestForm();
                     setShowGuestModal(true);
+                     data.setPostDialogOpen(true)
                   }}
                   className="w-full bg-primary-500 text-white py-3 rounded-lg font-medium hover:bg-primary-600 transition flex items-center justify-center space-x-2"
                 >
@@ -1603,6 +1633,7 @@ export default function GuestsPage() {
                     setImportStep(1);
                     setImportedGuests([]);
                     setShowImportModal(true);
+                     data.setPostDialogOpen(true)
                   }}
                   className="p-2 text-gray-600 hover:bg-gray-100 rounded-full"
                 >
@@ -1795,6 +1826,7 @@ export default function GuestsPage() {
                       onClick={() => {
                         resetGuestForm();
                         setShowGuestModal(true);
+                         data.setPostDialogOpen(true)
                       }}
                       className="bg-primary-500 text-white px-6 py-3 rounded-xl text-sm font-medium inline-flex items-center gap-2"
                     >
@@ -1882,6 +1914,7 @@ export default function GuestsPage() {
                   onClick={() => {
                     resetGroupForm();
                     setShowGroupModal(true);
+                     data.setPostDialogOpen(true)
                   }}
                   className="w-full bg-primary-500 text-white px-4 py-3 rounded-xl text-sm font-medium flex items-center justify-center gap-2 mb-4"
                 >
@@ -1995,6 +2028,7 @@ export default function GuestsPage() {
                   onClick={() => {
                     resetTableForm();
                     setShowTableModal(true);
+                     data.setPostDialogOpen(true)
                   }}
                   className="w-full bg-primary-500 text-white px-4 py-3 rounded-xl text-sm font-medium flex items-center justify-center gap-2 mb-4"
                 >
@@ -2069,6 +2103,7 @@ export default function GuestsPage() {
                         onClick={() => {
                           resetTableForm();
                           setShowTableModal(true);
+                           data.setPostDialogOpen(true)
                         }}
                         className="bg-primary-500 text-white px-6 py-3 rounded-xl text-sm font-medium inline-flex items-center gap-2"
                       >
@@ -2088,6 +2123,7 @@ export default function GuestsPage() {
                   onClick={() => {
                     resetMenuForm();
                     setShowMenuModal(true);
+                     data.setPostDialogOpen(true)
                   }}
                   className="w-full bg-primary-500 text-white px-4 py-3 rounded-xl text-sm font-medium flex items-center justify-center gap-2 mb-4"
                 >
@@ -2149,7 +2185,10 @@ export default function GuestsPage() {
 
           {/* Mobile FAB */}
           <button
-            onClick={() => setShowAddMenu(true)}
+            onClick={() => {
+              setShowAddMenu(true)
+              data.setPostDialogOpen(true)
+            }}
             className="fixed bottom-20 right-4 w-14 h-14 bg-primary-500 rounded-full shadow-lg flex items-center justify-center text-white hover:bg-primary-600 transition-colors z-40"
           >
             <Plus className="w-6 h-6" />
@@ -2170,13 +2209,17 @@ export default function GuestsPage() {
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Adicionar</h3>
                   <div className="space-y-3">
                     <button
+
                       onClick={() => {
                         setShowAddMenu(false);
                         resetGuestForm();
                         setShowGuestModal(true);
+                        data.setPostDialogOpen(true)
                       }}
+
                       className="w-full flex items-center gap-4 p-4 hover:bg-gray-50 rounded-xl"
                     >
+
                       <div className="w-10 h-10 bg-blue-100 rounded-xl flex items-center justify-center">
                         <UserPlus className="w-5 h-5 text-blue-600" />
                       </div>
@@ -2190,6 +2233,7 @@ export default function GuestsPage() {
                         setShowAddMenu(false);
                         resetGroupForm();
                         setShowGroupModal(true);
+                         data.setPostDialogOpen(true)
                       }}
                       className="w-full flex items-center gap-4 p-4 hover:bg-gray-50 rounded-xl"
                     >
@@ -2206,6 +2250,7 @@ export default function GuestsPage() {
                         setShowAddMenu(false);
                         resetTableForm();
                         setShowTableModal(true);
+                         data.setPostDialogOpen(true)
                       }}
                       className="w-full flex items-center gap-4 p-4 hover:bg-gray-50 rounded-xl"
                     >
@@ -2365,7 +2410,7 @@ export default function GuestsPage() {
 
         {/* Guest Modal */}
         {showGuestModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50">
             <div className="bg-white rounded-t-3xl sm:rounded-2xl p-6 w-full max-w-md max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold text-black">
@@ -2540,7 +2585,7 @@ export default function GuestsPage() {
 
         {/* Group Modal */}
         {showGroupModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50">
             <div className="bg-white rounded-t-3xl sm:rounded-2xl p-6 w-full max-w-md">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold text-black">
@@ -2615,7 +2660,7 @@ export default function GuestsPage() {
 
         {/* Table Modal */}
         {showTableModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50">
             <div className="bg-white rounded-t-3xl sm:rounded-2xl p-6 w-full max-w-md">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold text-black">
@@ -2676,7 +2721,7 @@ export default function GuestsPage() {
 
         {/* Menu Modal */}
         {showMenuModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50">
             <div className="bg-white rounded-t-3xl sm:rounded-2xl p-6 w-full max-w-md">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold text-black">
@@ -2747,7 +2792,7 @@ export default function GuestsPage() {
 
         {/* Delete Confirmation Modal */}
         {deleteConfirm && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50">
             <div className="bg-white rounded-t-3xl sm:rounded-2xl p-6 w-full max-w-sm mx-4">
               <div className="flex items-center justify-center w-16 h-16 mx-auto bg-red-100 rounded-full mb-4">
                 <Trash2 className="w-8 h-8 text-red-500" />
@@ -2782,7 +2827,7 @@ export default function GuestsPage() {
 
         {/* Send Invitation Confirmation Modal */}
         {showInviteConfirm && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50">
             <div className="bg-white rounded-t-3xl sm:rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-y-auto">
               <button 
                 onClick={() => { setShowInviteConfirm(false); setInvitationMessage(''); }}
@@ -2838,7 +2883,7 @@ export default function GuestsPage() {
 
         {/* Guest Selection Modal */}
         {showGuestSelect && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50">
             <div className="bg-white rounded-t-3xl sm:rounded-2xl p-6 w-full max-w-lg max-h-[90vh] overflow-hidden flex flex-col">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold text-black">Selecionar Convidados</h2>
@@ -2957,7 +3002,7 @@ export default function GuestsPage() {
 
         {/* Import Guests Modal */}
         {showImportModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50">
             <div className="bg-white rounded-t-3xl sm:rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-xl font-semibold text-black">
@@ -3145,7 +3190,7 @@ export default function GuestsPage() {
         )}
         {/* Import Result Modal */}
         {showImportResultModal && importResult && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-4">
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50">
             <div className="bg-white rounded-t-3xl sm:rounded-2xl p-6 w-full max-w-md">
               <div className="flex items-center justify-center w-16 h-16 mx-auto bg-green-100 rounded-full mb-4">
                 <Check className="w-8 h-8 text-green-500" />

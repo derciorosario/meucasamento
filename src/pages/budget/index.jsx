@@ -3,6 +3,8 @@ import DefaultLayout from '../../layout/DefaultLayout';
 import { ChevronDown, ChevronRight, Check, Heart, Loader2, Plus, Trash2, Edit2, X, MoreVertical, Filter, Play } from 'lucide-react';
 import { getCategories, updateCategory, deleteCategory, createCategory, initDefaultCategories, getBudget, updateBudget, getTutorials } from '../../api/client';
 import {toast} from '../../lib/toast';
+import { motion, AnimatePresence } from 'framer-motion';
+import { useData } from '../../contexts/DataContext';
 
 // Helper function to extract YouTube video ID
 const extractYouTubeId = (url) => {
@@ -40,6 +42,18 @@ const WeddingBudgetManager = () => {
   const [budgetTutorial, setBudgetTutorial] = useState(null);
   const [showTutorialDropdown, setShowTutorialDropdown] = useState(false);
   const [showTutorialDesktop, setShowTutorialDesktop] = useState(false);
+
+  const data=useData()
+  
+  useEffect(()=>{
+  
+      if(!data.postDialogOpen){
+         setShowAddModal(false);
+      }
+  
+  },[data.postDialogOpen])
+    
+   
 
   // Fetch budget and categories from API
   const fetchData = useCallback(async () => {
@@ -232,12 +246,14 @@ const WeddingBudgetManager = () => {
       parent: category._id
     });
     setShowAddModal(true);
+     data.setPostDialogOpen(true)
   };
 
   // Open add modal with empty values (for global buttons)
   const openAddModalEmpty = () => {
     setNewCategory({ name: '', type: '', estimatedCost: null, status: 'not-started', parent: null });
     setShowAddModal(true);
+    data.setPostDialogOpen(true)
   };
 
   // Handle parent category change in modal
@@ -325,7 +341,7 @@ const WeddingBudgetManager = () => {
 
   if (loading) {
     return (
-      <DefaultLayout>
+      <DefaultLayout largerPadding={true}>
         <div className="flex items-center justify-center min-h-[400px]">
           <Loader2 className="w-8 h-8 animate-spin text-primary-500" />
         </div>
@@ -334,7 +350,7 @@ const WeddingBudgetManager = () => {
   }
 
   return (
-    <DefaultLayout>
+    <DefaultLayout largerPadding={true}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
         {/* Mobile Tabs */}
         <div className="lg:hidden mb-4">
@@ -362,7 +378,7 @@ const WeddingBudgetManager = () => {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:-translate-y-[70px] bg-gray-50 p-3 rounded-2xl">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:-translate-y-[70px] bg-gray-50 py-3 rounded-2xl">
           {/* Left Column - Budget Details */}
           <div className="lg:col-span-2">
             <div className="bg-white rounded-2xl shadow-lg p-4 sm:p-6 mb-6">
@@ -564,7 +580,7 @@ const WeddingBudgetManager = () => {
                                           <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-2 mb-2">
                                               <span className="font-medium text-gray-900">{subcategory.name}</span>
-                                              <span className={`text-xs px-2 py-1 rounded-full ${getStatusColor(subcategory.status)}`}>
+                                              <span className={`text-xs text-center px-2 py-1 rounded-full ${getStatusColor(subcategory.status)}`}>
                                                 {getStatusIcon(subcategory.status)} {statusLabels[subcategory.status]}
                                               </span>
                                             </div>
@@ -1071,41 +1087,153 @@ const WeddingBudgetManager = () => {
         {/* Mobile FAB for adding expenses */}
         <button
           onClick={openAddModalEmpty}
-          className="lg:hidden fixed bottom-6 right-6 w-14 h-14 bg-primary-500 rounded-full shadow-lg flex items-center justify-center text-white hover:bg-primary-600 transition-colors z-40"
+          className="lg:hidden fixed bottom-20 right-6 w-14 h-14 bg-primary-500 rounded-full shadow-lg flex items-center justify-center text-white hover:bg-primary-600 transition-colors z-40"
           aria-label="Adicionar despesa"
         >
           <Plus className="w-6 h-6" />
         </button>
 
-        {/* Add Subcategory Modal */}
+        {/* Add Subcategory Modal - Mobile Optimized */}
+        <AnimatePresence>
+          {showAddModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="lg:hidden fixed inset-0 bg-black/50 z-50 flex items-end"
+              onClick={() => setShowAddModal(false)}
+            >
+              <motion.div
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                exit={{ y: "100%" }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                className="bg-white rounded-t-2xl w-full max-w-md mx-auto max-h-[90vh] overflow-y-auto"
+                onClick={e => e.stopPropagation()}
+              >
+                <div className="p-4 border-b border-gray-200 sticky top-0 bg-white z-10">
+                  <div className="flex items-center justify-between">
+                    <h3 className="text-lg font-semibold text-gray-800">Adicionar item</h3>
+                    <button 
+                      onClick={() => setShowAddModal(false)}
+                      className="w-10 h-10 flex items-center justify-center rounded-full active:bg-gray-100"
+                      aria-label="Fechar"
+                    >
+                      <X className="w-5 h-5 text-gray-500" />
+                    </button>
+                  </div>
+                </div>
+                
+                <form onSubmit={handleAddSubcategory} className="p-4 space-y-4">
+                  {newCategory.parent ? (
+                    <div className="p-3 bg-gray-100 rounded-xl">
+                      <span className="text-sm text-gray-600">Categoria: </span>
+                      <span className="font-medium text-gray-900">
+                        {categories.find(c => c._id === newCategory.parent)?.name}
+                      </span>
+                    </div>
+                  ) : (
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Categoria Pai</label>
+                      <select
+                        value={newCategory.parent || ''}
+                        onChange={(e) => handleParentChange(e.target.value)}
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-black focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        required
+                      >
+                        <option value="">Selecione uma categoria</option>
+                        {categories.map(cat => (
+                          <option key={cat._id} value={cat._id}>{cat.name}</option>
+                        ))}
+                      </select>
+                    </div>
+                  )}
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
+                    <input
+                      type="text"
+                      value={newCategory.name}
+                      onChange={(e) => setNewCategory({...newCategory, name: e.target.value})}
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-black focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      required
+                      placeholder="Ex: Buffet"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Custo Estimado (MT)</label>
+                    <input
+                      type="number"
+                      value={newCategory.estimatedCost ?? ''}
+                      onChange={(e) => setNewCategory({...newCategory, estimatedCost: Number(e.target.value) || null})}
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-black focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      placeholder="0"
+                    />
+                  </div>
+                  
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Estado</label>
+                    <select
+                      value={newCategory.status}
+                      onChange={(e) => setNewCategory({...newCategory, status: e.target.value})}
+                      className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-black focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    >
+                      <option value="not-started">Não iniciado</option>
+                      <option value="negotiating">Em negociação</option>
+                      <option value="contracted">Contratado</option>
+                      <option value="paid">Pago</option>
+                      <option value="completed">Concluído</option>
+                    </select>
+                  </div>
+                  
+                  <div className="flex gap-3 pt-4">
+                    <button
+                      type="button"
+                      onClick={() => setShowAddModal(false)}
+                      className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium active:bg-gray-50"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      type="submit"
+                      className="flex-1 px-4 py-3 bg-primary-500 text-white rounded-xl font-medium active:bg-primary-600"
+                    >
+                      Adicionar
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Add Subcategory Modal - Desktop */}
         {showAddModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl p-6 w-full max-w-md mx-4 max-h-[90vh] overflow-y-auto">
-              <div className="flex items-center justify-between mb-4 top-0 bg-white">
-                <h3 className="text-lg font-semibold text-gray-800">Adicionar item</h3>
-                <button 
-                  onClick={() => setShowAddModal(false)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                  aria-label="Fechar"
-                >
-                  <X className="w-5 h-5 text-gray-500" />
+          <div className="hidden lg:flex fixed inset-0 bg-black/50 items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl p-6 max-w-md w-full">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-serif font-bold text-black">Adicionar item</h3>
+                <button onClick={() => setShowAddModal(false)}>
+                  <X className="w-6 h-6 text-gray-400" />
                 </button>
               </div>
-              <form onSubmit={handleAddSubcategory}>
+              
+              <form onSubmit={handleAddSubcategory} className="space-y-4">
                 {newCategory.parent ? (
-                  <div className="mb-4 p-3 bg-gray-100 rounded-lg">
+                  <div className="p-3 bg-gray-100 rounded-lg">
                     <span className="text-sm text-gray-600">Categoria: </span>
                     <span className="font-medium text-gray-900">
                       {categories.find(c => c._id === newCategory.parent)?.name}
                     </span>
                   </div>
                 ) : (
-                  <div className="mb-4">
+                  <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Categoria Pai</label>
                     <select
                       value={newCategory.parent || ''}
                       onChange={(e) => handleParentChange(e.target.value)}
-                      className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-primary-500"
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg text-black"
                       required
                     >
                       <option value="">Selecione uma categoria</option>
@@ -1115,33 +1243,36 @@ const WeddingBudgetManager = () => {
                     </select>
                   </div>
                 )}
-                <div className="mb-4">
+                
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Nome</label>
                   <input
                     type="text"
                     value={newCategory.name}
                     onChange={(e) => setNewCategory({...newCategory, name: e.target.value})}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg text-black"
                     required
                     placeholder="Ex: Buffet"
                   />
                 </div>
-                <div className="mb-4">
+                
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Custo Estimado (MT)</label>
                   <input
                     type="number"
                     value={newCategory.estimatedCost ?? ''}
                     onChange={(e) => setNewCategory({...newCategory, estimatedCost: Number(e.target.value) || null})}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg text-black"
                     placeholder="0"
                   />
                 </div>
-                <div className="mb-6">
+                
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">Estado</label>
                   <select
                     value={newCategory.status}
                     onChange={(e) => setNewCategory({...newCategory, status: e.target.value})}
-                    className="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-black focus:outline-none focus:ring-2 focus:ring-primary-500"
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg text-black"
                   >
                     <option value="not-started">Não iniciado</option>
                     <option value="negotiating">Em negociação</option>
@@ -1150,17 +1281,18 @@ const WeddingBudgetManager = () => {
                     <option value="completed">Concluído</option>
                   </select>
                 </div>
-                <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
+                
+                <div className="flex gap-3 pt-4">
                   <button
                     type="button"
                     onClick={() => setShowAddModal(false)}
-                    className="w-full sm:flex-1 text-gray-500 px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium order-2 sm:order-1"
+                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
                   >
                     Cancelar
                   </button>
                   <button
                     type="submit"
-                    className="w-full sm:flex-1 px-4 py-2.5 bg-primary-500 text-white rounded-lg hover:bg-primary-600 font-medium order-1 sm:order-2"
+                    className="flex-1 px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600"
                   >
                     Adicionar
                   </button>
@@ -1170,15 +1302,72 @@ const WeddingBudgetManager = () => {
           </div>
         )}
 
-        {/* Delete Confirmation Modal */}
+        {/* Delete Confirmation Modal - Mobile Optimized */}
+        <AnimatePresence>
+          {deleteConfirm && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="lg:hidden fixed inset-0 bg-black/50 z-50 flex items-end"
+              onClick={() => setDeleteConfirm(null)}
+            >
+              <motion.div
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                exit={{ y: "100%" }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                className="bg-white rounded-t-2xl w-full max-w-md mx-auto"
+                onClick={e => e.stopPropagation()}
+              >
+                <div className="p-4 border-b border-gray-200">
+                  <div className="flex items-center justify-end">
+                    <button 
+                      onClick={() => setDeleteConfirm(null)}
+                      className="w-10 h-10 flex items-center justify-center rounded-full active:bg-gray-100"
+                      aria-label="Fechar"
+                    >
+                      <X className="w-5 h-5 text-gray-500" />
+                    </button>
+                  </div>
+                </div>
+                
+                <div className="p-6 text-center">
+                  <div className="w-16 h-16 mx-auto bg-red-100 rounded-full flex items-center justify-center mb-4">
+                    <Trash2 className="w-8 h-8 text-red-500" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Confirmar exclusão</h3>
+                  <p className="text-gray-600 mb-6">
+                    Tem certeza que deseja excluir este item? Esta ação não pode ser desfeita.
+                  </p>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={() => setDeleteConfirm(null)}
+                      className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium active:bg-gray-50"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={confirmDelete}
+                      className="flex-1 px-4 py-3 bg-red-500 text-white rounded-xl font-medium active:bg-red-600"
+                    >
+                      Excluir
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Delete Confirmation Modal - Desktop */}
         {deleteConfirm && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl p-6 w-full max-w-sm mx-4">
-              <div className="flex items-center justify-end mb-2">
+          <div className="hidden lg:flex fixed inset-0 bg-black/50 items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl p-6 max-w-sm w-full">
+              <div className="flex justify-end mb-2">
                 <button 
                   onClick={() => setDeleteConfirm(null)}
                   className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                  aria-label="Fechar"
                 >
                   <X className="w-5 h-5 text-gray-500" />
                 </button>
@@ -1190,16 +1379,16 @@ const WeddingBudgetManager = () => {
               <p className="text-gray-600 text-center mb-6">
                 Tem certeza que deseja excluir este item? Esta ação não pode ser desfeita.
               </p>
-              <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-3">
+              <div className="flex gap-3">
                 <button
                   onClick={() => setDeleteConfirm(null)}
-                  className="w-full sm:flex-1 text-gray-500 px-4 py-2.5 border border-gray-300 rounded-lg hover:bg-gray-50 font-medium order-2 sm:order-1"
+                  className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={confirmDelete}
-                  className="w-full sm:flex-1 px-4 py-2.5 bg-red-500 text-white rounded-lg hover:bg-red-600 font-medium order-1 sm:order-2"
+                  className="flex-1 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
                 >
                   Excluir
                 </button>

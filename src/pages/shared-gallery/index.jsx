@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import Header from '../../components/Header';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useData } from '../../contexts/DataContext';
 
 const SharedGallery = () => {
   const { shareCode } = useParams();
@@ -24,6 +25,23 @@ const SharedGallery = () => {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef(null);
+
+    const data=useData()
+    
+    useEffect(()=>{
+        if(!data.postDialogOpen){
+            setLightboxIndex(-1)
+  
+        }
+    },[data.postDialogOpen])
+  
+    useEffect(()=>{
+  
+      if(lightboxIndex>=0){
+            data.setPostDialogOpen(true)
+      }
+  
+    },[lightboxIndex])
 
   // Keyboard navigation
   const handleKeyDown = useCallback((e) => {
@@ -164,7 +182,7 @@ const SharedGallery = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50  pb-20">
       <Header />
 
       {/* Download Progress */}

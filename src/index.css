@@ -128,7 +128,7 @@ button{
   }
   
   /* Ensure buttons have minimum touch target size */
-  button,
+  __button,
   [role="button"] {
     min-height: 44px;
     min-width: 44px;

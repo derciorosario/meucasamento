@@ -57,8 +57,11 @@ export const DataProvider = ({ children }) => {
         _setOpenPopUps({...initial_popups,[option]:value || true})
     }
 
+     const [postDialogOpen, setPostDialogOpen] = useState(false);
+
     const env="test" //test || pro
     const value = {
+      postDialogOpen, setPostDialogOpen,
       env,
       _openPopUps,
       _scrollToSection,
