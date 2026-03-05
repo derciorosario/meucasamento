@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { API_URL } from '../../api/client';
-import { Gift, Search, Check, Heart, ChevronLeft, Store, Link as LinkIcon, XCircle, Phone } from 'lucide-react';
+import { Gift, Search, Check, Heart, ChevronLeft, Store, Link as LinkIcon, XCircle, Phone, ShoppingCart } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Header from '../../components/Header';
 import { useData } from '../../contexts/DataContext';
@@ -234,7 +234,7 @@ const SharedGifts = () => {
               <div
                 key={gift._id}
                 className={`bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex flex-col h-full ${
-                  gift.status === 'claimed' ? 'opacity-75' : ''
+                  (gift.status === 'claimed' || gift.status === 'purchased') ? 'opacity-75' : ''
                 }`}
               >
                 {/* Gift Image - Clickable */}
@@ -255,6 +255,11 @@ const SharedGifts = () => {
                   {gift.status === 'claimed' && (
                     <div className="absolute top-2 right-2 px-2 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700">
                       Reservado
+                    </div>
+                  )}
+                  {gift.status === 'purchased' && (
+                    <div className="absolute top-2 right-2 px-2 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700">
+                      Comprado
                     </div>
                   )}
                 </div>
@@ -297,12 +302,21 @@ const SharedGifts = () => {
                   )}
 
                   {/* Claimed By or Claim Button - Always at bottom */}
-                  {gift.status === 'claimed' ? (
+                  {gift.status === 'claimed' || gift.status === 'purchased' ? (
                     <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg mt-auto">
-                      <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
-                      <span className="text-xs text-gray-600 font-medium truncate">
-                        Reservado por {gift.claimedBy}
-                      </span>
+                      {gift.status === 'purchased' ? (
+                        <ShoppingCart className="w-4 h-4 text-green-500 flex-shrink-0" />
+                      ) : (
+                        <Check className="w-4 h-4 text-red-500 flex-shrink-0" />
+                      )}
+                      <div className="flex flex-col">
+                        <span className="text-xs text-gray-600 font-medium truncate">
+                          {gift.status === 'purchased' ? `Comprado por ${gift.claimedBy}` : `Reservado por ${gift.claimedBy}`}
+                        </span>
+                        {gift.claimedByPhone && (
+                          <span className="text-xs text-gray-400">{gift.claimedByPhone}</span>
+                        )}
+                      </div>
                     </div>
                   ) : (
                     <button
