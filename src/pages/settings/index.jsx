@@ -147,7 +147,7 @@ const SettingsPage = () => {
 
   if (loading) {
     return (
-      <DefaultLayout hero={{ title: "Configurações", subtitle: "Gerencie as suas configurações" }}>
+      <DefaultLayout largerPadding={true} hero={{ title: "Configurações", subtitle: "Gerencie as suas configurações" }}>
         <div className="flex items-center justify-center min-h-[60vh]">
           <Loader2 className="w-8 h-8 animate-spin text-primary-600" />
         </div>
@@ -156,7 +156,7 @@ const SettingsPage = () => {
   }
 
   return (
-    <DefaultLayout hero={{ 
+    <DefaultLayout largerPadding={true} hero={{ 
       title: "Configurações", 
       subtitle: "Gerencie as suas configurações de conta",
       image: "https://images.unsplash.com/photo-1519167758481-83f29da8c1e8?w=1200&h=400&fit=crop"

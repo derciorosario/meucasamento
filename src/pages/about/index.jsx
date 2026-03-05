@@ -94,30 +94,59 @@ export default function About() {
           </div>
         </div>
 
-        {/* Timeline */}
-        <div className="mb-16">
-          <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">Nossa Jornada</h2>
-          <div className="relative">
-            <div className="absolute left-1/2 -translate-x-1/2 h-full w-1 bg-[#9CAA8E]/20"></div>
-            <div className="space-y-8">
-              {timeline.map((item, idx) => (
-                <div key={idx} className={`flex items-center ${idx % 2 === 0 ? 'flex-row' : 'flex-row-reverse'}`}>
-                  <div className="w-1/2 pr-8 text-right">
-                    <div className="bg-white rounded-xl p-6 shadow-md inline-block">
-                      <span className="text-[#9CAA8E] font-bold text-lg">{item.year}</span>
-                      <h3 className="font-semibold text-gray-900 mt-1">{item.title}</h3>
-                      <p className="text-sm text-gray-600 mt-1">{item.description}</p>
-                    </div>
-                  </div>
-                  <div className="w-8 h-8 bg-[#9CAA8E] rounded-full flex items-center justify-center z-10">
-                    <div className="w-3 h-3 bg-white rounded-full"></div>
-                  </div>
-                  <div className="w-1/2 pl-8"></div>
-                </div>
-              ))}
+       
+       
+       {/* Timeline */}
+<div className="mb-16">
+  <h2 className="text-3xl font-bold text-gray-900 mb-8 text-center">
+    Nossa Jornada
+  </h2>
+
+  <div className="relative">
+    {/* Linha central - só desktop */}
+    <div className="hidden md:block absolute left-1/2 -translate-x-1/2 h-full w-1 bg-[#9CAA8E]/20"></div>
+
+    {/* Linha lateral - mobile */}
+    <div className="md:hidden absolute left-4 top-0 h-full w-1 bg-[#9CAA8E]/20"></div>
+
+    <div className="space-y-8">
+      {timeline.map((item, idx) => (
+        <div
+          key={idx}
+          className={`
+            relative flex flex-col md:flex-row items-start md:items-center
+            ${idx % 2 === 0 ? "md:flex-row" : "md:flex-row-reverse"}
+          `}
+        >
+          {/* Conteúdo */}
+          <div className="w-full md:w-1/2 md:px-8">
+            <div className="bg-white rounded-xl p-6 shadow-md">
+              <span className="text-[#9CAA8E] font-bold text-lg">
+                {item.year}
+              </span>
+              <h3 className="font-semibold text-gray-900 mt-1">
+                {item.title}
+              </h3>
+              <p className="text-sm text-gray-600 mt-1">
+                {item.description}
+              </p>
             </div>
           </div>
+
+          {/* Bolinha */}
+          <div className="absolute md:static left-0 md:left-auto flex items-center justify-center">
+            <div className="w-8 h-8 bg-[#9CAA8E] rounded-full flex items-center justify-center z-10">
+              <div className="w-3 h-3 bg-white rounded-full"></div>
+            </div>
+          </div>
+
+          {/* Espaço do outro lado (desktop) */}
+          <div className="hidden md:block w-1/2"></div>
         </div>
+      ))}
+    </div>
+  </div>
+</div>
 
         {/* Team */}
         <div className="mb-16 hidden">
@@ -143,7 +172,7 @@ export default function About() {
         <div className="text-center">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Faça parte da nossa história</h2>
           <p className="text-gray-600 mb-8">Junte-se a milhares de casais e fornecedores que confiam em nós</p>
-          <div className="flex justify-center gap-4">
+          <div className="flex justify-center gap-4 flex-wrap">
             <a 
               href="/signup" 
               className="px-8 py-3 bg-gradient-to-r from-[#9CAA8E] to-[#8A9A7E] text-white rounded-full font-medium hover:shadow-lg transition-all"

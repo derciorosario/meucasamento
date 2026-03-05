@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 import { API_URL } from '../../api/client';
-import { Gift, Search, Check, Heart, ChevronLeft, Store, Link as LinkIcon, XCircle } from 'lucide-react';
+import { Gift, Search, Check, Heart, ChevronLeft, Store, Link as LinkIcon, XCircle, Phone } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Header from '../../components/Header';
 import { useData } from '../../contexts/DataContext';
@@ -20,6 +20,7 @@ const SharedGifts = () => {
   const [showClaimModal, setShowClaimModal] = useState(false);
   const [selectedGift, setSelectedGift] = useState(null);
   const [guestName, setGuestName] = useState('');
+  const [guestPhone, setGuestPhone] = useState('');
   const [claiming, setClaiming] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const [showImageModal, setShowImageModal] = useState(false);
@@ -92,7 +93,7 @@ const SharedGifts = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ guestName }),
+        body: JSON.stringify({ guestName, guestPhone }),
       });
 
       const data = await response.json();
@@ -101,6 +102,7 @@ const SharedGifts = () => {
         toast.success(data.message);
         setShowClaimModal(false);
         setGuestName('');
+        setGuestPhone('');
         // Update local state
         setGifts(gifts.map(g => 
           g._id === selectedGift._id 
@@ -341,7 +343,7 @@ const SharedGifts = () => {
             </div>
 
             <form onSubmit={handleClaimGift}>
-              <div className="mb-6">
+              <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Seu Nome *
                 </label>
@@ -355,12 +357,27 @@ const SharedGifts = () => {
                 />
               </div>
 
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <Phone className="w-4 h-4 inline mr-1" />
+                  Seu Telemóvel
+                </label>
+                <input
+                  type="tel"
+                  value={guestPhone}
+                  onChange={(e) => setGuestPhone(e.target.value)}
+                  placeholder="Ex: 84 123 4567"
+                  className="w-full px-4 py-3 bg-white border border-gray-200 text-gray-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent"
+                />
+              </div>
+
               <div className="flex gap-3">
                 <button
                   type="button"
                   onClick={() => {
                     setShowClaimModal(false);
                     setGuestName('');
+                    setGuestPhone('');
                   }}
                   className="flex-1 px-4 py-3 border border-gray-200 text-gray-700 bg-white rounded-xl hover:bg-gray-50 transition-colors font-medium"
                 >

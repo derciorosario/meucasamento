@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import DefaultLayout from '../../layout/DefaultLayout';
 import { API_URL, getTutorials } from '../../api/client';
-import { Plus, Gift, Search, Share2, QrCode, Trash2, Edit2, Check, X, Image, DollarSign, LayoutGrid, Table, Loader2, Download, Copy, Play, ChevronDown, Store, Link as LinkIcon, MoreHorizontal, XCircle } from 'lucide-react';
+import { Plus, Gift, Search, Share2, QrCode, Trash2, Edit2, Check, X, Image, DollarSign, LayoutGrid, Table, Loader2, Download, Copy, Play, ChevronDown, Store, Link as LinkIcon, MoreHorizontal, XCircle, Phone, ShoppingCart } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useData } from '../../contexts/DataContext';
 
@@ -24,14 +24,14 @@ const WeddingGifts = () => {
 
 
    const data=useData()
-    
-    useEffect(()=>{
-        if(!data.postDialogOpen){
-            setShowImageModal(false);
-            setShowCategoryModal(false);
-  
-        }
-    },[data.postDialogOpen])
+   
+   useEffect(()=>{
+       if(!data.postDialogOpen){
+           setShowImageModal(false);
+           setShowCategoryModal(false);
+ 
+       }
+   },[data.postDialogOpen])
 
   // Close category menu when clicking outside
   useEffect(() => {
@@ -48,6 +48,7 @@ const WeddingGifts = () => {
   const [viewMode, setViewMode] = useState('grid');
   const [shareCode, setShareCode] = useState('');
   const [stats, setStats] = useState({ totalGifts: 0, claimedGifts: 0, totalValue: 0, claimedValue: 0 });
+  const purchasedGifts = gifts.filter(g => g.status === 'purchased').length;
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef(null);
@@ -66,7 +67,9 @@ const WeddingGifts = () => {
     category: 'Cozinha',
     isPublic: false,
     claimedBy: '',
+    claimedByPhone: '',
     status: 'available',
+    isPurchased: false,
     storeName: '',
     storeLink: '',
   });
@@ -163,10 +166,18 @@ const WeddingGifts = () => {
   // Handle form input changes
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData({ 
-      ...formData, 
-      [name]: type === 'checkbox' ? checked : value 
-    });
+    if (name === 'isPurchased') {
+      setFormData({ 
+        ...formData, 
+        isPurchased: checked,
+        status: checked ? 'purchased' : (formData.claimedBy ? 'claimed' : 'available')
+      });
+    } else {
+      setFormData({ 
+        ...formData, 
+        [name]: type === 'checkbox' ? checked : value 
+      });
+    }
   };
 
   // Handle image upload
@@ -247,7 +258,9 @@ const WeddingGifts = () => {
           category: 'Cozinha',
           isPublic: false,
           claimedBy: '',
+          claimedByPhone: '',
           status: 'available',
+          isPurchased: false,
           storeName: '',
           storeLink: '',
         });
@@ -273,7 +286,9 @@ const WeddingGifts = () => {
       category: gift.category,
       isPublic: gift.isPublic,
       claimedBy: gift.claimedBy || '',
+      claimedByPhone: gift.claimedByPhone || '',
       status: gift.status || 'available',
+      isPurchased: gift.status === 'purchased',
       storeName: gift.storeName || '',
       storeLink: gift.storeLink || '',
     });
@@ -299,6 +314,7 @@ const WeddingGifts = () => {
           isPublic: formData.isPublic,
           image: formData.image,
           claimedBy: formData.claimedBy || null,
+          claimedByPhone: formData.claimedByPhone || null,
           status: formData.status,
           storeName: formData.storeName || null,
           storeLink: formData.storeLink || null,
@@ -320,7 +336,9 @@ const WeddingGifts = () => {
           category: 'Cozinha',
           isPublic: false,
           claimedBy: '',
+          claimedByPhone: '',
           status: 'available',
+          isPurchased: false,
           storeName: '',
           storeLink: '',
         });
@@ -505,14 +523,26 @@ const WeddingGifts = () => {
     }
   };
 
+  // Helper function to get status badge
+  const getStatusBadge = (status) => {
+    if (status === 'purchased') {
+      return { class: 'bg-green-100 text-green-700', text: 'Comprado' };
+    } else if (status === 'claimed') {
+      return { class: 'bg-red-100 text-red-700', text: 'Reservado' };
+    }
+    return { class: 'bg-[#9CAA8E]/10 text-[#9CAA8E]', text: 'Disponível' };
+  };
+
   // Render grid view
   const renderGridView = () => (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-      {gifts.map((gift) => (
+      {gifts.map((gift) => {
+        const statusBadge = getStatusBadge(gift.status);
+        return (
         <div
           key={gift._id}
           className={`bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex flex-col h-full ${
-            gift.status === 'claimed' ? 'opacity-75' : ''
+            gift.status !== 'available' ? 'opacity-75' : ''
           }`}
         >
           {/* Gift Image - Clickable */}
@@ -530,12 +560,8 @@ const WeddingGifts = () => {
               <Gift className="w-16 h-16 text-gray-300" />
             )}
             {/* Status Badge */}
-            <div className={`absolute top-3 right-3 px-3 py-1 rounded-full text-sm font-bold ${
-              gift.status === 'claimed'
-                ? 'bg-red-100 text-red-700'
-                : 'bg-[#9CAA8E]/10 text-[#9CAA8E]'
-            }`}>
-              {gift.status === 'claimed' ? 'Reservado' : 'Disponível'}
+            <div className={`absolute top-3 right-3 px-3 py-1 rounded-full text-sm font-bold ${statusBadge.class}`}>
+              {statusBadge.text}
             </div>
           </div>
 
@@ -578,13 +604,23 @@ const WeddingGifts = () => {
               </div>
             )}
 
-            {/* Claimed By */}
+            {/* Claimed/Purchased By - Show phone for purchased */}
             {gift.claimedBy && (
               <div className="flex items-center gap-2 mb-4 p-2 bg-gray-50 rounded-lg">
-                <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
-                <span className="text-sm text-gray-600 truncate">
-                  Reservado por: <span className="font-medium">{gift.claimedBy}</span>
-                </span>
+                {gift.status === 'purchased' ? (
+                  <ShoppingCart className="w-4 h-4 text-green-500 flex-shrink-0" />
+                ) : (
+                  <Check className="w-4 h-4 text-green-500 flex-shrink-0" />
+                )}
+                <div className="flex flex-col">
+                  <span className="text-sm text-gray-600">
+                    {gift.status === 'purchased' ? 'Comprado por: ' : 'Reservado por: '}
+                    <span className="font-medium">{gift.claimedBy}</span>
+                  </span>
+                  {gift.claimedByPhone && (
+                    <span className="text-xs text-gray-500">{gift.claimedByPhone}</span>
+                  )}
+                </div>
               </div>
             )}
 
@@ -606,7 +642,8 @@ const WeddingGifts = () => {
             </div>
           </div>
         </div>
-      ))}
+      );
+      })}
     </div>
   );
 
@@ -626,8 +663,10 @@ const WeddingGifts = () => {
             </tr>
           </thead>
           <tbody className="divide-y divide-gray-100">
-            {gifts.map((gift) => (
-              <tr key={gift._id} className={`hover:bg-gray-50 ${gift.status === 'claimed' ? 'opacity-75' : ''}`}>
+            {gifts.map((gift) => {
+              const statusBadge = getStatusBadge(gift.status);
+              return (
+              <tr key={gift._id} className={`hover:bg-gray-50 ${gift.status !== 'available' ? 'opacity-75' : ''}`}>
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
                     <div 
@@ -675,16 +714,19 @@ const WeddingGifts = () => {
                   )}
                 </td>
                 <td className="px-6 py-4">
-                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${
-                    gift.status === 'claimed'
-                      ? 'bg-red-100 text-red-700 font-bold'
-                      : 'bg-[#9CAA8E]/10 text-[#9CAA8E]'
-                  }`}>
-                    {gift.status === 'claimed' ? 'Reservado' : 'Disponível'}
+                  <span className={`px-3 py-1 rounded-full text-sm font-medium ${statusBadge.class}`}>
+                    {statusBadge.text}
                   </span>
                 </td>
                 <td className="px-6 py-4 text-sm text-gray-600">
-                  {gift.claimedBy || '-'}
+                  {gift.claimedBy ? (
+                    <div>
+                      <span>{gift.claimedBy}</span>
+                      {gift.claimedByPhone && (
+                        <div className="text-xs text-gray-500">{gift.claimedByPhone}</div>
+                      )}
+                    </div>
+                  ) : '-'}
                 </td>
                 <td className="px-6 py-4">
                   <div className="flex items-center justify-end gap-2">
@@ -703,7 +745,8 @@ const WeddingGifts = () => {
                   </div>
                 </td>
               </tr>
-            ))}
+            );
+            })}
           </tbody>
         </table>
       </div>
@@ -734,7 +777,7 @@ const WeddingGifts = () => {
           </div>
 
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 mb-8">
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-[#9CAA8E]/10 rounded-full flex items-center justify-center">
@@ -761,6 +804,18 @@ const WeddingGifts = () => {
 
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
               <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                  <ShoppingCart className="w-6 h-6 text-purple-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-gray-900">{purchasedGifts}</p>
+                  <p className="text-sm text-gray-500">Presentes Comprados</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
+              <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
                   <DollarSign className="w-6 h-6 text-blue-600" />
                 </div>
@@ -773,8 +828,8 @@ const WeddingGifts = () => {
 
             <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
-                  <DollarSign className="w-6 h-6 text-purple-600" />
+                <div className="w-12 h-12 bg-indigo-100 rounded-full flex items-center justify-center">
+                  <DollarSign className="w-6 h-6 text-indigo-600" />
                 </div>
                 <div>
                   <p className="text-2xl font-bold text-gray-900">{stats.claimedValue.toLocaleString('pt-MZ')}</p>
@@ -819,7 +874,9 @@ const WeddingGifts = () => {
                     category: 'Cozinha',
                     isPublic: false,
                     claimedBy: '',
+                    claimedByPhone: '',
                     status: 'available',
+                    isPurchased: false,
                     storeName: '',
                     storeLink: '',
                   });
@@ -1010,6 +1067,16 @@ const WeddingGifts = () => {
               <p className="text-xl font-bold text-gray-900">{stats.claimedGifts}</p>
               <p className="text-xs text-gray-500">Reservados</p>
             </div>
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+              <ShoppingCart className="w-5 h-5 text-purple-600 mb-2" />
+              <p className="text-xl font-bold text-gray-900">{purchasedGifts}</p>
+              <p className="text-xs text-gray-500">Comprados</p>
+            </div>
+            <div className="bg-white rounded-xl p-4 shadow-sm border border-gray-100">
+              <DollarSign className="w-5 h-5 text-blue-600 mb-2" />
+              <p className="text-xl font-bold text-gray-900">{stats.totalValue.toLocaleString('pt-MZ')}</p>
+              <p className="text-xs text-gray-500">Valor Total</p>
+            </div>
           </div>
 
           {/* Mobile Search */}
@@ -1144,7 +1211,9 @@ const WeddingGifts = () => {
                   category: 'Cozinha',
                   isPublic: false,
                   claimedBy: '',
+                  claimedByPhone: '',
                   status: 'available',
+                  isPurchased: false,
                   storeName: '',
                   storeLink: '',
                 });
@@ -1159,11 +1228,13 @@ const WeddingGifts = () => {
 
           {/* Mobile Gift List - Card Style */}
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {gifts.map((gift) => (
+            {gifts.map((gift) => {
+              const statusBadge = getStatusBadge(gift.status);
+              return (
               <div
                 key={gift._id}
                 className={`bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden flex flex-col ${
-                  gift.status === 'claimed' ? 'opacity-75' : ''
+                  gift.status !== 'available' ? 'opacity-75' : ''
                 }`}
               >
                 {/* Gift Image - Clickable */}
@@ -1181,12 +1252,8 @@ const WeddingGifts = () => {
                     <Gift className="w-12 h-12 text-gray-300" />
                   )}
                   {/* Status Badge */}
-                  <div className={`absolute top-2 right-2 px-2 py-1 rounded-full text-xs font-bold ${
-                    gift.status === 'claimed'
-                      ? 'bg-red-100 text-red-700'
-                      : 'bg-[#9CAA8E]/10 text-[#9CAA8E]'
-                  }`}>
-                    {gift.status === 'claimed' ? 'Reservado' : 'Disponível'}
+                  <div className={`absolute top-2 right-2 px-2 py-1 rounded-full text-xs font-bold ${statusBadge.class}`}>
+                    {statusBadge.text}
                   </div>
                 </div>
 
@@ -1229,12 +1296,17 @@ const WeddingGifts = () => {
                     </div>
                   )}
 
-                  {/* Claimed by info */}
+                  {/* Claimed/Purchased by info */}
                   {gift.claimedBy && (
                     <div className="flex items-center gap-1 mb-2">
-                      <Check className="w-3 h-3 text-green-500 flex-shrink-0" />
+                      {gift.status === 'purchased' ? (
+                        <ShoppingCart className="w-3 h-3 text-green-500 flex-shrink-0" />
+                      ) : (
+                        <Check className="w-3 h-3 text-green-500 flex-shrink-0" />
+                      )}
                       <span className="text-xs text-green-600 font-medium truncate">
                         {gift.claimedBy}
+                        {gift.claimedByPhone && ` - ${gift.claimedByPhone}`}
                       </span>
                     </div>
                   )}
@@ -1257,7 +1329,8 @@ const WeddingGifts = () => {
                   </div>
                 </div>
               </div>
-            ))}
+            );
+            })}
           </div>
 
           {/* Mobile Empty State */}
@@ -1452,41 +1525,95 @@ const WeddingGifts = () => {
                 </label>
               </div>
 
-              {/* Reserved By - Only show when editing and status is claimed */}
+              {/* Reserved By - Only show when editing */}
               {editingGift && (
                 <div className="space-y-4 pt-4 border-t border-gray-100">
                   <h3 className="text-sm font-medium text-gray-700">Reserva</h3>
                   
-                  {/* Status Toggle */}
-                  <div className="flex items-center gap-3">
-                    <input
-                      type="checkbox"
-                      name="status"
-                      id="status"
-                      checked={formData.status === 'claimed'}
-                      onChange={(e) => setFormData({ ...formData, status: e.target.checked ? 'claimed' : 'available', claimedBy: e.target.checked ? formData.claimedBy : '' })}
-                      className="w-5 h-5 text-[#9CAA8E] border-gray-300 rounded focus:ring-[#9CAA8E]"
-                    />
-                    <label htmlFor="status" className="text-sm text-gray-700">
-                      Presente reservado
-                    </label>
+                  {/* Status Checkboxes */}
+                  <div className="space-y-3">
+                    {/* Reserved checkbox */}
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="checkbox"
+                        name="isClaimed"
+                        id="isClaimed"
+                        checked={formData.status === 'claimed' || formData.status === 'purchased'}
+                        onChange={(e) => {
+                          if (e.target.checked) {
+                            setFormData({ 
+                              ...formData, 
+                              status: formData.isPurchased ? 'purchased' : 'claimed'
+                            });
+                          } else {
+                            setFormData({ 
+                              ...formData, 
+                              status: 'available',
+                              claimedBy: '',
+                              claimedByPhone: ''
+                            });
+                          }
+                        }}
+                        className="w-5 h-5 text-[#9CAA8E] border-gray-300 rounded focus:ring-[#9CAA8E]"
+                      />
+                      <label htmlFor="isClaimed" className="text-sm text-gray-700">
+                        Presente reservado
+                      </label>
+                    </div>
+
+                    
                   </div>
 
-                  {/* Reserved By Name */}
-                  {formData.status === 'claimed' && (
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-2">
-                        Nome de quem reservou
-                      </label>
+                  {/* Reserved By Name and Phone */}
+                  {(formData.status === 'claimed' || formData.status === 'purchased') && (
+                    <>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Nome de quem reservou/comprou
+                        </label>
+                        <input
+                          type="text"
+                          name="claimedBy"
+                          value={formData.claimedBy}
+                          onChange={handleInputChange}
+                          placeholder="Nome da pessoa que reservou"
+                          className="w-full px-4 py-3 bg-white border border-gray-200 text-gray-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent"
+                        />
+                      </div>
+
+                      {/* Phone Number */}
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          <Phone className="w-4 h-4 inline mr-1" />
+                          Telemóvel
+                        </label>
+                        <input
+                          type="tel"
+                          name="claimedByPhone"
+                          value={formData.claimedByPhone}
+                          onChange={handleInputChange}
+                          placeholder="Ex: 84/85 123 4567"
+                          className="w-full px-4 py-3 bg-white border border-gray-200 text-gray-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent"
+                        />
+                      </div>
+
+
+                      {/* Purchased checkbox */}
+                    <div className="flex items-center gap-3">
                       <input
-                        type="text"
-                        name="claimedBy"
-                        value={formData.claimedBy}
+                        type="checkbox"
+                        name="isPurchased"
+                        id="isPurchased"
+                        checked={formData.isPurchased}
                         onChange={handleInputChange}
-                        placeholder="Nome da pessoa que reservou"
-                        className="w-full px-4 py-3 bg-white border border-gray-200 text-gray-900 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent"
+                        className="w-5 h-5 text-[#9CAA8E] border-gray-300 rounded focus:ring-[#9CAA8E]"
                       />
+                      <label htmlFor="isPurchased" className="text-sm text-gray-700">
+                        Presente comprado
+                      </label>
                     </div>
+                    
+                    </>
                   )}
                 </div>
               )}
