@@ -6,7 +6,7 @@ import {
   User, LogOut, Settings, X, Menu, Shield, 
   Home, Calendar, CheckSquare, Users, Gift, Image, 
   DollarSign, Briefcase, Heart, Bell, ChevronDown,
-  MapPin, MessageSquare, Star, ShoppingBag, Users2, Wallet, List
+  MapPin, MessageSquare, Star, ShoppingBag, Users2, Wallet, List, Clock
 } from 'lucide-react';
 import { useData } from '../contexts/DataContext';
 
@@ -127,6 +127,13 @@ const Header = ({notSticky, returnEmpty}) => {
           short_label: 'Agenda',
           path: '/checklist',
           icon: List,
+          show: true
+        },
+        {
+          label: 'Programa',
+          short_label: 'Programa',
+          path: '/program',
+          icon: Clock,
           show: true
         },
         {

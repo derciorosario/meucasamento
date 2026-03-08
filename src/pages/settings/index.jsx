@@ -365,7 +365,7 @@ const SettingsPage = () => {
                 </button>
               </div>
 
-              <div className="border-t border-gray-200 pt-4 mt-4">
+              <div className="border-t border-gray-200 pt-4 mt-4 hidden">
                 <p className="text-sm font-medium text-gray-500 mb-3">Notificações por funcionalidade</p>
                 
                 <div className="space-y-3">
@@ -538,7 +538,7 @@ const SettingsPage = () => {
             
             <div className="bg-red-50 border border-red-200 rounded-xl p-6">
               <div className="flex items-start gap-4">
-                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
+                <div className="w-12 max-md:hidden h-12 bg-red-100 rounded-full flex items-center justify-center flex-shrink-0">
                   <AlertTriangle className="w-6 h-6 text-red-600" />
                 </div>
                 <div className="flex-1">
@@ -565,20 +565,20 @@ const SettingsPage = () => {
                         placeholder="Digite a sua password para confirmar"
                         className="w-full text-gray-800 px-4 py-2 border-2 border-red-300 rounded-lg focus:outline-none focus:border-red-500"
                       />
-                      <div className="flex gap-3">
+                      <div className="flex gap-3 flex-wrap">
                         <button
                           onClick={() => {
                             setShowDeleteConfirm(false);
                             setDeletePassword('');
                           }}
-                          className="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition-colors"
+                          className="px-4 w-full py-2 bg-gray-200 text-gray-700 rounded-lg font-medium hover:bg-gray-300 transition-colors"
                         >
                           Cancelar
                         </button>
                         <button
                           onClick={handleDeleteAccount}
                           disabled={deleting || !deletePassword}
-                          className="px-4 py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center gap-2"
+                          className="px-4 w-full py-2 bg-red-600 text-white rounded-lg font-medium hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center gap-2"
                         >
                           {deleting ? (
                             <Loader2 className="w-4 h-4 animate-spin" />

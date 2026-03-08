@@ -54,7 +54,7 @@ const Footer = ({largerPadding}) => {
           
           <div className="md:border-t border-gray-700 md:pt-8 flex flex-col md:flex-row justify-between items-center">
             <p className="text-gray-400 max-md:text-center text-sm mb-4 md:mb-0">
-              © 2024 Meu Casamento. Todos os direitos reservados.
+              © 2026 Meu Casamento. Todos os direitos reservados.
             </p>
             <div className="flex gap-4">
               <a href="#" className="text-gray-400 hover:text-white !text-white">

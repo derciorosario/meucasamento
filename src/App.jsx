@@ -35,6 +35,7 @@ import CalendarPage from './pages/calendar';
 import VendorProfilePage from './pages/vendor';
 import WeddingGifts from './pages/gifts';
 import SharedGifts from './pages/shared-gifts';
+import WeddingProgram from './pages/program';
 
 function App() {
   return (
@@ -72,6 +73,7 @@ function App() {
         <Route path="/gallery" element={<Gallery />} />
         <Route path="/calendar" element={<CalendarPage />} />
         <Route path="/gifts" element={<WeddingGifts />} />
+        <Route path="/program" element={<WeddingProgram />} />
 
         
         {/* Admin Routes - Require admin role */}

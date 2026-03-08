@@ -269,6 +269,49 @@ export const getTasksByTimeline = () => client.get('/tasks/timeline');
 // Get tasks grouped by category
 export const getTasksByCategory = () => client.get('/tasks/category');
 
+// ============ Wedding Program API ============
+
+// Get program for authenticated user
+export const getProgram = () => client.get('/program');
+
+// Initialize default program (with optional force reset for existing users)
+export const initProgram = (forceReset = false) => client.post('/program/init', { forceReset });
+
+// Update entire program
+export const updateProgram = (sections) => client.put('/program', { sections });
+
+// Add or update a section
+export const upsertSection = (sectionKey, sectionData) => 
+  client.post('/program/section', { sectionKey, ...sectionData });
+
+// Delete a section
+export const deleteSection = (sectionKey) => 
+  client.delete(`/program/section/${sectionKey}`);
+
+// Add responsible
+export const addProgramResponsible = (name) => 
+  client.post('/program/responsible', { name });
+
+// Delete responsible
+export const deleteProgramResponsible = (name) => 
+  client.delete(`/program/responsible/${encodeURIComponent(name)}`);
+
+// Add activity to section
+export const addActivity = (sectionKey, activityData) => 
+  client.post(`/program/section/${sectionKey}/activity`, activityData);
+
+// Update activity
+export const updateActivity = (sectionKey, activityId, activityData) => 
+  client.put(`/program/section/${sectionKey}/activity/${activityId}`, activityData);
+
+// Delete activity
+export const deleteActivity = (sectionKey, activityId) => 
+  client.delete(`/program/section/${sectionKey}/activity/${activityId}`);
+
+// Reorder activities
+export const reorderActivities = (sectionKey, orderedActivityIds) => 
+  client.put(`/program/section/${sectionKey}/reorder`, { orderedActivityIds });
+
 // Initialize default tasks for a new user
 export const initDefaultTasks = () => client.post('/tasks/init');
 
