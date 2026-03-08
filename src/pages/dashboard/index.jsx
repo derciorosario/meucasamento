@@ -5,7 +5,7 @@ import {
   ChevronRight, Camera, UtensilsCrossed, Music, Flower2, 
   User, LogOut, Settings, X, ChevronDown, Plus, Loader2,
   TrendingUp, MessageSquare, Star, Eye, Briefcase, DollarSign,
-  Play, Home, List, ShoppingBag, Users2, Calendar as CalendarIcon, Wallet, Image, Gift, Menu
+  Play, Home, List, ShoppingBag, Users2, Calendar as CalendarIcon, Wallet, Image, Gift, Menu, Clock
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { API_URL, getTasks, getGuests, getGuestStats, getBudget, getCategories, updateBudget, getVendorQuoteRequests, getVendors, toggleTaskCompletion, getMyQuoteRequests, getVendor, getTutorials } from '../../api/client';
@@ -274,6 +274,7 @@ export default function WeddingDashboard() {
   const coupleTabs = [
     { id: 'inicio', label: 'Inicio', path: '/', icon: Home },
     { id: 'agenda', label: 'Agenda', path: '/checklist', icon: List },
+    { id: 'programa', label: 'Programa', path: '/program', icon: Clock },
     { id: 'fornecedores', label: 'Fornecedores', path: '/vendors', icon: ShoppingBag },
     { id: 'orcamento', label: 'Orçamento', path: '/budget', icon: Wallet },
     { id: 'convidados', label: 'Convidados', path: '/guests', icon: Users2 },
