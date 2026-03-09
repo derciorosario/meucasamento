@@ -28,7 +28,9 @@ const AdminSettings = () => {
       budget: '',
       vendors: '',
       gallery: '',
-      gifts: ''
+      gifts: '',
+      program: '',
+    //  home: ''
     },
     siteSettings: {
       maintenanceMode: false,
@@ -110,7 +112,9 @@ const AdminSettings = () => {
     { key: 'budget', label: 'Budget Page', placeholder: 'Enter YouTube URL for budget tutorial', color: 'yellow' },
     { key: 'vendors', label: 'Vendors Page', placeholder: 'Enter YouTube URL for vendors tutorial', color: 'purple' },
     { key: 'gallery', label: 'Gallery Page', placeholder: 'Enter YouTube URL for gallery tutorial', color: 'pink' },
-    { key: 'gifts', label: 'Gifts Page', placeholder: 'Enter YouTube URL for gifts tutorial', color: 'red' }
+    { key: 'gifts', label: 'Gifts Page', placeholder: 'Enter YouTube URL for gifts tutorial', color: 'red' },
+    { key: 'program', label: 'Program Page', placeholder: 'Enter YouTube URL for program tutorial', color: 'indigo' },
+    //{ key: 'home', label: 'Home/Dashboard Page', placeholder: 'Enter YouTube URL for home tutorial', color: 'orange' }
   ];
 
   const getColorClasses = (color) => {
@@ -120,7 +124,9 @@ const AdminSettings = () => {
       yellow: 'border-gray-300 focus:ring-[#9CAA8E] focus:border-[#9CAA8E]',
       purple: 'border-gray-300 focus:ring-[#9CAA8E] focus:border-[#9CAA8E]',
       pink: 'border-gray-300 focus:ring-[#9CAA8E] focus:border-[#9CAA8E]',
-      red: 'border-gray-300 focus:ring-[#9CAA8E] focus:border-[#9CAA8E]'
+      red: 'border-gray-300 focus:ring-[#9CAA8E] focus:border-[#9CAA8E]',
+      indigo: 'border-gray-300 focus:ring-[#9CAA8E] focus:border-[#9CAA8E]',
+      orange: 'border-gray-300 focus:ring-[#9CAA8E] focus:border-[#9CAA8E]'
     };
     return colors[color] || colors.green;
   };
@@ -132,7 +138,9 @@ const AdminSettings = () => {
       yellow: 'text-[#9CAA8E]',
       purple: 'text-[#9CAA8E]',
       pink: 'text-[#9CAA8E]',
-      red: 'text-[#9CAA8E]'
+      red: 'text-[#9CAA8E]',
+      indigo: 'text-[#9CAA8E]',
+      orange: 'text-[#9CAA8E]'
     };
     return colors[color] || colors.green;
   };

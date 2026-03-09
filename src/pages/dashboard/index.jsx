@@ -948,6 +948,8 @@ export default function WeddingDashboard() {
                           {tutorial.key === 'vendors' && 'Fornecedores'}
                           {tutorial.key === 'gallery' && 'Galeria'}
                           {tutorial.key === 'gifts' && 'Presentes'}
+                          {tutorial.key === 'program' && 'Programa'}
+                          {tutorial.key === 'home' && 'Início'}
                         </div>
                         <div className="text-xs text-gray-500 mt-1">Tutorial</div>
                       </div>
@@ -963,7 +965,7 @@ export default function WeddingDashboard() {
                 <div className="bg-white rounded-xl overflow-hidden max-w-4xl w-full" onClick={e => e.stopPropagation()}>
                   <div className="flex items-center justify-between px-4 py-3 bg-gray-100">
                     <h3 className="text-lg font-semibold text-gray-900 capitalize">
-                      Tutorial: {playingTutorial.key === 'guests' ? 'Convidados' : playingTutorial.key === 'checklist' ? 'Agenda' : playingTutorial.key === 'budget' ? 'Orçamento' : playingTutorial.key === 'vendors' ? 'Fornecedores' : playingTutorial.key === 'gallery' ? 'Galeria' : playingTutorial.key === 'gifts' ? 'Presentes' : playingTutorial.key}
+                      Tutorial: {playingTutorial.key === 'guests' ? 'Convidados' : playingTutorial.key === 'checklist' ? 'Agenda' : playingTutorial.key === 'budget' ? 'Orçamento' : playingTutorial.key === 'vendors' ? 'Fornecedores' : playingTutorial.key === 'gallery' ? 'Galeria' : playingTutorial.key === 'gifts' ? 'Presentes' : playingTutorial.key === 'program' ? 'Programa' : playingTutorial.key === 'home' ? 'Início' : playingTutorial.key}
                     </h3>
                     <button
                       onClick={() => setPlayingTutorial(null)}

@@ -268,7 +268,8 @@ export default function WeddingLanding() {
       
     
   
-  <nav className="flex items-center justify-between px-4 sm:px-6 lg:px-8 py-4 border-b bg-white">
+<nav className="sticky top-0 z-50 border-b border-gray-200 flex items-center justify-between px-4 sm:px-6 lg:px-8 py-4 border-b bg-white">
+
   {/* Left side: Logo/Brand */}
   <div onClick={() => navigate('/')} className="flex items-center gap-2 cursor-pointer">
     <div className="w-8 h-8 bg-[#9CAA8E] rounded-full flex items-center justify-center">

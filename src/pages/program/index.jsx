@@ -3,12 +3,20 @@ import DefaultLayout from '../../layout/DefaultLayout';
 import { 
   ChevronDown, Check, Heart, Loader2, Edit2, Trash2, X, Plus, 
   GripVertical, Clock, User, MapPin, Save, RotateCcw,
-  Menu, ChevronRight, Calendar, Users, Settings, MoreVertical
+  Menu, ChevronRight, Calendar, Users, Settings, MoreVertical, Play
 } from 'lucide-react';
 import { toast } from '../../lib/toast';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useData } from '../../contexts/DataContext';
 import * as api from '../../api/client';
+
+// Helper function to extract YouTube video ID
+const extractYouTubeId = (url) => {
+  if (!url) return null;
+  const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
+  const match = url.match(regExp);
+  return (match && match[2].length === 11) ? match[2] : null;
+};
 
 // Default sections
 const defaultSections = [
@@ -114,6 +122,10 @@ const ProgramPage = () => {
   const [showNewResponsibleInput, setShowNewResponsibleInput] = useState(false);
   const [tempNewResponsible, setTempNewResponsible] = useState('');
   
+  // Tutorial video state
+  const [programTutorial, setProgramTutorial] = useState(null);
+  const [showTutorialDropdown, setShowTutorialDropdown] = useState(false);
+  
   // Mobile states
   const [showMobileFilters, setShowMobileFilters] = useState(false);
   const [mobileActionMenu, setMobileActionMenu] = useState(null);
@@ -151,6 +163,20 @@ const ProgramPage = () => {
   useEffect(() => {
     const loadProgram = async () => {
       try {
+        // Fetch tutorial videos
+        try {
+          const tutorialsRes = await api.getTutorials();
+          if (tutorialsRes.data?.tutorialVideos?.program) {
+            const videoId = extractYouTubeId(tutorialsRes.data.tutorialVideos.program);
+            setProgramTutorial({
+              url: tutorialsRes.data.tutorialVideos.program,
+              videoId
+            });
+          }
+        } catch (tutError) {
+          console.log('No tutorial videos available');
+        }
+        
         const response = await api.getProgram();
         console.log('=== PROGRAM API RESPONSE ===');
         console.log('Response:', JSON.stringify(response.data, null, 2));
@@ -472,6 +498,22 @@ const ProgramPage = () => {
     setEditForm({ ...activity });
     setShowActivityDetails(false);
     setMobileActionMenu(null);
+    
+    // Switch to the appropriate tab on mobile and scroll to edit form
+    const currentTab = mobileActiveTab;
+    if (currentTab !== 'schedule' && currentTab !== 'activities') {
+      setMobileActiveTab('schedule');
+      setActiveTab('schedule');
+    }
+    
+    // Scroll to edit form after a short delay to allow rendering
+    setTimeout(() => {
+      const editFormElement = document.getElementById('mobile-edit-form');
+      if (editFormElement) {
+        editFormElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        window.scrollBy(0, -60); // Offset for header
+      }
+    }, 100);
   };
 
   // Save edited activity
@@ -751,6 +793,35 @@ const handleAddResponsibleFromForm = async () => {
   return (
     <DefaultLayout largerPadding={true} hero={{title:"Programa do Casamento",subtitle:"Organize o cronograma do seu grande dia"}}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+        
+        {/* Tutorial Video - Desktop & Mobile */}
+        {programTutorial && (
+          <div className="mb-6">
+            <button
+              onClick={() => setShowTutorialDropdown(!showTutorialDropdown)}
+              className="w-full flex items-center justify-between p-3 bg-primary-50 rounded-lg border border-primary-100 hover:bg-primary-100 transition-colors"
+            >
+              <div className="flex items-center gap-2">
+                <Play className="w-5 h-5 text-primary-500" fill="currentColor" />
+                <span className="text-sm font-medium text-primary-700">Ver tutorial</span>
+                <span className="text-xs text-primary-600 ml-1">(como usar esta página)</span>
+              </div>
+              <ChevronDown className={`w-4 h-4 text-primary-500 transition-transform ${showTutorialDropdown ? 'rotate-180' : ''}`} />
+            </button>
+            
+            {showTutorialDropdown && (
+              <div className="mt-2 rounded-lg overflow-hidden">
+                <iframe
+                  src={`https://www.youtube.com/embed/${programTutorial.videoId}`}
+                  title="Tutorial Video"
+                  className="w-full aspect-video"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                ></iframe>
+              </div>
+            )}
+          </div>
+        )}
         
         {/* Desktop Tab Navigation (hidden on mobile) */}
         <div className="hidden lg:flex flex-wrap gap-2 mb-6">
@@ -1767,19 +1838,20 @@ const handleAddResponsibleFromForm = async () => {
             </button>
 
             {editingResponsible && (
-              <div id="responsible-input" className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+             <div id="responsible-input" className="bg-white rounded-2xl p-4 border border-gray-100 shadow-sm">
+              <div className="flex flex-col sm:flex-row gap-2">
+                <input
+                  type="text"
+                  value={newResponsible}
+                  onChange={(e) => setNewResponsible(e.target.value)}
+                  placeholder="Nome do responsável"
+                  className="w-full sm:flex-1 px-3 py-2 border border-gray-200 rounded-xl text-black text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
+                  onKeyPress={(e) => e.key === 'Enter' && handleAddResponsible()}
+                />
                 <div className="flex gap-2">
-                  <input
-                    type="text"
-                    value={newResponsible}
-                    onChange={(e) => setNewResponsible(e.target.value)}
-                    placeholder="Nome do responsável"
-                    className="flex-1 px-3 py-2 border border-gray-200 rounded-xl text-black text-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
-                    onKeyPress={(e) => e.key === 'Enter' && handleAddResponsible()}
-                  />
                   <button
                     onClick={handleAddResponsible}
-                    className="px-4 py-2 bg-primary-500 text-white rounded-xl text-sm"
+                    className="flex-1 sm:flex-none px-4 py-2 bg-primary-500 text-white rounded-xl text-sm"
                   >
                     OK
                   </button>
@@ -1788,12 +1860,13 @@ const handleAddResponsibleFromForm = async () => {
                       setEditingResponsible(false);
                       setNewResponsible('');
                     }}
-                    className="px-4 py-2 border border-gray-200 text-gray-700 rounded-xl text-sm"
+                    className="flex-1 sm:flex-none px-4 py-2 border border-gray-200 text-gray-700 rounded-xl text-sm"
                   >
-                    X
+                    Cancel
                   </button>
                 </div>
               </div>
+            </div>
             )}
 
             {/* Responsibles List */}
@@ -1943,6 +2016,140 @@ const handleAddResponsibleFromForm = async () => {
                   >
                     Cancelar
                   </button>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
+
+        {/* Mobile Activity Details Bottom Sheet - Edit Mode */}
+        <AnimatePresence>
+          {editingActivity && (
+            <>
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="lg:hidden fixed inset-0 bg-black/50 z-50"
+                onClick={() => {
+                  setEditingActivity(null);
+                  setEditForm({});
+                }}
+              />
+              <motion.div
+                id="mobile-edit-form"
+                initial={{ y: "100%" }}
+                animate={{ y: 0 }}
+                exit={{ y: "100%" }}
+                transition={{ type: "spring", damping: 25, stiffness: 300 }}
+                className="lg:hidden fixed bottom-0 left-0 right-0 bg-white rounded-t-3xl z-50 max-h-[85vh] overflow-y-auto"
+              >
+                <div className="p-4">
+                  <div className="w-12 h-1 bg-gray-300 rounded-full mx-auto mb-4" />
+                  
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-xl font-semibold text-gray-900">Editar Atividade</h3>
+                    <button
+                      onClick={() => {
+                        setEditingActivity(null);
+                        setEditForm({});
+                      }}
+                      className="p-2 hover:bg-gray-100 rounded-full"
+                    >
+                      <X className="w-5 h-5 text-gray-500" />
+                    </button>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Título</label>
+                      <input
+                        type="text"
+                        value={editForm.title}
+                        onChange={(e) => setEditForm({...editForm, title: e.target.value})}
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-black focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        placeholder="Título da atividade"
+                      />
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Início</label>
+                        <input
+                          type="time"
+                          value={editForm.startTime}
+                          onChange={(e) => setEditForm({...editForm, startTime: e.target.value})}
+                          className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-black focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Fim (opcional)</label>
+                        <input
+                          type="time"
+                          value={editForm.endTime || ''}
+                          onChange={(e) => setEditForm({...editForm, endTime: e.target.value})}
+                          className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-black focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Responsável</label>
+                      <div className="relative">
+                        <select
+                          value={editForm.responsible}
+                          onChange={(e) => setEditForm({...editForm, responsible: e.target.value})}
+                          className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-black focus:outline-none focus:ring-2 focus:ring-primary-500 appearance-none"
+                        >
+                          <option value="">Selecione</option>
+                          {responsibles.map(r => (
+                            <option key={r} value={r}>{r}</option>
+                          ))}
+                        </select>
+                        <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Local</label>
+                      <input
+                        type="text"
+                        value={editForm.location}
+                        onChange={(e) => setEditForm({...editForm, location: e.target.value})}
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-black focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        placeholder="Local da atividade"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Descrição (opcional)</label>
+                      <textarea
+                        value={editForm.description || ''}
+                        onChange={(e) => setEditForm({...editForm, description: e.target.value})}
+                        className="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-black focus:outline-none focus:ring-2 focus:ring-primary-500"
+                        rows={3}
+                        placeholder="Descrição adicional"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="flex gap-3 mt-6">
+                    <button
+                      onClick={() => {
+                        setEditingActivity(null);
+                        setEditForm({});
+                      }}
+                      className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl font-medium active:bg-gray-50"
+                    >
+                      Cancelar
+                    </button>
+                    <button
+                      onClick={saveEditActivity}
+                      className="flex-1 px-4 py-3 bg-primary-500 text-white rounded-xl font-medium active:bg-primary-600"
+                    >
+                      Guardar
+                    </button>
+                  </div>
                 </div>
               </motion.div>
             </>

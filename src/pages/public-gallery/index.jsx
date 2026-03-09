@@ -192,7 +192,7 @@ const PublicGallery = () => {
           </div>
         )}
 
-        <div className="flex items-center justify-between mb-8">
+        <div className="flex items-center justify-between mb-8 gap-3 max-md:flex-col">
           <div>
             <h2 className="text-2xl font-bold text-gray-900">
               Álbuns Públicos
