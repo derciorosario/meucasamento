@@ -3,7 +3,6 @@ const env = "pro";
 ///import { Capacitor, CapacitorHttp } from '@capacitor/core';
 export const isNative = false /// Capacitor.isNativePlatform();
 
-
 export const API_URL = 
   env == "dev" ? isNative ? "http://10.24.0.78:5000/api" : "http://localhost:5005/api" :
   env == "test" ? "https://kaziwani-server.visum.co.mz/api" :
