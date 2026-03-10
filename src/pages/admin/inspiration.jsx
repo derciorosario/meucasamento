@@ -800,7 +800,7 @@ const AdminInspiration = () => {
                   </div>
 
                   {/* URL Input */}
-                  <div className="mt-3">
+                  <div className="mt-3 hidden">
                     <div className="flex items-center gap-2 text-xs sm:text-sm text-gray-500 mb-1 sm:mb-2">
                       <LinkIcon size={12} className="sm:w-3.5 sm:h-3.5" />
                       <span>Ou insira uma URL</span>
