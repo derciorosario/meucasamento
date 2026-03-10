@@ -1,4 +1,5 @@
 import { Routes, Route, Navigate } from 'react-router-dom';
+import { useEffect } from 'react';
 import { useAuth } from './contexts/AuthContext';
 import Login from './pages/login';
 import Signup from './pages/signup';
@@ -21,6 +22,7 @@ import AdminUsers from './pages/admin/users';
 import AdminVendors from './pages/admin/vendors';
 import AdminGalleries from './pages/admin/galleries';
 import AdminSettings from './pages/admin/settings';
+import AdminInspiration from './pages/admin/inspiration';
 import VendorPlans from './pages/vendors/plans';
 import Support from './pages/support';
 import About from './pages/about';
@@ -36,8 +38,17 @@ import VendorProfilePage from './pages/vendor';
 import WeddingGifts from './pages/gifts';
 import SharedGifts from './pages/shared-gifts';
 import WeddingProgram from './pages/program';
+import SetupPartnerPassword from './pages/setup-partner-password';
+import VendorLanding from './pages/vendor-landing';
+import VendorSignup from './pages/vendor-signup';
+import { trackPlatformVisit } from './api/client';
 
 function App() {
+  useEffect(() => {
+    // Track platform visit on app load
+    trackPlatformVisit().catch(err => console.log('Error tracking visit:', err));
+  }, []);
+
   return (
     <Routes>
       {/* Public Routes - No authentication required */}
@@ -62,6 +73,9 @@ function App() {
       <Route path="/terms" element={<Terms />} />
       <Route path="/public-gallery" element={<PublicGallery />} />
       <Route path="/guest-confirm/:token" element={<GuestConfirm />} />
+      <Route path="/setup-partner-password/:token" element={<SetupPartnerPassword />} />
+      <Route path="/vendor-landing" element={<VendorLanding />} />
+      <Route path="/vendor-signup" element={<VendorSignup />} />
       
       {/* Protected Routes - Require authentication */}
       <Route element={<ProtectedRoute />}>
@@ -82,6 +96,7 @@ function App() {
         <Route path="/admin/vendors" element={<AdminVendors />} />
         <Route path="/admin/galleries" element={<AdminGalleries />} />
         <Route path="/admin/settings" element={<AdminSettings />} />
+        <Route path="/admin/inspiration" element={<AdminInspiration />} />
 
 
       </Route>

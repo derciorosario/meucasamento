@@ -144,8 +144,11 @@ const ProgramPage = () => {
   // Drag and drop state
   const [draggedItem, setDraggedItem] = useState(null);
   const [dragOverItem, setDragOverItem] = useState(null);
+  const [touchDragItem, setTouchDragItem] = useState(null);
+  const [touchDragOver, setTouchDragOver] = useState(null);
   const dragItem = useRef();
   const dragOverItemRef = useRef();
+  const touchStartPos = useRef(null);
 
     // Refs for scrolling
   const sectionRefs = useRef({});
@@ -350,6 +353,127 @@ const ProgramPage = () => {
   const handleDragOver = (e) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
+  };
+
+  // Touch drag and drop handlers for mobile
+  const [isTouchDragging, setIsTouchDragging] = useState(false);
+  const touchDragged = useRef(false);
+  
+  const handleTouchStart = (e, sectionKey, index) => {
+    // Prevent default touch behavior (scrolling) to enable drag
+    try {
+      e.preventDefault();
+    } catch (err) {}
+    try {
+      e.nativeEvent.preventDefault();
+    } catch (err) {}
+    touchStartPos.current = { x: e.touches[0].clientX, y: e.touches[0].clientY };
+    touchDragged.current = false;
+    setIsTouchDragging(false);
+    
+    // Start drag after a short hold (300ms)
+    const timer = setTimeout(() => {
+      if (touchStartPos.current) {
+        dragItem.current = { sectionKey, index };
+        setTouchDragItem({ sectionKey, index });
+        setIsTouchDragging(true);
+        touchDragged.current = true;
+      }
+    }, 300);
+    
+    // Store timer reference to clear on touch end
+    e.target.dataset.touchTimer = timer;
+  };
+
+  const handleTouchMove = (e, sectionKey, index) => {
+    // Prevent default touch behavior (scrolling) while dragging
+    try {
+      e.preventDefault();
+    } catch (err) {}
+    try {
+      e.nativeEvent.preventDefault();
+    } catch (err) {}
+    // Check if user moved finger significantly (more than 10px) to differentiate from click
+    if (touchStartPos.current) {
+      const touch = e.touches[0];
+      const distance = Math.sqrt(
+        Math.pow(touch.clientX - touchStartPos.current.x, 2) + 
+        Math.pow(touch.clientY - touchStartPos.current.y, 2)
+      );
+      
+      if (distance > 10) {
+        // User is dragging - clear any timer
+        const timer = e.target.dataset.touchTimer;
+        if (timer) {
+          clearTimeout(parseInt(timer));
+          e.target.dataset.touchTimer = null;
+        }
+        touchStartPos.current = null;
+        touchDragged.current = true;
+        setIsTouchDragging(true);
+      }
+    }
+    
+    if (!dragItem.current) return;
+    
+    const touch = e.touches[0];
+    const element = document.elementFromPoint(touch.clientX, touch.clientY);
+    
+    if (element) {
+      const activityItem = element.closest('[data-activity-index]');
+      if (activityItem) {
+        const targetIndex = parseInt(activityItem.getAttribute('data-activity-index'));
+        const targetSection = activityItem.getAttribute('data-section-key');
+        if (targetSection && !isNaN(targetIndex)) {
+          dragOverItemRef.current = { sectionKey: targetSection, index: targetIndex };
+          setTouchDragOver({ sectionKey: targetSection, index: targetIndex });
+        }
+      }
+    }
+  };
+
+  const handleTouchEnd = (e, activity, sectionKey) => {
+    // Clear any pending timer
+    const timer = e.target.dataset.touchTimer;
+    if (timer) {
+      clearTimeout(parseInt(timer));
+      e.target.dataset.touchTimer = null;
+    }
+    
+    // If touch was dragging, complete the drag
+    if (touchDragged.current && dragItem.current && dragOverItemRef.current) {
+      const { sectionKey: sourceSection, index: sourceIndex } = dragItem.current;
+      const { sectionKey: targetSection, index: targetIndex } = dragOverItemRef.current;
+      
+      if (sourceSection === targetSection && sourceIndex !== targetIndex) {
+        const newProgram = { ...program };
+        const activities = [...newProgram[sourceSection].activities];
+        const [removed] = activities.splice(sourceIndex, 1);
+        activities.splice(targetIndex, 0, removed);
+        newProgram[sourceSection].activities = activities;
+        
+        const orderedIds = activities.map(a => a._id);
+        api.reorderActivities(sourceSection, orderedIds).then(() => {
+          setProgram(newProgram);
+          toast.success('Ordem atualizada!');
+        }).catch(error => {
+          console.error('Error reordering:', error);
+        });
+      }
+    }
+    
+    dragItem.current = null;
+    dragOverItemRef.current = null;
+    setTouchDragItem(null);
+    setTouchDragOver(null);
+    setIsTouchDragging(false);
+    touchStartPos.current = null;
+    
+    // If not dragged, treat as click
+    if (!touchDragged.current) {
+      handleViewActivity(activity, sectionKey);
+    }
+    touchDragged.current = false;
   };
 
   // Move activity up
@@ -1434,8 +1558,19 @@ const handleAddResponsibleFromForm = async () => {
                       {section.activities?.map((activity, index) => (
                         <div
                           key={activity._id || index}
-                          onClick={() => handleViewActivity(activity, sectionKey)}
-                          className="p-4 border-b border-gray-100 last:border-0 active:bg-gray-100 cursor-pointer"
+                          data-section-key={sectionKey}
+                          data-activity-index={index}
+                          onClick={() => !isTouchDragging && handleViewActivity(activity, sectionKey)}
+                          onTouchStart={(e) => handleTouchStart(e, sectionKey, index)}
+                          onTouchMove={(e) => handleTouchMove(e, sectionKey, index)}
+                          onTouchEnd={(e) => handleTouchEnd(e, activity, sectionKey)}
+                          className={`p-4 border-b border-gray-100 last:border-0 active:bg-gray-100 cursor-pointer select-none ${
+                            touchDragItem?.sectionKey === sectionKey && touchDragItem?.index === index
+                              ? 'opacity-50 bg-primary-50' 
+                              : touchDragOver?.sectionKey === sectionKey && touchDragOver?.index === index
+                                ? 'bg-primary-100'
+                                : ''
+                          }`}
                         >
                           <div className="flex items-center gap-3">
                             <div className="w-16 flex-shrink-0">

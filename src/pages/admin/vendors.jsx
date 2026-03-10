@@ -32,7 +32,6 @@ const AdminVendors = () => {
   const [vendors, setVendors] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, pages: 0 });
   const [filters, setFilters] = useState({
-    isActive: '',
     isFeatured: '',
     status: '',
     search: '',
@@ -92,7 +91,6 @@ const AdminVendors = () => {
     setEditForm({
       name: vendor.name,
       description: vendor.description,
-      isActive: vendor.isActive,
       isFeatured: vendor.isFeatured,
       isVerified: vendor.isVerified,
       city: vendor.city,
@@ -119,17 +117,17 @@ const AdminVendors = () => {
     setDeleteModal({ show: true, vendorId, vendorName: vendors.find(v => v._id === vendorId)?.name || 'this vendor' });
   };
 
-  const confirmDelete = async () => {
+  const confirmReject = async () => {
     try {
-      const response = await deleteAdminVendor(deleteModal.vendorId);
+      const response = await rejectVendor(deleteModal.vendorId, '');
       if (response.data.success) {
-        toast.success('Vendor deactivated successfully');
+        toast.success('Vendor status changed to rejected');
         setDeleteModal({ show: false, vendorId: null, vendorName: '' });
         fetchVendors();
       }
     } catch (error) {
-      console.error('Error deactivating vendor:', error);
-      toast.error('Failed to deactivate vendor');
+      console.error('Error rejecting vendor:', error);
+      toast.error('Failed to reject vendor');
     }
   };
 
@@ -151,7 +149,7 @@ const AdminVendors = () => {
     try {
       const response = await rejectVendor(vendorId, reason || '');
       if (response.data.success) {
-        toast.success('Vendor rejected');
+        toast.success('Vendor status changed to rejected');
         fetchVendors();
       }
     } catch (error) {
@@ -203,7 +201,7 @@ const AdminVendors = () => {
       return;
     }
 
-    if (action === 'deactivate') {
+    if (action === 'reject') {
       setBulkDeleteModal(true);
     }
   };
@@ -288,19 +286,7 @@ const AdminVendors = () => {
             </div>
           </div>
           
-          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Active Vendors</p>
-                <p className="text-2xl font-semibold text-gray-900">
-                  {vendors.filter(v => v.isActive).length}
-                </p>
-              </div>
-              <div className="p-3 bg-green-50 rounded-lg">
-                <CheckCircleIcon className="w-6 h-6 text-green-600" />
-              </div>
-            </div>
-          </div>
+         
           
           <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
             <div className="flex items-center justify-between">
@@ -350,7 +336,7 @@ const AdminVendors = () => {
                 <button
                   onClick={() => setShowFilters(!showFilters)}
                   className={`p-2 border rounded-lg transition-colors ${
-                    showFilters || filters.isActive || filters.isFeatured
+                    showFilters || filters.isFeatured
                       ? 'bg-[#9CAA8E] text-white border-[#9CAA8E]'
                       : 'border-gray-300 text-gray-600 hover:bg-gray-50'
                   }`}
@@ -365,10 +351,10 @@ const AdminVendors = () => {
                     {selectedVendors.length} selected
                   </span>
                   <button
-                    onClick={() => handleBulkAction('deactivate')}
+                    onClick={() => handleBulkAction('reject')}
                     className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition-colors"
                   >
-                    Deactivate Selected
+                    Reject Selected
                   </button>
                 </div>
               )}
@@ -378,18 +364,7 @@ const AdminVendors = () => {
             {showFilters && (
               <div className="mt-4 pt-4 border-t border-gray-200">
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-                    <select
-                      value={filters.isActive}
-                      onChange={(e) => setFilters({ ...filters, isActive: e.target.value })}
-                      className="w-full px-3 py-2 border text-gray-600 border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent"
-                    >
-                      <option value="">All Status</option>
-                      <option value="true">Active</option>
-                      <option value="false">Inactive</option>
-                    </select>
-                  </div>
+                
                   
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-1">Approval</label>
@@ -447,7 +422,7 @@ const AdminVendors = () => {
                   
                   <div className="flex items-end">
                     <button
-                      onClick={() => setFilters({ isActive: '', isFeatured: '', isVerified: '', status: '', search: '' })}
+                      onClick={() => setFilters({ isFeatured: '', isVerified: '', status: '', search: '' })}
                       className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center gap-2"
                     >
                       <XMarkIcon className="w-4 h-4" />
@@ -501,9 +476,7 @@ const AdminVendors = () => {
                   <th className="py-4 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Verified
                   </th>
-                  <th className="py-4 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Status
-                  </th>
+                 
                   <th className="py-4 px-6 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Approval
                   </th>
@@ -577,17 +550,7 @@ const AdminVendors = () => {
                             <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#9CAA8E]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
                           </label>
                         </td>
-                        <td className="py-4 px-6">
-                          <label className="relative inline-flex items-center cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={editForm.isActive}
-                              onChange={(e) => setEditForm({...editForm, isActive: e.target.checked})}
-                              className="sr-only peer"
-                            />
-                            <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#9CAA8E]/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500"></div>
-                          </label>
-                        </td>
+                       
                         <td className="py-4 px-6">
                           <div className="flex items-center gap-2">
                             <button
@@ -677,15 +640,7 @@ const AdminVendors = () => {
                             {vendor.isVerified ? 'Verified' : 'Unverified'}
                           </span>
                         </td>
-                        <td className="py-4 px-6">
-                          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                            vendor.isActive
-                              ? 'bg-green-100 text-green-800'
-                              : 'bg-red-100 text-red-800'
-                          }`}>
-                            {vendor.isActive ? 'Active' : 'Inactive'}
-                          </span>
-                        </td>
+                       
                         <td className="py-4 px-6">
                           <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
                             vendor.status === 'approved'
@@ -701,10 +656,11 @@ const AdminVendors = () => {
                           <div className="flex items-center gap-2">
                             <button
                               onClick={() => handleViewProfile(vendor)}
-                              className="p-1 text-blue-600 hover:text-blue-800 transition-colors"
+                              className="inline-flex items-center gap-1 px-2 py-1 text-blue-600 hover:text-blue-800 transition-colors text-sm"
                               title="View vendor"
                             >
-                              <EyeIcon className="w-5 h-5" />
+                              <EyeIcon className="w-4 h-4" />
+                              View
                             </button>
                             {vendor.status === 'pending' && (
                               <>
@@ -731,13 +687,15 @@ const AdminVendors = () => {
                             >
                               <PencilSquareIcon className="w-5 h-5" />
                             </button>
-                            <button
-                              onClick={() => handleDelete(vendor._id)}
-                              className="p-1 text-gray-500 hover:text-red-600 transition-colors"
-                              title="Deactivate vendor"
-                            >
-                              <XCircleIcon className="w-5 h-5" />
-                            </button>
+                            {vendor.status === 'approved' && (
+                              <button
+                                onClick={() => handleDelete(vendor._id)}
+                                className="p-1 text-gray-500 hover:text-red-600 transition-colors"
+                                title="Change status to rejected"
+                              >
+                                <XCircleIcon className="w-5 h-5" />
+                              </button>
+                            )}
                           </div>
                         </td>
                       </>
@@ -836,10 +794,10 @@ const AdminVendors = () => {
                   <XCircleIcon className="h-8 w-8 text-red-600" />
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                  Deactivate Vendor
+                  Change Status to Rejected
                 </h3>
                 <p className="text-gray-600 mb-6">
-                  Are you sure you want to deactivate <span className="font-semibold">{deleteModal.vendorName}</span>? This action can be reversed later.
+                  Are you sure you want to change the status of <span className="font-semibold">{deleteModal.vendorName}</span> to rejected? This action can be reversed later.
                 </p>
                 <div className="flex gap-3 justify-center">
                   <button
@@ -849,10 +807,10 @@ const AdminVendors = () => {
                     Cancel
                   </button>
                   <button
-                    onClick={confirmDelete}
+                    onClick={confirmReject}
                     className="px-6 py-2.5 bg-red-600 text-white font-medium rounded-xl hover:bg-red-700 transition-colors"
                   >
-                    Deactivate
+                    Reject
                   </button>
                 </div>
               </div>
@@ -878,10 +836,10 @@ const AdminVendors = () => {
                   <XCircleIcon className="h-8 w-8 text-red-600" />
                 </div>
                 <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                  Deactivate Vendors
+                  Change Status to Rejected
                 </h3>
                 <p className="text-gray-600 mb-6">
-                  Are you sure you want to deactivate <span className="font-semibold">{selectedVendors.length} selected vendors</span>? This action can be reversed later.
+                  Are you sure you want to change the status of <span className="font-semibold">{selectedVendors.length} selected vendors</span> to rejected? This action can be reversed later.
                 </p>
                 <div className="flex gap-3 justify-center">
                   <button
@@ -893,18 +851,18 @@ const AdminVendors = () => {
                   <button
                     onClick={async () => {
                       try {
-                        await Promise.all(selectedVendors.map(id => deleteAdminVendor(id)));
-                        toast.success(`${selectedVendors.length} vendors deactivated`);
+                        await Promise.all(selectedVendors.map(id => rejectVendor(id, '')));
+                        toast.success(`${selectedVendors.length} vendors status changed to rejected`);
                         setSelectedVendors([]);
                         setBulkDeleteModal(false);
                         fetchVendors();
                       } catch (error) {
-                        toast.error('Failed to deactivate some vendors');
+                        toast.error('Failed to reject some vendors');
                       }
                     }}
                     className="px-6 py-2.5 bg-red-600 text-white font-medium rounded-xl hover:bg-red-700 transition-colors"
                   >
-                    Deactivate
+                    Reject
                   </button>
                 </div>
               </div>

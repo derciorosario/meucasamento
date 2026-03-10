@@ -29,12 +29,12 @@ const categoryLabels = {
 
 // Timeline period labels
 const timelineLabels = {
-  '12_months_before': '+ 12 meses',
-  '9_months_before': '9 à 12 meses',
-  '6_months_before': '6 à 8 meses',
-  '3_months_before': '4 à 5 meses',
-  '1_month_before': '2 à 3 meses',
-  '2_weeks_before': '1 mês',
+  '12_months_before': '+ 12 meses  antes do casamento',
+  '9_months_before': '9 à 12 meses antes do casamento',
+  '6_months_before': '6 à 8 meses antes do casamento',
+  '3_months_before': '4 à 5 meses antes do casamento',
+  '1_month_before': '2 à 3 meses antes do casamento',
+  '2_weeks_before': '1 mês antes do casamento',
   'wedding_day': 'Semana do casamento',
   'after_wedding': 'Após o casamento',
 };
@@ -143,7 +143,7 @@ const ChecklistPage = () => {
   });
 
   // Date type selection: 'period' or 'dueDate' (mandatory)
-  const [dateType, setDateType] = useState(null);
+  const [dateType, setDateType] = useState('dueDate');
 
   // Edit task state
   const [editingTask, setEditingTask] = useState(null);
@@ -167,6 +167,13 @@ const ChecklistPage = () => {
   const [checklistTutorial, setChecklistTutorial] = useState(null);
   const [showTutorialDropdown, setShowTutorialDropdown] = useState(false);
   const [showTutorialDesktop, setShowTutorialDesktop] = useState(false);
+  
+  // Tips state
+  const [checklistTips, setChecklistTips] = useState([
+    'Ganhe tempo e dinheiro contratando pacotes de foto e vídeo com o mesmo fornecedor.',
+    'Defina o estilo de decoração e a paleta de cores antes de escolher suas alianças.',
+    'Delegue pequenas tarefas a amigos e familiares para aliviar o estresse.'
+  ]);
 
   // Minimum swipe distance
   const minSwipeDistance = 50;
@@ -208,6 +215,13 @@ const ChecklistPage = () => {
             url: tutorialsRes.data.tutorialVideos.checklist,
             videoId
           });
+        }
+
+        console.log({aaaaa:tutorialsRes.data?.tips?.checklist})
+
+        // Fetch tips
+        if (tutorialsRes.data?.tips?.checklist && tutorialsRes.data.tips.checklist.length > 0) {
+          setChecklistTips(tutorialsRes.data.tips.checklist);
         }
       } catch (tutError) {
         console.log('No tutorial videos available');
@@ -541,6 +555,7 @@ const ChecklistPage = () => {
       });
       
       setIsModalOpen(false);
+
       setNewTask({
         title: '',
         categoryType: 'other',
@@ -548,7 +563,9 @@ const ChecklistPage = () => {
         priority: 'medium',
         dueDate: null,
       });
-      setDateType(null);
+      
+      setDateType('dueDate');
+
     } catch (error) {
       console.error('Error creating task:', error);
       toast.error('Erro ao criar tarefa');
@@ -1732,24 +1749,20 @@ const ChecklistPage = () => {
               </div>
 
               <div className="space-y-4 mb-6">
-                <div className="flex items-start space-x-3">
-                  <div className="w-1.5 h-1.5 bg-primary-500 rounded-full mt-2 flex-shrink-0"></div>
-                  <p className="text-sm text-gray-700">
-                    Ganhe tempo e dinheiro contratando pacotes de foto e vídeo com o mesmo fornecedor.
-                  </p>
-                </div>
-                <div className="flex items-start space-x-3">
-                  <div className="w-1.5 h-1.5 bg-primary-500 rounded-full mt-2 flex-shrink-0"></div>
-                  <p className="text-sm text-gray-700">
-                    Defina o estilo de decoração e a paleta de cores antes de escolher suas alianças.
-                  </p>
-                </div>
-                <div className="flex items-start space-x-3">
-                  <div className="w-1.5 h-1.5 bg-primary-500 rounded-full mt-2 flex-shrink-0"></div>
-                  <p className="text-sm text-gray-700">
-                    Delegue pequenas tarefas a amigos e familiares para aliviar o estresse.
-                  </p>
-                </div>
+                {checklistTips.length > 0 ? (
+                  checklistTips.map((tip, index) => (
+                    tip && (
+                      <div key={index} className="flex items-start space-x-3">
+                        <div className="w-1.5 h-1.5 bg-primary-500 rounded-full mt-2 flex-shrink-0"></div>
+                        <p className="text-sm text-gray-700">
+                          {tip}
+                        </p>
+                      </div>
+                    )
+                  ))
+                ) : (
+                  <p className="text-sm text-gray-500">Nenhuma dica disponível no momento.</p>
+                )}
               </div>
 
               <div className="border-t border-gray-200 pt-6">

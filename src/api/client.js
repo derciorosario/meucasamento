@@ -388,6 +388,9 @@ export const deleteMenu = (id) => client.delete(`/guests/menus/${id}`);
 // Get all vendor categories
 export const getVendorCategories = () => client.get('/vendors/categories');
 
+// Get vendor statistics
+export const getVendorStats = () => client.get('/vendors/stats');
+
 // Get vendor's quote requests (for vendors)
 export const getVendorQuoteRequests = () => client.get('/vendors/my/quotes');
 
@@ -406,6 +409,18 @@ export const getVendor = (id) => client.get(`/vendors/${id}`);
 
 // Get featured vendors
 export const getFeaturedVendors = () => client.get('/vendors/featured');
+
+// Inspiration Cards API
+export const getInspirationCards = () => client.get('/inspiration/cards');
+export const getAllInspirationCards = () => client.get('/inspiration/admin/cards');
+export const createInspirationCard = (data) => client.post('/inspiration/admin/cards', data);
+export const updateInspirationCard = (id, data) => client.put(`/inspiration/admin/cards/${id}`, data);
+export const deleteInspirationCard = (id) => client.delete(`/inspiration/admin/cards/${id}`);
+export const toggleInspirationCard = (id) => client.patch(`/inspiration/admin/cards/${id}/toggle`);
+export const reorderInspirationCards = (cardIds) => client.patch('/inspiration/admin/cards/reorder', { cardIds });
+export const uploadInspirationImage = (formData) => client.post('/inspiration/upload', formData, {
+  headers: { 'Content-Type': 'multipart/form-data' }
+});
 
 // Get vendors by category
 export const getVendorsByCategory = (categorySlug) => client.get(`/vendors/featured/${categorySlug}`);
@@ -510,6 +525,15 @@ export const getUserPublicAlbums = (userId) => client.get(`/gallery/user/${userI
 // Get admin dashboard
 export const getAdminDashboard = () => client.get('/admin/dashboard');
 
+// Get platform statistics (visits and logins)
+export const getPlatformStats = () => client.get('/admin/stats/platform');
+
+// Get login history
+export const getLoginHistory = (params) => client.get('/admin/login-history', { params });
+
+// Get user login history
+export const getUserLoginHistory = (userId, params) => client.get(`/admin/users/${userId}/login-history`, { params });
+
 // Get all users with pagination
 export const getAdminUsers = (params) => client.get('/admin/users', { params });
 
@@ -565,6 +589,9 @@ export const getAdminSettings = () => client.get('/admin/settings');
 // Update admin settings
 export const updateAdminSettings = (data) => client.put('/admin/settings', data);
 
+// Track platform visit (public)
+export const trackPlatformVisit = () => client.post('/settings/track-visit');
+
 // ==================== FAVORITES API ====================
 
 // Get user's favorite vendors
@@ -611,3 +638,29 @@ export const shareCalendarEvent = (id, email, permission) =>
 // Remove share from calendar event
 export const removeCalendarShare = (id, userId) => 
   client.delete(`/calendar/events/${id}/share/${userId}`);
+
+// ==================== PARTNER API ====================
+
+// Invite a partner to access the user's account
+export const invitePartner = (data) => client.post('/partner/invite', data);
+
+// Resend partner invitation
+export const resendPartnerInvitation = (data) => client.post('/partner/resend-invitation', data);
+
+// Verify invitation token
+export const verifyInvitation = (token) => client.get(`/partner/verify-invitation/${token}`);
+
+// Setup partner password
+export const setupPartnerPassword = (data) => client.post('/partner/setup-password', data);
+
+// Check email exists in User or PartnerUser tables
+export const checkEmail = (email) => client.get(`/partner/check-email/${email}`);
+
+// Login as specific user (when email exists in both tables)
+export const loginAsUser = (data) => client.post('/partner/login-as-user', data);
+
+// Cancel pending invitation
+export const cancelPartnerInvitation = () => client.delete('/partner/invitation');
+
+// Remove approved partner
+export const removePartner = () => client.delete('/partner/partner');

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { getProfile, updateProfile, getVendorCategories, uploadProfileImage, getVendorQuoteRequests, updateQuoteRequestStatus, getMyQuoteRequests, getVendor } from '../../api/client';
+import { getProfile, updateProfile, getVendorCategories, uploadProfileImage, getVendorQuoteRequests, updateQuoteRequestStatus, getMyQuoteRequests, getVendor, invitePartner, resendPartnerInvitation, cancelPartnerInvitation, removePartner } from '../../api/client';
 import VendorProfileModal from '../../components/VendorProfileModal';
 import { API_URL } from '../../api/client';
 import { toast } from 'react-hot-toast';
@@ -10,12 +10,30 @@ import Loader from '../../components/loader';
 import { motion, AnimatePresence } from 'framer-motion';
 import COUNTRIES from '../../constants/countries';
 
-
+// Default services options based on category
+const CATEGORY_DEFAULT_SERVICES = {
+  'fotografia-filmagem': ['Fotografia', 'Vídeo', 'Álbum fotográfico', 'Making-of', 'Drone', 'Edição de vídeo', 'Galeria online'],
+  'salao-espaco-casamento': ['Aluguer do espaço', 'Decoração', 'Som', 'Iluminação', 'Catering', 'Bolo de casamento', 'Copa'],
+  'decoracao-casamento': ['Centro de mesa', 'Arranjos florais', 'Iluminação', 'Mesa do bolo', 'Arquitetura de flores', 'Cortinados', 'Balões'],
+  'mc': ['Animação', 'Jogos', 'Apresentação', 'Musicalização', 'Hora do bolo', 'Despedida de solteiro'],
+  'dj-som': ['Som ambiente', 'Iluminação DJ', 'Mesa de mistura', 'Microfones', 'Hora do bolo', 'Actuação ao vivo'],
+  'carros-casamento': ['Carro da noiva', 'Carro do noivo', 'Carros de acompanhamento', 'Transporte de convidados', 'Carro decorado', 'Chauffeur'],
+  'florista': ['Buqué da noiva', 'Lapela do noivo', 'Centro de mesa', 'Arranjo cerimonial', 'Decoração de arco', 'Corredor de pétalas'],
+  'ourivesaria-joalharia': ['Alianças', 'Alianças personalizadas', 'Pulsaira de noiva', 'Brincos', 'Colar', 'Relógio'],
+  'wedding-planner': ['Planeamento completo', 'Coordenação no dia', 'Fornecedores', 'Orçamento', 'Cronograma', 'Decoração'],
+  'criador-convites': ['Convites', 'Save the date', 'Cartões de agradecimento', 'Menu de casamento', 'Placas de mesa', 'Envelope'],
+  'ateliers': ['Vestido de noiva', 'Fato de noivo', 'Vestido de madrinha', 'Acessórios', 'Provas', 'Ajustes'],
+  'maquiador': ['Maquilhagem da noiva', 'Hair styling', 'Madrinhas', 'Noivo', 'Mãe da noiva', 'Prova de maquiagem'],
+  'bolo-casamento': ['Bolo de noiva', 'Bolo de corte', 'Bolos individuais', 'Cupcakes', 'Doces tradicionais', 'Bolo vegano'],
+  'tendas-casamento': ['Tenda principal', 'Tenda de cocktail', 'Tenda de crianças', 'Palco', 'Piso', 'Iluminação'],
+  'lua-mel': ['Pacote completo', 'Voos', 'Hotel', 'Passeios', 'Seguro de viagem', 'Transfers'],
+  'musica-atuacao': ['Música cerimonial', 'Música na recepção', 'Banda ao vivo', 'Solo/Duo', 'Actuação especial', 'Som e iluminação'],
+};
 
 // FAQ predefined questions configuration
 const FAQ_QUESTIONS = [
   // Services category
-  { id: 's1', question: 'Quais serviços estão incluídos no pacote?', type: 'multi-select', allowCustom: true, options: [], category: 'services',_placeholder:'Fotografia e Vídeo (8 horas), Decoração completa, Iluminação básica e Bolo personalizado.' },
+  { id: 's1', question: 'Quais serviços estão incluídos no pacote?', type: 'multi-select', allowCustom: true, category: 'services', _placeholder:'Selecione ou adicione os serviços oferecidos...' },
   { id: 's2', question: 'Quantas horas de serviço estão incluídas?', type: 'text', category: 'services', placeholder: 'Ex: 8 horas' },
   { id: 's3', question: 'É possível contratar serviços adicionais?', type: 'boolean', category: 'services' },
   { id: 's4', question: 'Quais são as opções de personalização disponíveis?', type: 'multi-select',allowCustom: true, options: ['Cores', 'Tema', 'Decoração', 'Música', 'Menu'], category: 'services' },
@@ -55,6 +73,173 @@ const getCategoryLabel = (category) => {
   };
   return labels[category] || category;
 };
+
+// Category-specific FAQ questions configuration
+
+// Category-specific FAQ questions configuration
+const CATEGORY_FAQS = {
+  // Fotografia & Filmagem
+  'fotografia-filmagem': [
+    { id: 'services', question: 'Quais serviços estão incluídos no pacote?', type: 'multi-select', allowCustom: true, options: ['Fotografia', 'Vídeo', 'Álbum fotográfico', 'Making-of', 'Drone', 'Edição de vídeo', 'Galeria online']},
+    { id: 'ff1', question: 'Trabalha sozinho ou conta com uma equipe de profissionais?', type: 'text', placeholder: 'Ex: Trabalho com uma equipe de 3 profissionais' },
+    { id: 'ff2', question: 'Tem um substituto em caso de imprevisto?', type: 'boolean' },
+    { id: 'ff3', question: 'Reserva o direito de publicar as fotos do casamento?', type: 'boolean' },
+    { id: 'ff4', question: 'Com que antecedência devo pagar a caução de reserva?', type: 'text', placeholder: 'Ex: 30 dias antes do evento' },
+    { id: 'ff5', question: 'Qual é o tempo de entrega aproximado do álbum finalizado?', type: 'text', placeholder: 'Ex: 60 dias após o casamento' },
+    { id: 'ff6', question: 'Recebe por horas ou por evento?', type: 'multi-select', options: ['Por hora', 'Por evento', 'Pacote completo'] },
+    { id: 'ff7', question: 'Se fosse necessário, poderia realizar horas extras?', type: 'boolean' },
+  ],
+  // Salão e Espaço de Casamento
+  'salao-espaco-casamento': [
+    { id: 'services', question: 'Quais serviços estão incluídos no pacote?', type: 'multi-select', allowCustom: true, options: ['Aluguer do espaço', 'Decoração', 'Som', 'Iluminação', 'Catering', 'Bolo de casamento', 'Copa'] },
+    { id: 'se1', question: 'O estacionamento está para quantas viaturas?', type: 'text', placeholder: 'Ex: 50 viaturas' },
+    { id: 'se2', question: 'Tem hora limite para término do evento', type: 'text', placeholder: 'Ex: 04:00 da manhã' },
+    { id: 'se3', question: 'Tem que pagar caução?', type: 'boolean' },
+    { id: 'se4', question: 'Dispõe de Cozinha?', type: 'boolean' },
+    { id: 'se5', question: 'Tem jardim?', type: 'boolean' },
+    { id: 'se6', question: 'O salão é climatizado?', type: 'boolean' },
+    { id: 'se7', question: 'Inclui casa da noiva?', type: 'boolean' },
+    { id: 'se8', question: 'Tem sistema de frio para bebidas?', type: 'boolean' },
+  ],
+  // Decoração de Casamento
+  'decoracao-casamento': [
+    { id: 'services', question: 'Quais serviços estão incluídos no pacote?', type: 'multi-select', allowCustom: true, options: ['Centro de mesa', 'Arranjos florais', 'Iluminação', 'Mesa do bolo', 'Arquitetura de flores', 'Cortinados', 'Balões'] },
+    { id: 'dc1', question: 'Qual é o estilo de decoração que trabalha?', type: 'multi-select', options: ['Clássico', 'Rústico', 'Moderno', 'Boho', 'Romântico', 'Luxo'] },
+    { id: 'dc2', question: 'Inclui arranjos florais?', type: 'boolean' },
+    { id: 'dc3', question: 'Trabalha com flores naturais ou artificiais?', type: 'multi-select', options: ['Naturais', 'Artificiais', 'Ambas'] },
+    { id: 'dc4', question: 'Fazdecoração de cerimónia e recepção?', type: 'boolean' },
+    { id: 'dc5', question: 'Qual é o prazo para marcação?', type: 'text', placeholder: 'Ex: Com 2 meses de antecedência' },
+    { id: 'dc6', question: 'Faz entrega e montagem no local?', type: 'boolean' },
+  ],
+  // MC
+  'mc': [
+    { id: 'services', question: 'Quais serviços estão incluídos no pacote?', type: 'multi-select', allowCustom: true, options: ['Animação', 'Jogos', 'Apresentação', 'Musicalização', 'Hora do bolo', 'Despedida de solteiro'] },
+    { id: 'mc1', question: 'Quantos anos de experiência tem?', type: 'text', placeholder: 'Ex: 10 anos de experiência' },
+    { id: 'mc2', question: 'Trabalha com equipamento de som próprio?', type: 'boolean' },
+    { id: 'mc3', question: 'Faz animação e jogos para os convidados?', type: 'boolean' },
+    { id: 'mc4', question: 'Qual é o tempo de atuação?', type: 'text', placeholder: 'Ex: 6 horas' },
+    { id: 'mc5', question: 'Tem substituto em caso de imprevisto?', type: 'boolean' },
+  ],
+  // DJ & Som
+  'dj-som': [
+    { id: 'services', question: 'Quais serviços estão incluídos no pacote?', type: 'multi-select', allowCustom: true, options: ['Som ambiente', 'Iluminação DJ', 'Mesa de mistura', 'Microfones', 'Hora do bolo', 'Actuação ao vivo'] },
+    { id: 'dj1', question: 'Qual é o estilo musical que toca?', type: 'multi-select', options: ['Pop', 'Rock', 'Kizomba', 'Kuduro', 'House', 'Semba', 'Afrobeat', ' Electrónica'] },
+    { id: 'dj2', question: 'Trabalha com equipamento de som próprio?', type: 'boolean' },
+    { id: 'dj3', question: 'Faz animação na hora do corte do bolo?', type: 'boolean' },
+    { id: 'dj4', question: 'Tem packs de iluminação?', type: 'boolean' },
+    { id: 'dj5', question: 'Qual é o tempo de atuação?', type: 'text', placeholder: 'Ex: 8 horas' },
+    { id: 'dj6', question: 'Pode actuar em diferentes locais?', type: 'boolean' },
+  ],
+  // Carros de Casamento
+  'carros-casamento': [
+    { id: 'services', question: 'Quais serviços estão incluídos no pacote?', type: 'multi-select', allowCustom: true, options: ['Carro da noiva', 'Carro do noivo', 'Carros de acompanhamento', 'Transporte de convidados', 'Carro decorado', 'Chauffeur'] },
+    { id: 'cc1', question: 'Quantos carros dispõe?', type: 'text', placeholder: 'Ex: 3 carros' },
+    { id: 'cc2', question: 'Os carros são próprios ou trabalha com parceiros?', type: 'text', placeholder: 'Ex: Frota própria' },
+    { id: 'cc3', question: 'Inclui chauffeur?', type: 'boolean' },
+    { id: 'cc4', question: 'Qual a distância máxima do serviço?', type: 'text', placeholder: 'Ex: 100km da cidade' },
+    { id: 'cc5', question: 'Tem seguro de passageiros?', type: 'boolean' },
+  ],
+  // Florista
+  'florista': [
+    { id: 'services', question: 'Quais serviços estão incluídos no pacote?', type: 'multi-select', allowCustom: true, options: ['Buqué da noiva', 'Lapela do noivo', 'Centro de mesa', 'Arranjo cerimonial', 'Decoração de arco', 'Corredor de pétalas'] },
+    { id: 'fl1', question: 'Trabalha com flores nacionais ou importadas?', type: 'multi-select', options: ['Nacionais', 'Importadas', 'Ambas'] },
+    { id: 'fl2', question: 'Faz buqué da noiva?', type: 'boolean' },
+    { id: 'fl3', question: 'Faz decoração de cerimónia?', type: 'boolean' },
+    { id: 'fl4', question: 'Faz entrega e montagem?', type: 'boolean' },
+    { id: 'fl5', question: 'Com antecedência precisa fazer a encomenda?', type: 'text', placeholder: 'Ex: 1 mês de antecedência' },
+  ],
+  // Ourivesaria & Joalharia
+  'ourivesaria-joalharia': [
+    { id: 'services', question: 'Quais serviços estão incluídos no pacote?', type: 'multi-select', allowCustom: true, options: ['Alianças', 'Alianças personalizadas', 'Pulsaira de noiva', 'Brincos', 'Colar', 'Relógio'] },
+    { id: 'oj1', question: 'Faz alianças sob medida?', type: 'boolean' },
+    { id: 'oj2', question: 'Quais materiais trabalha?', type: 'multi-select', options: ['Ouro', 'Prata', 'Platina', 'Aço inoxidável'] },
+    { id: 'oj3', question: 'Faz gravura nas alianças?', type: 'boolean' },
+    { id: 'oj4', question: 'Tem garantia dos produtos?', type: 'boolean' },
+    { id: 'oj5', question: 'Faz reposição em caso de perda?', type: 'boolean' },
+  ],
+  // Wedding Planner
+  'wedding-planner': [
+    { id: 'services', question: 'Quais serviços estão incluídos no pacote?', type: 'multi-select', allowCustom: true, options: ['Planeamento completo', 'Coordenação no dia', 'Fornecedores', 'Orçamento', 'Cronograma', 'Decoração'] },
+    { id: 'wp1', question: 'Quantos casamentos já organizou?', type: 'text', placeholder: 'Ex: Mais de 50 casamentos' },
+    { id: 'wp2', question: 'O serviço inclui supervisão no dia do casamento?', type: 'boolean' },
+    { id: 'wp3', question: 'Trabalha com fornecedores próprios?', type: 'boolean' },
+    { id: 'wp4', question: 'Faz planeamento completo ou apenas no dia?', type: 'multi-select', options: ['Completo', 'Apenas no dia', 'Ambos'] },
+    { id: 'wp5', question: 'Qual a área de atuação?', type: 'text', placeholder: 'Ex: Todo o país' },
+  ],
+  // Criador de Convites
+  'criador-convites': [
+    { id: 'services', question: 'Quais serviços estão incluídos no pacote?', type: 'multi-select', allowCustom: true, options: ['Convites', 'Save the date', 'Cartões de agradecimento', 'Menu de casamento', 'Placas de mesa', 'Envelope'] },
+    { id: 'cv1', question: 'Fazdesign exclusivo ou usa templates?', type: 'multi-select', options: ['Exclusivo', 'Templates', 'Ambos'] },
+    { id: 'cv2', question: 'Quais materiais utiliza?', type: 'multi-select', options: ['Papel couchê', 'Papelão', 'Papel vegetal', 'Papel artesanal'] },
+    { id: 'cv3', question: 'Inclui impressão?', type: 'boolean' },
+    { id: 'cv4', question: 'Qual o prazo de entrega?', type: 'text', placeholder: 'Ex: 15 dias úteis' },
+    { id: 'cv5', question: 'Faz outros cartões (agradecimento, menu, etc)?', type: 'boolean' },
+  ],
+  // Ateliers
+  'ateliers': [
+    { id: 'services', question: 'Quais serviços estão incluídos no pacote?', type: 'multi-select', allowCustom: true, options: ['Vestido de noiva', 'Fato de noivo', 'Vestido de madrinha', 'Acessórios', 'Provas', 'Ajustes'] },
+    { id: 'at1', question: 'Faz vestidos sob medida?', type: 'boolean' },
+    { id: 'at2', question: 'Inclui prova do vestido?', type: 'boolean' },
+    { id: 'at3', question: 'Quantas provas inclui?', type: 'text', placeholder: 'Ex: 3 provas' },
+    { id: 'at4', question: 'Faz ajustes após a entrega?', type: 'boolean' },
+    { id: 'at5', question: 'Qual o prazo de confecção?', type: 'text', placeholder: 'Ex: 3 a 4 meses' },
+    { id: 'at6', question: 'Trabalha com tecidos nacionais ou importados?', type: 'multi-select', options: ['Nacionais', 'Importados', 'Ambos'] },
+  ],
+  // Maquiador
+  'maquiador': [
+    { id: 'services', question: 'Quais serviços estão incluídos no pacote?', type: 'multi-select', allowCustom: true, options: ['Maquilhagem da noiva', 'Hair styling', 'Madrinhas', 'Noivo', 'Mãe da noiva', 'Prova de maquiagem'] },
+    { id: 'ma1', question: 'Inclui teste de maquiagem?', type: 'boolean' },
+    { id: 'ma2', question: 'Quantas pessoas pode maquiar?', type: 'text', placeholder: 'Ex: Até 5 pessoas' },
+    { id: 'ma3', question: 'O produto inclui/pode incluir hair styling?', type: 'boolean' },
+    { id: 'ma4', question: 'Trabalhapara noiva e convidados?', type: 'boolean' },
+    { id: 'ma5', question: 'Faz aplicação no local ou em estúdio?', type: 'multi-select', options: ['No local', 'Em estúdio', 'Ambos'] },
+    { id: 'ma6', question: 'Usa produtos próprios?', type: 'boolean' },
+  ],
+  // Bolo de Casamento
+  'bolo-casamento': [
+    { id: 'services', question: 'Quais serviços estão incluídos no pacote?', type: 'multi-select', allowCustom: true, options: ['Bolo de noiva', 'Bolo de corte', 'Bolos individuais', 'Cupcakes', 'Doces tradicionais', 'Bolo vegano'] },
+    { id: 'bc1', question: 'Quais sabores oferece?', type: 'multi-select', options: ['Chocolate', 'Baunilha', 'Morango', 'Cenoura', 'Red Velvet', 'Nozes'] },
+    { id: 'bc2', question: 'Faz bolo para dietéticos/veganos?', type: 'boolean' },
+    { id: 'bc3', question: 'Inclui decoração com Flores?', type: 'boolean' },
+    { id: 'bc4', question: 'Faz entrega e montagem?', type: 'boolean' },
+    { id: 'bc5', question: 'Qual o prazo de encomenda?', type: 'text', placeholder: 'Ex: 1 mês de antecedência' },
+    { id: 'bc6', question: 'Qual o número mínimo de fatias?', type: 'text', placeholder: 'Ex: 50 fatias' },
+  ],
+  // Tendas de Casamento
+  'tendas-casamento': [
+    { id: 'services', question: 'Quais serviços estão incluídos no pacote?', type: 'multi-select', allowCustom: true, options: ['Tenda principal', 'Tenda de cocktail', 'Tenda de crianças', 'Palco', 'Piso', 'Iluminação'] },
+    { id: 'tn1', question: 'Qual tipo de tendas dispõe?', type: 'multi-select', options: ['Toldos', 'Tendas transparentes', 'Tendas estruturadas', 'Gazebos'] },
+    { id: 'tn2', question: 'Qual a capacidade máxima?', type: 'text', placeholder: 'Ex: 200 pessoas' },
+    { id: 'tn3', question: 'Inclui montagem e desmontagem?', type: 'boolean' },
+    { id: 'tn4', question: 'Faz instalação de piso?', type: 'boolean' },
+    { id: 'tn5', question: 'Tem sistema de iluminação?', type: 'boolean' },
+    { id: 'tn6', question: 'Trabalha com geração própria de energia?', type: 'boolean' },
+  ],
+  // Lua de Mel
+  'lua-mel': [
+    { id: 'services', question: 'Quais serviços estão incluídos no pacote?', type: 'multi-select', allowCustom: true, options: ['Pacote completo', 'Voos', 'Hotel', 'Passeios', 'Seguro de viagem', 'Transfers'] },
+    { id: 'lm1', question: 'Quais destinos oferece?', type: 'multi-select', options: ['Ilhas Maurícias', 'África do Sul', 'Dubai', 'Europa', 'Brasil', 'Maurícia'] },
+    { id: 'lm2', question: 'Inclui passagem e hotel?', type: 'boolean' },
+    { id: 'lm3', question: 'Faz seguro de viagem?', type: 'boolean' },
+    { id: 'lm4', question: 'Possui paquetes próprios?', type: 'boolean' },
+    { id: 'lm5', question: 'Ajuda com vistos e documentação?', type: 'boolean' },
+  ],
+  // Música & Actuação
+  'musica-atuacao': [
+    { id: 'services', question: 'Quais serviços estão incluídos no pacote?', type: 'multi-select', allowCustom: true, options: ['Música cerimonial', 'Música na recepção', 'Banda ao vivo', 'Solo/Duo', 'Actuação especial', 'Som e iluminação'] },
+    { id: 'mu1', question: 'Que tipo de actuações oferece?', type: 'multi-select', options: ['Música ao vivo', 'Banda', 'Solo', 'Duo', 'Actuações teatrais', 'Dança'] },
+    { id: 'mu2', question: 'Qual o tempo de actuação?', type: 'text', placeholder: 'Ex: 4 horas' },
+    { id: 'mu3', question: 'Actua em cerimónia e recepção?', type: 'boolean' },
+    { id: 'mu4', question: 'Trabalha com equipamento de som próprio?', type: 'boolean' },
+    { id: 'mu5', question: 'Qual o repertório?', type: 'text', placeholder: 'Ex: Músicas populares portuguesas e internacionais' },
+    { id: 'mu6', question: 'Pode personalizar a actuação?', type: 'boolean' },
+  ],
+};
+// Helper function to get FAQ questions for a specific category
+const getCategoryFaqs = (categorySlug) => {
+  return CATEGORY_FAQS[categorySlug] || [];
+};
+
 import { 
   X, 
   Trash2, 
@@ -87,7 +272,8 @@ import {
   AlertCircle,
   Plus,
   Users,
-  CheckCircle
+  CheckCircle,
+  Send
 } from 'lucide-react';
 
 const ProfilePage = () => {
@@ -119,8 +305,17 @@ const ProfilePage = () => {
   const [customFaqInputs, setCustomFaqInputs] = useState({}); // Track custom input values for FAQ
   const [cities, setCities] = useState([]); // Cities from JSON file
   const [loadingCities, setLoadingCities] = useState(false);
+  const [invitingPartner, setInvitingPartner] = useState(false);
+  const [showPartnerConfirmModal, setShowPartnerConfirmModal] = useState(false);
+  const [showDeletePartnerModal, setShowDeletePartnerModal] = useState(false);
+  const [deletePartnerType, setDeletePartnerType] = useState(''); // 'pending' or 'approved'
   
-  const navigate=useNavigate()
+  // Check if user is logged in as partner
+  const isPartner = localStorage.getItem('isPartner') === 'true';
+  const partnerName = localStorage.getItem('partnerName') || '';
+  
+  const navigate = useNavigate();
+  
   // Vendor Profile Modal states
   const [showProfile, setShowProfile] = useState(false);
   const [selectedVendorProfile, setSelectedVendorProfile] = useState(null);
@@ -128,8 +323,6 @@ const ProfilePage = () => {
   const avatarInputRef = useRef(null);
   const mobileMenuRef = useRef(null);
 
-
-  
   // Form states
   const [formData, setFormData] = useState({
     name: '',
@@ -211,8 +404,9 @@ const ProfilePage = () => {
         const currentVendor = vendor || (vendors && vendors.length > 0 ? vendors[0] : null);
 
         if (profile?.country) {
-           loadCities(profile?.country);
+          loadCities(profile?.country);
         }
+        
         setFormData({
           name: user?.name || '',
           avatar: user?.avatar || '',
@@ -240,7 +434,6 @@ const ProfilePage = () => {
           vendorMaxCapacity: currentVendor?.maxCapacity || '',
           vendorFaqs: currentVendor?.faqs || [],
           vendorMapLink: currentVendor?.mapLink || '',
-
           ...profile,
           ...user
         });
@@ -252,8 +445,6 @@ const ProfilePage = () => {
       setLoading(false);
     }
   };
-
-  console.log(formData.vendorFaqs)
 
   const fetchCategories = async () => {
     try {
@@ -271,7 +462,6 @@ const ProfilePage = () => {
     setLoadingQuotes(true);
     try {
       const response = await getVendorQuoteRequests();
-
       if (response.data) {
         setQuoteRequests(Array.isArray(response.data) ? response.data : []);
       }
@@ -304,25 +494,48 @@ const ProfilePage = () => {
       fetchMyQuoteRequests();
     }
 
-
-
-    if(activeTab === 'vendor'){
+    if (activeTab === 'vendor') {
       if (profile?.vendorCountry) {
-           loadCities(profile?.vendorCountry);
+        loadCities(profile?.vendorCountry);
       }
     }
 
-    if(activeTab === 'personal'){
+    if (activeTab === 'personal') {
       if (profile?.country) {
-           loadCities(profile?.country);
+        loadCities(profile?.country);
       }
     }
-    
-
-  }, [selectedVendor, activeTab]);
+  }, [selectedVendor, activeTab, profile]);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    
+    // When vendor category changes, clear the FAQs and show notification
+    if (name === 'vendorCategory' && value !== formData.vendorCategory) {
+      // Find the category slug
+      const selectedCategory = categories.find(cat => cat._id === value);
+      const categorySlug = selectedCategory?.slug || '';
+      const categoryHasFaqs = Object.keys(CATEGORY_FAQS).includes(categorySlug);
+      
+      if (categoryHasFaqs) {
+        // Clear FAQs when category changes
+        setFormData(prev => ({
+          ...prev,
+          [name]: value,
+          vendorFaqs: [] // Clear all FAQ answers
+        }));
+        
+        // Show info message
+        toast.info(
+          <span>
+            As perguntas foram atualizadas para a categoria <b>{selectedCategory?.name}</b>. Por favor, responda às novas perguntas.
+          </span>,
+          { duration: 4000 }
+        );
+        return;
+      }
+    }
+    
     setFormData(prev => ({
       ...prev,
       [name]: value
@@ -491,6 +704,137 @@ const ProfilePage = () => {
     }
   };
 
+  // Handle inviting a partner - show confirmation modal first
+  const handleInvitePartnerClick = () => {
+    if (!formData.partnerEmail) {
+      toast.error('Por favor, insira o email do parceiro');
+      return;
+    }
+    
+    if (!formData.partnerName) {
+      toast.error('Por favor, insira o nome do parceiro');
+      return;
+    }
+
+    setShowPartnerConfirmModal(true);
+  };
+
+  // Handle confirming and sending the invitation
+  const handleConfirmInvite = async () => {
+    setShowPartnerConfirmModal(false);
+    setInvitingPartner(true);
+    
+    try {
+      // First save the profile with partner info
+      const updateData = {
+        name: formData.name,
+        avatar: formData.avatar,
+        userType: formData.userType,
+        phone: formData.phone,
+        country: formData.country,
+        city: formData.city,
+        weddingDate: formData.weddingDate,
+        weddingVenue: formData.weddingVenue,
+        weddingGuestCount: formData.weddingGuestCount ? parseInt(formData.weddingGuestCount) : null,
+        partner: formData.partnerName || formData.partnerEmail ? {
+          name: formData.partnerName,
+          email: formData.partnerEmail,
+        } : undefined,
+      };
+
+      await updateProfile(updateData);
+      
+      // Then send the invitation
+      const response = await invitePartner({
+        email: formData.partnerEmail,
+        name: formData.partnerName,
+      });
+      
+      if (response.data.success) {
+        toast.success('Convite enviado ao parceiro!');
+        fetchProfile();
+      }
+    } catch (error) {
+      console.error('Error inviting partner:', error);
+      if (error.response?.data?.message) {
+        toast.error(error.response.data.message);
+      } else {
+        toast.error('Erro ao enviar convite');
+      }
+    } finally {
+      setInvitingPartner(false);
+    }
+  };
+
+  // Handle resending invitation
+  const handleResendInvitation = async () => {
+    if (!formData.partnerEmail) return;
+    
+    setInvitingPartner(true);
+    try {
+      const response = await resendPartnerInvitation({
+        email: formData.partnerEmail,
+      });
+      
+      if (response.data.success) {
+        toast.success('Convite reenviado!');
+      }
+    } catch (error) {
+      console.error('Error resending invitation:', error);
+      toast.error('Erro ao reenviar convite');
+    } finally {
+      setInvitingPartner(false);
+    }
+  };
+
+  // Handle canceling pending invitation
+  const handleCancelInvitation = async () => {
+    setInvitingPartner(true);
+    try {
+      const response = await cancelPartnerInvitation();
+      
+      if (response.data.success) {
+        toast.success('Convite cancelado!');
+        setFormData(prev => ({
+          ...prev,
+          partnerName: '',
+          partnerEmail: ''
+        }));
+        fetchProfile();
+      }
+    } catch (error) {
+      console.error('Error canceling invitation:', error);
+      toast.error('Erro ao cancelar convite');
+    } finally {
+      setInvitingPartner(false);
+      setShowDeletePartnerModal(false);
+    }
+  };
+
+  // Handle removing approved partner
+  const handleRemovePartner = async () => {
+    setInvitingPartner(true);
+    try {
+      const response = await removePartner();
+      
+      if (response.data.success) {
+        toast.success('Parceiro removido!');
+        setFormData(prev => ({
+          ...prev,
+          partnerName: '',
+          partnerEmail: ''
+        }));
+        fetchProfile();
+      }
+    } catch (error) {
+      console.error('Error removing partner:', error);
+      toast.error('Erro ao remover parceiro');
+    } finally {
+      setInvitingPartner(false);
+      setShowDeletePartnerModal(false);
+    }
+  };
+
   // Price range helpers
   const getPriceRangeColor = (range) => {
     const colors = {
@@ -514,17 +858,7 @@ const ProfilePage = () => {
 
   // Handle opening vendor profile
   const handleVendorClick = async (vendorId) => {
-    navigate('/vendor/'+vendorId)
-    return
-    try {
-      const response = await getVendor(vendorId);
-      setSelectedVendorProfile(response.data);
-      setCurrentSlide(0);
-      setShowProfile(true);
-    } catch (error) {
-      console.error('Error fetching vendor:', error);
-      toast.error('Erro ao carregar perfil do fornecedor');
-    }
+    navigate('/vendor/' + vendorId);
   };
 
   const handleAddVendor = async (e) => {
@@ -681,6 +1015,18 @@ const ProfilePage = () => {
     <div className="min-h-screen bg-gray-50">
       <Header />
       
+      {/* Partner Banner */}
+      {isPartner && (
+        <div className="bg-[#9CAA8E] text-white py-3 px-4">
+          <div className="max-w-4xl mx-auto flex items-center justify-center gap-2">
+            <User className="w-5 h-5" />
+            <span className="font-medium">
+              Você está a visualizar o perfil de {partnerName || 'um parceiro'}. Apenas pode visualizar as informações, não pode editar.
+            </span>
+          </div>
+        </div>
+      )}
+      
       <div className="max-w-4xl mx-auto px-4 py-4 md:py-8">
         {/* Profile Header Card - Desktop */}
         <div className="hidden md:block bg-white rounded-2xl shadow-md p-6 mb-6">
@@ -696,7 +1042,7 @@ const ProfilePage = () => {
               <button
                 type="button"
                 onClick={() => avatarInputRef.current?.click()}
-                disabled={uploadingAvatar}
+                disabled={uploadingAvatar || isPartner}
                 className="relative group"
               >
                 {formData.avatar ? (
@@ -748,7 +1094,7 @@ const ProfilePage = () => {
               <button
                 type="button"
                 onClick={() => avatarInputRef.current?.click()}
-                disabled={uploadingAvatar}
+                disabled={uploadingAvatar || isPartner}
                 className="relative group"
               >
                 {formData.avatar ? (
@@ -875,7 +1221,6 @@ const ProfilePage = () => {
                 </span>}
             </button>
           )}
-        
         </div>
 
         {/* Tabs - Mobile Optimized with Horizontal Scroll */}
@@ -1037,8 +1382,6 @@ const ProfilePage = () => {
         {/* Content */}
         {activeTab === 'gallery' ? (
           <Gallery userId={user?.id} isOwner={true} />
-        ) : activeTab === 'calendar' ? (
-          <CalendarComponent userId={user?.id} vendorId={selectedVendor?._id} />
         ) : (
           <form onSubmit={handleSubmit} className="bg-white rounded-2xl md:rounded-2xl shadow-lg p-4 md:p-8 pb-10 mb-10">
             {/* Personal Info Tab */}
@@ -1060,7 +1403,8 @@ const ProfilePage = () => {
                       name="name"
                       value={formData.name}
                       onChange={handleChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black text-sm md:text-base"
+                      disabled={isPartner}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black text-sm md:text-base disabled:bg-gray-100 disabled:text-gray-500"
                     />
                   </div>
                   
@@ -1091,7 +1435,8 @@ const ProfilePage = () => {
                       name="phone"
                       value={formData.phone}
                       onChange={handleChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black text-sm md:text-base"
+                      disabled={isPartner}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black text-sm md:text-base disabled:bg-gray-100 disabled:text-gray-500"
                     />
                   </div>
                   
@@ -1103,7 +1448,8 @@ const ProfilePage = () => {
                       name="country"
                       value={formData.country}
                       onChange={handleChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black bg-white text-sm md:text-base"
+                      disabled={isPartner}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black bg-white text-sm md:text-base disabled:bg-gray-100 disabled:text-gray-500"
                     >
                       <option value="">Selecione um país</option>
                       {countryOptions.map(country => (
@@ -1127,7 +1473,8 @@ const ProfilePage = () => {
                         name="city"
                         value={formData.city}
                         onChange={handleChange}
-                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black bg-white text-sm md:text-base"
+                        disabled={isPartner || !formData.country}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black bg-white text-sm md:text-base disabled:bg-gray-100 disabled:text-gray-500"
                       >
                         <option value="">Selecione uma cidade</option>
                         {cities.map(city => (
@@ -1143,7 +1490,7 @@ const ProfilePage = () => {
                         value={formData.city}
                         onChange={handleChange}
                         placeholder={formData.country ? "Digite a cidade" : "Selecione um país primeiro"}
-                        disabled={!formData.country}
+                        disabled={isPartner || !formData.country}
                         className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black text-sm md:text-base disabled:bg-gray-100 disabled:text-gray-400"
                       />
                     )}
@@ -1156,6 +1503,21 @@ const ProfilePage = () => {
                     <h3 className="text-base md:text-lg font-serif font-semibold text-black mb-4">
                       Informações do Parceiro(a)
                     </h3>
+                    
+                    {/* Info message */}
+                    <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="flex items-start gap-2">
+                        <AlertCircle className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
+                        <div className="text-sm text-blue-800">
+                          <p className="font-medium">Convidar Parceiro(a)</p>
+                          <p className="text-xs mt-1">
+                            Convide seu parceiro(a) para aceder e gerir o casamento consigo. 
+                            Eles receberão um e-mail para criar uma conta e aceder ao planeamento.
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1 md:mb-2">
@@ -1166,7 +1528,8 @@ const ProfilePage = () => {
                           name="partnerName"
                           value={formData.partnerName}
                           onChange={handleChange}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black text-sm md:text-base"
+                          disabled={isPartner}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black text-sm md:text-base disabled:bg-gray-100 disabled:text-gray-500"
                         />
                       </div>
                       <div>
@@ -1178,10 +1541,85 @@ const ProfilePage = () => {
                           name="partnerEmail"
                           value={formData.partnerEmail}
                           onChange={handleChange}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black text-sm md:text-base"
+                          disabled={isPartner}
+                          className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black text-sm md:text-base disabled:bg-gray-100 disabled:text-gray-500"
                         />
                       </div>
                     </div>
+                    
+                    {/* Partner Status */}
+                    {(profile?.partner?.status && profile?.partner?.email) && (
+                      <div className="mt-4 p-3 rounded-lg bg-gray-50">
+                        <div className="flex items-center gap-2">
+                          {profile.partner.status === 'approved' ? (
+                            <CheckCircle className="w-5 h-5 text-green-500" />
+                          ) : (
+                            <Clock className="w-5 h-5 text-yellow-500" />
+                          )}
+                          <span className={`text-sm font-medium ${
+                            profile.partner.status === 'approved' ? 'text-green-700' : 'text-yellow-700'
+                          }`}>
+                            {profile.partner.status === 'approved' 
+                              ? 'Parceiro(a) verificado(a) e com acesso' 
+                              : 'Convite pendente de aprovação'}
+                          </span>
+                        </div>
+                        {profile.partner.status === 'pending' && (
+                          <div className="mt-3 flex flex-wrap gap-2">
+                            <button
+                              type="button"
+                              onClick={handleResendInvitation}
+                              disabled={invitingPartner}
+                              className="text-sm text-[#9CAA8E] hover:text-[#8A9A7E] disabled:opacity-50"
+                            >
+                              {invitingPartner ? 'A reenviar...' : 'Reenviar convite'}
+                            </button>
+                            <span className="text-gray-300">|</span>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setDeletePartnerType('pending');
+                                setShowDeletePartnerModal(true);
+                              }}
+                              disabled={invitingPartner}
+                              className="text-sm text-red-500 hover:text-red-600 disabled:opacity-50"
+                            >
+                              Cancelar convite
+                            </button>
+                          </div>
+                        )}
+                        {(profile.partner.status === 'approved' && !isPartner) && (
+                          <div className="mt-3">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setDeletePartnerType('approved');
+                                setShowDeletePartnerModal(true);
+                              }}
+                              disabled={invitingPartner}
+                              className="text-sm text-red-500 hover:text-red-600 disabled:opacity-50"
+                            >
+                              {invitingPartner ? 'A remover...' : 'Remover parceiro(a)'}
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* Invite Button */}
+                    {(formData.partnerEmail && formData.partnerName) && !profile?.partner?.status && (
+                      <div className="mt-4">
+                        <button
+                          type="button"
+                          onClick={handleInvitePartnerClick}
+                          disabled={invitingPartner}
+                          className="flex items-center gap-2 px-4 py-2 bg-[#9CAA8E] text-white rounded-lg hover:bg-[#8A9A7E] disabled:opacity-50 text-sm"
+                        >
+                          <Send className="w-4 h-4" />
+                          {invitingPartner ? 'A enviar convite...' : 'Enviar convite'}
+                        </button>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -1204,7 +1642,8 @@ const ProfilePage = () => {
                       name="weddingDate"
                       value={formData.weddingDate}
                       onChange={handleChange}
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black text-sm md:text-base"
+                      disabled={isPartner}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black text-sm md:text-base disabled:bg-gray-100 disabled:text-gray-500"
                     />
                   </div>
                   
@@ -1218,7 +1657,8 @@ const ProfilePage = () => {
                       value={formData.weddingVenue}
                       onChange={handleChange}
                       placeholder="Nome do espaço ou endereço"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black text-sm md:text-base"
+                      disabled={isPartner}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black text-sm md:text-base disabled:bg-gray-100 disabled:text-gray-500"
                     />
                   </div>
                   
@@ -1232,7 +1672,8 @@ const ProfilePage = () => {
                       value={formData.weddingGuestCount}
                       onChange={handleChange}
                       min="0"
-                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black text-sm md:text-base"
+                      disabled={isPartner}
+                      className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black text-sm md:text-base disabled:bg-gray-100 disabled:text-gray-500"
                     />
                   </div>
                 </div>
@@ -1787,19 +2228,26 @@ const ProfilePage = () => {
                     <div className="md:col-span-2 mt-6">
                       <h3 className="text-base md:text-lg font-serif font-semibold text-black mb-4 flex items-center gap-2">
                         <MessageSquare className="w-5 h-5" />
-                        Perguntas Frequentes (FAQ)
+                        Serviços e Perguntas Frequentes (FAQ)
                       </h3>
                       
                       {/* Toggle FAQ Section Button */}
                       {!showFaqSection ? (
-                        <button
-                          type="button"
-                          onClick={() => setShowFaqSection(true)}
-                          className="w-full py-4 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 hover:border-[#9CAA8E] hover:text-[#9CAA8E] transition-colors flex items-center justify-center gap-2"
-                        >
-                          <Plus className="w-5 h-5" />
-                          Adicionar Perguntas Frequentes
-                        </button>
+                        formData.vendorCategory ? (
+                          <button
+                            type="button"
+                            onClick={() => setShowFaqSection(true)}
+                            className="w-full py-4 border-2 border-dashed border-gray-300 rounded-xl text-gray-500 hover:border-[#9CAA8E] hover:text-[#9CAA8E] transition-colors flex items-center justify-center gap-2"
+                          >
+                            <Plus className="w-5 h-5" />
+                            Adicionar Perguntas Frequentes
+                          </button>
+                        ) : (
+                          <div className="w-full py-4 border-2 border-dashed border-yellow-300 bg-yellow-50 rounded-xl text-yellow-700 flex items-center justify-center gap-2">
+                            <AlertCircle className="w-5 h-5" />
+                            Selecione uma categoria acima para adicionar Serviços e Perguntas Frequentes
+                          </div>
+                        )
                       ) : (
                         <>
                           <p className="text-sm text-gray-500 mb-4">
@@ -1813,250 +2261,513 @@ const ProfilePage = () => {
                             className="mb-4 text-sm text-gray-500 hover:text-gray-700 flex items-center gap-1"
                           >
                             <X className="w-4 h-4" />
-                            Ocultar Perguntas Frequentes
+                            Ocultar
                           </button>
                       
-                      {/* Group FAQs by category */}
-                      {['services', 'pricing', 'availability', 'logistics', 'style'].map(category => {
-                        const categoryQuestions = FAQ_QUESTIONS.filter(q => q.category === category);
-                        if (categoryQuestions.length === 0) return null;
-                        
-                        return (
-                          <div key={category} className="mb-6">
-                            <h4 className="text-sm font-medium text-[#9CAA8E] mb-3 uppercase tracking-wide">
-                              {getCategoryLabel(category)}
-                            </h4>
-                            <div className="space-y-4">
-                              {categoryQuestions.map(faq => {
-                                const currentAnswer = formData.vendorFaqs?.find(f => f.questionId === faq.id)?.answer;
-                                
-                                return (
-                                  <div key={faq.id} className="bg-gray-50 rounded-xl p-4">
-                                    <label className="block text-sm font-medium text-gray-700 mb-2">
-                                      {faq.question}
-                                    </label>
-                                    
-                                    {/* Text input */}
-                                    {faq.type === 'text' && (
-                                      <input
-                                        type="text"
-                                        value={currentAnswer || ''}
-                                        onChange={(e) => {
-                                          const newFaqs = [...(formData.vendorFaqs || [])];
-                                          const existingIndex = newFaqs.findIndex(f => f.questionId === faq.id);
-                                          const newAnswer = { questionId: faq.id, answer: e.target.value };
+                          {/* Check if category is selected */}
+                          {formData.vendorCategory ? (
+                            <>
+                          {/* Group FAQs by category */}
+                          {(() => {
+                            // Get the current category slug
+                            const currentCategory = categories.find(c => c._id === formData.vendorCategory);
+                            const categorySlug = currentCategory?.slug || '';
+                            const categoryFaqs = getCategoryFaqs(categorySlug);
+                            
+                            // If category has specific FAQs, show those
+                            if (categoryFaqs.length > 0) {
+                              return (
+                                <div className="mb-6">
+                                  <h4 className="text-sm font-medium text-[#9CAA8E] mb-3 uppercase tracking-wide">
+                                    Perguntas para {currentCategory?.name || 'Fornecedor'}
+                                  </h4>
+                                  <div className="space-y-4">
+                                    {categoryFaqs.map(faq => {
+                                      const currentAnswer = formData.vendorFaqs?.find(f => f.questionId === faq.id)?.answer;
+                                      
+                                      return (
+                                        <div key={faq.id} className="bg-gray-50 rounded-xl p-4">
+                                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            {faq.question}
+                                          </label>
                                           
-                                          if (existingIndex >= 0) {
-                                            newFaqs[existingIndex] = newAnswer;
-                                          } else {
-                                            newFaqs.push(newAnswer);
-                                          }
+                                          {/* Text input */}
+                                          {faq.type === 'text' && (
+                                            <input
+                                              type="text"
+                                              value={currentAnswer || ''}
+                                              onChange={(e) => {
+                                                const newFaqs = [...(formData.vendorFaqs || [])];
+                                                const existingIndex = newFaqs.findIndex(f => f.questionId === faq.id);
+                                                const newAnswer = { questionId: faq.id, answer: e.target.value };
+                                                
+                                                if (existingIndex >= 0) {
+                                                  newFaqs[existingIndex] = newAnswer;
+                                                } else {
+                                                  newFaqs.push(newAnswer);
+                                                }
+                                                
+                                                setFormData(prev => ({ ...prev, vendorFaqs: newFaqs }));
+                                              }}
+                                              placeholder={faq.placeholder || 'Digite sua resposta...'}
+                                              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black text-sm"
+                                            />
+                                          )}
                                           
-                                          setFormData(prev => ({ ...prev, vendorFaqs: newFaqs }));
-                                        }}
-                                        placeholder={faq.placeholder || 'Digite sua resposta...'}
-                                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black text-sm"
-                                      />
-                                    )}
-                                    
-                                    {/* Boolean input */}
-                                    {faq.type === 'boolean' && (
-                                      <div className="flex gap-4">
-                                        <label className="flex items-center gap-2 cursor-pointer">
-                                          <input
-                                            type="radio"
-                                            name={`faq-${faq.id}`}
-                                            checked={currentAnswer === true}
-                                            onChange={() => {
-                                              const newFaqs = [...(formData.vendorFaqs || [])];
-                                              const existingIndex = newFaqs.findIndex(f => f.questionId === faq.id);
-                                              const newAnswer = { questionId: faq.id, answer: true };
+                                          {/* Boolean input */}
+                                          {faq.type === 'boolean' && (
+                                            <div className="flex gap-4">
+                                              <label className="flex items-center gap-2 cursor-pointer">
+                                                <input
+                                                  type="radio"
+                                                  name={`faq-${faq.id}`}
+                                                  checked={currentAnswer === true}
+                                                  onChange={() => {
+                                                    const newFaqs = [...(formData.vendorFaqs || [])];
+                                                    const existingIndex = newFaqs.findIndex(f => f.questionId === faq.id);
+                                                    const newAnswer = { questionId: faq.id, answer: true };
+                                                    
+                                                    if (existingIndex >= 0) {
+                                                      newFaqs[existingIndex] = newAnswer;
+                                                    } else {
+                                                      newFaqs.push(newAnswer);
+                                                    }
+                                                    
+                                                    setFormData(prev => ({ ...prev, vendorFaqs: newFaqs }));
+                                                  }}
+                                                  className="w-4 h-4 text-[#9CAA8E] focus:ring-[#9CAA8E]"
+                                                />
+                                                <span className="text-sm text-gray-700">Sim</span>
+                                              </label>
+                                              <label className="flex items-center gap-2 cursor-pointer">
+                                                <input
+                                                  type="radio"
+                                                  name={`faq-${faq.id}`}
+                                                  checked={currentAnswer === false}
+                                                  onChange={() => {
+                                                    const newFaqs = [...(formData.vendorFaqs || [])];
+                                                    const existingIndex = newFaqs.findIndex(f => f.questionId === faq.id);
+                                                    const newAnswer = { questionId: faq.id, answer: false };
+                                                    
+                                                    if (existingIndex >= 0) {
+                                                      newFaqs[existingIndex] = newAnswer;
+                                                    } else {
+                                                      newFaqs.push(newAnswer);
+                                                    }
+                                                    
+                                                    setFormData(prev => ({ ...prev, vendorFaqs: newFaqs }));
+                                                  }}
+                                                  className="w-4 h-4 text-[#9CAA8E] focus:ring-[#9CAA8E]"
+                                                />
+                                                <span className="text-sm text-gray-700">Não</span>
+                                              </label>
+                                            </div>
+                                          )}
+                                          
+                                          {/* Multi-select input */}
+                                          {faq.type === 'multi-select' && (
+                                            <div>
+                                             
+                                              <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                                {faq.options.map(option => {
+                                                  const isSelected = Array.isArray(currentAnswer) && currentAnswer.includes(option);
+                                                  
+                                                  return (
+                                                    <label
+                                                      key={option}
+                                                      className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-colors ${
+                                                        isSelected 
+                                                          ? 'bg-[#9CAA8E]/10 border-[#9CAA8E] text-[#9CAA8E]' 
+                                                          : 'bg-white border-gray-200 text-gray-700 hover:border-gray-300'
+                                                      }`}
+                                                    >
+                                                      <input
+                                                        type="checkbox"
+                                                        checked={isSelected}
+                                                        onChange={() => {
+                                                          const newFaqs = [...(formData.vendorFaqs || [])];
+                                                          const existingIndex = newFaqs.findIndex(f => f.questionId === faq.id);
+                                                          let currentAnswers = Array.isArray(currentAnswer) ? [...currentAnswer] : [];
+                                                          
+                                                          if (isSelected) {
+                                                            currentAnswers = currentAnswers.filter(a => a !== option);
+                                                          } else {
+                                                            currentAnswers.push(option);
+                                                          }
+                                                          
+                                                          const newAnswer = { questionId: faq.id, answer: currentAnswers };
+                                                          
+                                                          if (existingIndex >= 0) {
+                                                            newFaqs[existingIndex] = newAnswer;
+                                                          } else {
+                                                            newFaqs.push(newAnswer);
+                                                          }
+                                                          
+                                                          setFormData(prev => ({ ...prev, vendorFaqs: newFaqs }));
+                                                        }}
+                                                        className="hidden"
+                                                      />
+                                                      {isSelected && <CheckCircle className="w-4 h-4 flex-shrink-0" />}
+                                                      <span className="text-sm flex-1">{option}</span>
+                                                    </label>
+                                                  );
+                                                })}
+                                              </div>
+
                                               
-                                              if (existingIndex >= 0) {
-                                                newFaqs[existingIndex] = newAnswer;
-                                              } else {
-                                                newFaqs.push(newAnswer);
-                                              }
-                                              
-                                              setFormData(prev => ({ ...prev, vendorFaqs: newFaqs }));
-                                            }}
-                                            className="w-4 h-4 text-[#9CAA8E] focus:ring-[#9CAA8E]"
-                                          />
-                                          <span className="text-sm text-gray-700">Sim</span>
-                                        </label>
-                                        <label className="flex items-center gap-2 cursor-pointer">
-                                          <input
-                                            type="radio"
-                                            name={`faq-${faq.id}`}
-                                            checked={currentAnswer === false}
-                                            onChange={() => {
-                                              const newFaqs = [...(formData.vendorFaqs || [])];
-                                              const existingIndex = newFaqs.findIndex(f => f.questionId === faq.id);
-                                              const newAnswer = { questionId: faq.id, answer: false };
-                                              
-                                              if (existingIndex >= 0) {
-                                                newFaqs[existingIndex] = newAnswer;
-                                              } else {
-                                                newFaqs.push(newAnswer);
-                                              }
-                                              
-                                              setFormData(prev => ({ ...prev, vendorFaqs: newFaqs }));
-                                            }}
-                                            className="w-4 h-4 text-[#9CAA8E] focus:ring-[#9CAA8E]"
-                                          />
-                                          <span className="text-sm text-gray-700">Não</span>
-                                        </label>
-                                      </div>
-                                    )}
-                                    
-                                   
-                                   
-                                   {/* Multi-select input */}
-{faq.type === 'multi-select' && (
-  <div>
-    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-      {/* Combine predefined options with any custom answers */}
-      {[...new Set([
-        ...faq.options,
-        ...(Array.isArray(currentAnswer) 
-          ? currentAnswer.filter(item => !faq.options.includes(item)) 
-          : [])
-      ])].map(option => {
-        const isSelected = Array.isArray(currentAnswer) && currentAnswer.includes(option);
-        const isCustom = !faq.options.includes(option);
-        
-        return (
-          <label
-            key={option}
-            className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-colors ${
-              isSelected 
-                ? 'bg-[#9CAA8E]/10 border-[#9CAA8E] text-[#9CAA8E]' 
-                : 'bg-white border-gray-200 text-gray-700 hover:border-gray-300'
-            }`}
-          >
-            <input
-              type="checkbox"
-              checked={isSelected}
-              onChange={() => {
-                const newFaqs = [...(formData.vendorFaqs || [])];
-                const existingIndex = newFaqs.findIndex(f => f.questionId === faq.id);
-                let currentAnswers = Array.isArray(currentAnswer) ? [...currentAnswer] : [];
-                
-                if (isSelected) {
-                  // Remove the option
-                  currentAnswers = currentAnswers.filter(a => a !== option);
-                } else {
-                  // Add the option
-                  currentAnswers.push(option);
-                }
-                
-                const newAnswer = { questionId: faq.id, answer: currentAnswers };
-                
-                if (existingIndex >= 0) {
-                  newFaqs[existingIndex] = newAnswer;
-                } else {
-                  newFaqs.push(newAnswer);
-                }
-                
-                setFormData(prev => ({ ...prev, vendorFaqs: newFaqs }));
-              }}
-              className="hidden"
-            />
-            {isSelected && <CheckCircle className="w-4 h-4 flex-shrink-0" />}
-            <span className="text-sm flex-1">
-              {option}
-              {isCustom && (
-                <span className="ml-1 hidden text-xs text-gray-400">(personalizado)</span>
-              )}
-            </span>
-          </label>
-        );
-      })}
-    </div>
-    
-    {/* Custom input for allowCustom */}
-    {faq.allowCustom && (
-      <div className="mt-3 flex gap-2">
-        <input
-          type="text"
-          value={customFaqInputs[faq.id] || ''}
-          onChange={(e) => setCustomFaqInputs(prev => ({ ...prev, [faq.id]: e.target.value }))}
-          placeholder={faq._placeholder || "Adicionar item personalizado..."}
-          className="flex-1 text-gray-500 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent"
-          onKeyPress={(e) => {
-            if (e.key === 'Enter' && customFaqInputs[faq.id]?.trim()) {
-              e.preventDefault();
-              const customValue = customFaqInputs[faq.id].trim();
-              const newFaqs = [...(formData.vendorFaqs || [])];
-              const existingIndex = newFaqs.findIndex(f => f.questionId === faq.id);
-              let currentAnswers = Array.isArray(currentAnswer) ? [...currentAnswer] : [];
-              
-              if (!currentAnswers.includes(customValue)) {
-                currentAnswers.push(customValue);
-                const newAnswer = { questionId: faq.id, answer: currentAnswers };
-                
-                if (existingIndex >= 0) {
-                  newFaqs[existingIndex] = newAnswer;
-                } else {
-                  newFaqs.push(newAnswer);
-                }
-                
-                setFormData(prev => ({ ...prev, vendorFaqs: newFaqs }));
-                setCustomFaqInputs(prev => ({ ...prev, [faq.id]: '' }));
-                toast.success(`"${customValue}" adicionado!`);
-              } else {
-                toast.error('Este item já foi adicionado');
-              }
-            }
-          }}
-        />
-        <button
-          type="button"
-          onClick={() => {
-            const customValue = customFaqInputs[faq.id]?.trim();
-            if (customValue) {
-              const newFaqs = [...(formData.vendorFaqs || [])];
-              const existingIndex = newFaqs.findIndex(f => f.questionId === faq.id);
-              let currentAnswers = Array.isArray(currentAnswer) ? [...currentAnswer] : [];
-              
-              if (!currentAnswers.includes(customValue)) {
-                currentAnswers.push(customValue);
-                const newAnswer = { questionId: faq.id, answer: currentAnswers };
-                
-                if (existingIndex >= 0) {
-                  newFaqs[existingIndex] = newAnswer;
-                } else {
-                  newFaqs.push(newAnswer);
-                }
-                
-                setFormData(prev => ({ ...prev, vendorFaqs: newFaqs }));
-                setCustomFaqInputs(prev => ({ ...prev, [faq.id]: '' }));
-                toast.success(`"${customValue}" adicionado!`);
-              } else {
-                toast.error('Este item já foi adicionado');
-              }
-            } else {
-              toast.error('Digite um valor para adicionar');
-            }
-          }}
-          className="px-4 py-2 bg-[#9CAA8E] text-white rounded-lg text-sm hover:bg-[#8A9A7E]"
-        >
-          Adicionar
-        </button>
-      </div>
-    )}
-  </div>
-)}
+
+                                                {/* Custom input for allowCustom__ */}
+                                                    {(faq.allowCustom && false) && (
+                                                      <div className="mt-3 flex gap-2">
+                                                        <input
+                                                          type="text"
+                                                          value={customFaqInputs[faq.id] || ''}
+                                                          onChange={(e) => setCustomFaqInputs(prev => ({ ...prev, [faq.id]: e.target.value }))}
+                                                          placeholder={faq._placeholder || "Adicionar item personalizado..."}
+                                                          className="flex-1 text-gray-500 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent"
+                                                          onKeyPress={(e) => {
+                                                            if (e.key === 'Enter' && customFaqInputs[faq.id]?.trim()) {
+                                                              e.preventDefault();
+                                                              const customValue = customFaqInputs[faq.id].trim();
+                                                              const newFaqs = [...(formData.vendorFaqs || [])];
+                                                              const existingIndex = newFaqs.findIndex(f => f.questionId === faq.id);
+                                                              let currentAnswers = Array.isArray(currentAnswer) ? [...currentAnswer] : [];
+                                                              
+                                                              if (!currentAnswers.includes(customValue)) {
+                                                                currentAnswers.push(customValue);
+                                                                const newAnswer = { questionId: faq.id, answer: currentAnswers };
+                                                                
+                                                                if (existingIndex >= 0) {
+                                                                  newFaqs[existingIndex] = newAnswer;
+                                                                } else {
+                                                                  newFaqs.push(newAnswer);
+                                                                }
+                                                                
+                                                                setFormData(prev => ({ ...prev, vendorFaqs: newFaqs }));
+                                                                setCustomFaqInputs(prev => ({ ...prev, [faq.id]: '' }));
+                                                                toast.success(`"${customValue}" adicionado!`);
+                                                              } else {
+                                                                toast.error('Este item já foi adicionado');
+                                                              }
+                                                            }
+                                                          }}
+                                                        />
+                                                        <button
+                                                          type="button"
+                                                          onClick={() => {
+                                                            const customValue = customFaqInputs[faq.id]?.trim();
+                                                            if (customValue) {
+                                                              const newFaqs = [...(formData.vendorFaqs || [])];
+                                                              const existingIndex = newFaqs.findIndex(f => f.questionId === faq.id);
+                                                              let currentAnswers = Array.isArray(currentAnswer) ? [...currentAnswer] : [];
+                                                              
+                                                              if (!currentAnswers.includes(customValue)) {
+                                                                currentAnswers.push(customValue);
+                                                                const newAnswer = { questionId: faq.id, answer: currentAnswers };
+                                                                
+                                                                if (existingIndex >= 0) {
+                                                                  newFaqs[existingIndex] = newAnswer;
+                                                                } else {
+                                                                  newFaqs.push(newAnswer);
+                                                                }
+                                                                
+                                                                setFormData(prev => ({ ...prev, vendorFaqs: newFaqs }));
+                                                                setCustomFaqInputs(prev => ({ ...prev, [faq.id]: '' }));
+                                                                toast.success(`"${customValue}" adicionado!`);
+                                                              } else {
+                                                                toast.error('Este item já foi adicionado');
+                                                              }
+                                                            } else {
+                                                              toast.error('Digite um valor para adicionar');
+                                                            }
+                                                          }}
+                                                          className="px-4 py-2 bg-[#9CAA8E] text-white rounded-lg text-sm hover:bg-[#8A9A7E]"
+                                                        >
+                                                          Adicionar
+                                                        </button>
+                                                      </div>
+                                                    )}
 
 
+
+                                            </div>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
                                   </div>
-                                );
-                              })}
+                                </div>
+                              );
+                            }
+                            
+                            // Otherwise, show the default FAQs grouped by category
+                            return ['services', 'pricing', 'availability', 'logistics', 'style'].map(category => {
+                              const categoryQuestions = FAQ_QUESTIONS.filter(q => q.category === category);
+                              if (categoryQuestions.length === 0) return null;
+                              
+                              return (
+                                <div key={category} className="mb-6">
+                                  <h4 className="text-sm font-medium text-[#9CAA8E] mb-3 uppercase tracking-wide">
+                                    {getCategoryLabel(category)}
+                                  </h4>
+                                  <div className="space-y-4">
+                                    {categoryQuestions.map(faq => {
+                                      const currentAnswer = formData.vendorFaqs?.find(f => f.questionId === faq.id)?.answer;
+                                      
+                                      return (
+                                        <div key={faq.id} className="bg-gray-50 rounded-xl p-4">
+                                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                                            {faq.question}
+                                          </label>
+                                        
+                                          {/* Text input */}
+                                          {faq.type === 'text' && (
+                                            <input
+                                              type="text"
+                                              value={currentAnswer || ''}
+                                              onChange={(e) => {
+                                                const newFaqs = [...(formData.vendorFaqs || [])];
+                                                const existingIndex = newFaqs.findIndex(f => f.questionId === faq.id);
+                                                const newAnswer = { questionId: faq.id, answer: e.target.value };
+                                                
+                                                if (existingIndex >= 0) {
+                                                  newFaqs[existingIndex] = newAnswer;
+                                                } else {
+                                                  newFaqs.push(newAnswer);
+                                                }
+                                                
+                                                setFormData(prev => ({ ...prev, vendorFaqs: newFaqs }));
+                                              }}
+                                              placeholder={faq.placeholder || 'Digite sua resposta...'}
+                                              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black text-sm"
+                                            />
+                                          )}
+                                          
+                                          {/* Boolean input */}
+                                          {faq.type === 'boolean' && (
+                                            <div className="flex gap-4">
+                                              <label className="flex items-center gap-2 cursor-pointer">
+                                                <input
+                                                  type="radio"
+                                                  name={`faq-${faq.id}`}
+                                                  checked={currentAnswer === true}
+                                                  onChange={() => {
+                                                    const newFaqs = [...(formData.vendorFaqs || [])];
+                                                    const existingIndex = newFaqs.findIndex(f => f.questionId === faq.id);
+                                                    const newAnswer = { questionId: faq.id, answer: true };
+                                                    
+                                                    if (existingIndex >= 0) {
+                                                      newFaqs[existingIndex] = newAnswer;
+                                                    } else {
+                                                      newFaqs.push(newAnswer);
+                                                    }
+                                                    
+                                                    setFormData(prev => ({ ...prev, vendorFaqs: newFaqs }));
+                                                  }}
+                                                  className="w-4 h-4 text-[#9CAA8E] focus:ring-[#9CAA8E]"
+                                                />
+                                                <span className="text-sm text-gray-700">Sim</span>
+                                              </label>
+                                              <label className="flex items-center gap-2 cursor-pointer">
+                                                <input
+                                                  type="radio"
+                                                  name={`faq-${faq.id}`}
+                                                  checked={currentAnswer === false}
+                                                  onChange={() => {
+                                                    const newFaqs = [...(formData.vendorFaqs || [])];
+                                                    const existingIndex = newFaqs.findIndex(f => f.questionId === faq.id);
+                                                    const newAnswer = { questionId: faq.id, answer: false };
+                                                    
+                                                    if (existingIndex >= 0) {
+                                                      newFaqs[existingIndex] = newAnswer;
+                                                    } else {
+                                                      newFaqs.push(newAnswer);
+                                                    }
+                                                    
+                                                    setFormData(prev => ({ ...prev, vendorFaqs: newFaqs }));
+                                                  }}
+                                                  className="w-4 h-4 text-[#9CAA8E] focus:ring-[#9CAA8E]"
+                                                />
+                                                <span className="text-sm text-gray-700">Não</span>
+                                              </label>
+                                            </div>
+                                          )}
+                                          
+                                          {/* Multi-select input */}
+                                          {faq.type === 'multi-select' && (
+                                            <div>
+                                              {/* Get category-specific options for s1 question */}
+                                              {(() => {
+                                                const currentCategory = categories.find(c => c._id === formData.vendorCategory);
+                                                const categorySlug = currentCategory?.slug || '';
+                                                const categorySpecificOptions = CATEGORY_DEFAULT_SERVICES[categorySlug] || [];
+                                                
+                                                // For s1 question, use category-specific options; otherwise use default options
+                                                const faqOptions = faq.id === 's1' && categorySpecificOptions.length > 0 
+                                                  ? categorySpecificOptions 
+                                                  : faq.options || [];
+                                                
+                                                // Combine predefined options with any custom answers
+                                                const allOptions = [...new Set([
+                                                  ...faqOptions,
+                                                  ...(Array.isArray(currentAnswer) 
+                                                    ? currentAnswer.filter(item => !faqOptions.includes(item)) 
+                                                    : [])
+                                                ])];
+                                                
+                                                return (
+                                                  <div>
+                                                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                                      {allOptions.map(option => {
+                                                        const isSelected = Array.isArray(currentAnswer) && currentAnswer.includes(option);
+                                                        const isCustom = faq.options && !faq.options.includes(option);
+                                                        
+                                                        return (
+                                                          <label
+                                                            key={option}
+                                                            className={`flex items-center gap-2 p-3 rounded-lg border cursor-pointer transition-colors ${
+                                                              isSelected 
+                                                                ? 'bg-[#9CAA8E]/10 border-[#9CAA8E] text-[#9CAA8E]' 
+                                                                : 'bg-white border-gray-200 text-gray-700 hover:border-gray-300'
+                                                            }`}
+                                                          >
+                                                            <input
+                                                              type="checkbox"
+                                                              checked={isSelected}
+                                                              onChange={() => {
+                                                                const newFaqs = [...(formData.vendorFaqs || [])];
+                                                                const existingIndex = newFaqs.findIndex(f => f.questionId === faq.id);
+                                                                let currentAnswers = Array.isArray(currentAnswer) ? [...currentAnswer] : [];
+                                                                
+                                                                if (isSelected) {
+                                                                  // Remove the option
+                                                                  currentAnswers = currentAnswers.filter(a => a !== option);
+                                                                } else {
+                                                                  // Add the option
+                                                                  currentAnswers.push(option);
+                                                                }
+                                                                
+                                                                const newAnswer = { questionId: faq.id, answer: currentAnswers };
+                                                                
+                                                                if (existingIndex >= 0) {
+                                                                  newFaqs[existingIndex] = newAnswer;
+                                                                } else {
+                                                                  newFaqs.push(newAnswer);
+                                                                }
+                                                                
+                                                                setFormData(prev => ({ ...prev, vendorFaqs: newFaqs }));
+                                                              }}
+                                                              className="hidden"
+                                                            />
+                                                            {isSelected && <CheckCircle className="w-4 h-4 flex-shrink-0" />}
+                                                            <span className="text-sm flex-1">
+                                                              {option}
+                                                              {isCustom && (
+                                                                <span className="ml-1 hidden text-xs text-gray-400">(personalizado)</span>
+                                                              )}
+                                                            </span>
+                                                          </label>
+                                                        );
+                                                      })}
+                                                    </div>
+                                                    
+                                                    {/* Custom input for allowCustom */}
+                                                    {(faq.allowCustom) && (
+                                                      <div className="mt-3 flex gap-2">
+                                                        <input
+                                                          type="text"
+                                                          value={customFaqInputs[faq.id] || ''}
+                                                          onChange={(e) => setCustomFaqInputs(prev => ({ ...prev, [faq.id]: e.target.value }))}
+                                                          placeholder={faq._placeholder || "Adicionar item personalizado..."}
+                                                          className="flex-1 text-gray-500 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent"
+                                                          onKeyPress={(e) => {
+                                                            if (e.key === 'Enter' && customFaqInputs[faq.id]?.trim()) {
+                                                              e.preventDefault();
+                                                              const customValue = customFaqInputs[faq.id].trim();
+                                                              const newFaqs = [...(formData.vendorFaqs || [])];
+                                                              const existingIndex = newFaqs.findIndex(f => f.questionId === faq.id);
+                                                              let currentAnswers = Array.isArray(currentAnswer) ? [...currentAnswer] : [];
+                                                              
+                                                              if (!currentAnswers.includes(customValue)) {
+                                                                currentAnswers.push(customValue);
+                                                                const newAnswer = { questionId: faq.id, answer: currentAnswers };
+                                                                
+                                                                if (existingIndex >= 0) {
+                                                                  newFaqs[existingIndex] = newAnswer;
+                                                                } else {
+                                                                  newFaqs.push(newAnswer);
+                                                                }
+                                                                
+                                                                setFormData(prev => ({ ...prev, vendorFaqs: newFaqs }));
+                                                                setCustomFaqInputs(prev => ({ ...prev, [faq.id]: '' }));
+                                                                toast.success(`"${customValue}" adicionado!`);
+                                                              } else {
+                                                                toast.error('Este item já foi adicionado');
+                                                              }
+                                                            }
+                                                          }}
+                                                        />
+                                                        <button
+                                                          type="button"
+                                                          onClick={() => {
+                                                            const customValue = customFaqInputs[faq.id]?.trim();
+                                                            if (customValue) {
+                                                              const newFaqs = [...(formData.vendorFaqs || [])];
+                                                              const existingIndex = newFaqs.findIndex(f => f.questionId === faq.id);
+                                                              let currentAnswers = Array.isArray(currentAnswer) ? [...currentAnswer] : [];
+                                                              
+                                                              if (!currentAnswers.includes(customValue)) {
+                                                                currentAnswers.push(customValue);
+                                                                const newAnswer = { questionId: faq.id, answer: currentAnswers };
+                                                                
+                                                                if (existingIndex >= 0) {
+                                                                  newFaqs[existingIndex] = newAnswer;
+                                                                } else {
+                                                                  newFaqs.push(newAnswer);
+                                                                }
+                                                                
+                                                                setFormData(prev => ({ ...prev, vendorFaqs: newFaqs }));
+                                                                setCustomFaqInputs(prev => ({ ...prev, [faq.id]: '' }));
+                                                                toast.success(`"${customValue}" adicionado!`);
+                                                              } else {
+                                                                toast.error('Este item já foi adicionado');
+                                                              }
+                                                            } else {
+                                                              toast.error('Digite um valor para adicionar');
+                                                            }
+                                                          }}
+                                                          className="px-4 py-2 bg-[#9CAA8E] text-white rounded-lg text-sm hover:bg-[#8A9A7E]"
+                                                        >
+                                                          Adicionar
+                                                        </button>
+                                                      </div>
+                                                    )}
+                                                  </div>
+                                                );
+                                              })()}
+                                            </div>
+                                          )}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+                              );
+                            });
+                          })()}
+                        </>
+                          ) : (
+                            <div className="py-6 text-center">
+                              <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <AlertCircle className="w-8 h-8 text-yellow-500" />
+                              </div>
+                              <p className="text-gray-700 font-medium mb-2">Selecione uma categoria para adicionar FAQs</p>
+                              <p className="text-sm text-gray-500">
+                                Por favor, selecione uma categoria acima no campo "Categoria" para poder adicionar as Perguntas Frequentes.
+                              </p>
                             </div>
-                          </div>
-                        );
-                      })}
-                      </>
+                          )}
+                        </>
                       )}
                     </div>
                   </div>
@@ -2309,145 +3020,145 @@ const ProfilePage = () => {
                     <p className="text-xs text-gray-400 mt-2">Visite a página de fornecedores para encontrar os melhores serviços</p>
                   </div>
                 ) : (
-                
-                
                   <div className="space-y-3 md:space-y-4">
-  {myQuoteRequests.map((quote) => (
-    <div
-      key={quote._id}
-      className="bg-white border border-gray-200 rounded-xl p-4 md:p-5 hover:shadow-md transition-all duration-200 cursor-pointer"
-      onClick={() => quote.vendor?._id && handleVendorClick(quote.vendor._id)}
-    >
-      <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
-        
-        {/* LEFT SIDE */}
-        <div className="flex items-start gap-3 md:gap-4">
-          <div className="w-10 h-10 md:w-12 md:h-12 bg-[#9CAA8E]/10 rounded-full flex items-center justify-center flex-shrink-0">
-            <Store className="w-5 h-5 md:w-6 md:h-6 text-[#9CAA8E]" />
-          </div>
+                    {myQuoteRequests.map((quote) => (
+                      <div
+                        key={quote._id}
+                        className="bg-white border border-gray-200 rounded-xl p-4 md:p-5 hover:shadow-md transition-all duration-200 cursor-pointer"
+                        onClick={() => quote.vendor?._id && handleVendorClick(quote.vendor._id)}
+                      >
+                        <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-4">
+                          
+                          {/* LEFT SIDE */}
+                          <div className="flex items-start gap-3 md:gap-4">
+                            <div className="w-10 h-10 md:w-12 md:h-12 bg-[#9CAA8E]/10 rounded-full flex items-center justify-center flex-shrink-0">
+                              <Store className="w-5 h-5 md:w-6 md:h-6 text-[#9CAA8E]" />
+                            </div>
 
-          <div className="flex-1 min-w-0">
-            <h4 className="font-semibold text-black text-sm md:text-base truncate">
-              {quote.vendor?.name || 'Fornecedor'}
-            </h4>
+                            <div className="flex-1 min-w-0">
+                              <h4 className="font-semibold text-black text-sm md:text-base truncate">
+                                {quote.vendor?.name || 'Fornecedor'}
+                              </h4>
 
-            <p className="text-xs md:text-sm text-gray-500 truncate">
-              {quote.vendor?.category?.name}
-            </p>
+                              <p className="text-xs md:text-sm text-gray-500 truncate">
+                                {quote.vendor?.category?.name}
+                              </p>
 
-            <div className="flex flex-wrap items-center gap-3 mt-2 text-xs md:text-sm text-gray-600">
-              {quote.eventDate && (
-                <span className="flex items-center gap-1">
-                  <Clock className="w-3 h-3 md:w-4 md:h-4" />
-                  {new Date(quote.eventDate).toLocaleDateString('pt-PT')}
-                </span>
-              )}
+                              <div className="flex flex-wrap items-center gap-3 mt-2 text-xs md:text-sm text-gray-600">
+                                {quote.eventDate && (
+                                  <span className="flex items-center gap-1">
+                                    <Clock className="w-3 h-3 md:w-4 md:h-4" />
+                                    {new Date(quote.eventDate).toLocaleDateString('pt-PT')}
+                                  </span>
+                                )}
 
-              {quote.guestCount && (
-                <span>{quote.guestCount} convidados</span>
-              )}
-            </div>
+                                {quote.guestCount && (
+                                  <span>{quote.guestCount} convidados</span>
+                                )}
+                              </div>
 
-            {quote.message && (
-              <p className="mt-3 text-gray-700 bg-gray-50 p-3 rounded-lg text-xs md:text-sm break-words">
-                {quote.message}
-              </p>
-            )}
-          </div>
-        </div>
+                              {quote.message && (
+                                <p className="mt-3 text-gray-700 bg-gray-50 p-3 rounded-lg text-xs md:text-sm break-words">
+                                  {quote.message}
+                                </p>
+                              )}
+                            </div>
+                          </div>
 
-        {/* RIGHT SIDE */}
-        <div className="flex items-center justify-between lg:flex-col lg:items-end gap-2">
-          <span
-            className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
-              quote.status === 'pending'
-                ? 'bg-yellow-100 text-yellow-800'
-                : quote.status === 'accepted'
-                ? 'bg-green-100 text-green-800'
-                : 'bg-red-100 text-red-800'
-            }`}
-          >
-            {quote.status === 'pending'
-              ? 'Pendente'
-              : quote.status === 'accepted'
-              ? 'Aceite'
-              : 'Recusado'}
-          </span>
+                          {/* RIGHT SIDE */}
+                          <div className="flex items-center justify-between lg:flex-col lg:items-end gap-2">
+                            <span
+                              className={`px-3 py-1 rounded-full text-xs font-medium whitespace-nowrap ${
+                                quote.status === 'pending'
+                                  ? 'bg-yellow-100 text-yellow-800'
+                                  : quote.status === 'accepted'
+                                  ? 'bg-green-100 text-green-800'
+                                  : 'bg-red-100 text-red-800'
+                              }`}
+                            >
+                              {quote.status === 'pending'
+                                ? 'Pendente'
+                                : quote.status === 'accepted'
+                                ? 'Aceite'
+                                : 'Recusado'}
+                            </span>
 
-          {quote.vendor?._id && (
-            <span className="text-xs text-[#9CAA8E]">
-              Ver fornecedor
-            </span>
-          )}
-        </div>
-      </div>
+                            {quote.vendor?._id && (
+                              <span className="text-xs text-[#9CAA8E]">
+                                Ver fornecedor
+                              </span>
+                            )}
+                          </div>
+                        </div>
 
-      {/* RESPONSE MESSAGE */}
-      {quote.responseMessage && (
-        <p className="mt-4 text-xs md:text-sm text-gray-500 border-t border-gray-100 pt-4 break-words">
-          <span className="font-medium">
-            Resposta do fornecedor:
-          </span>{' '}
-          {quote.responseMessage}
-        </p>
-      )}
+                        {/* RESPONSE MESSAGE */}
+                        {quote.responseMessage && (
+                          <p className="mt-4 text-xs md:text-sm text-gray-500 border-t border-gray-100 pt-4 break-words">
+                            <span className="font-medium">
+                              Resposta do fornecedor:
+                            </span>{' '}
+                            {quote.responseMessage}
+                          </p>
+                        )}
 
-      {/* CREATED DATE */}
-      {quote.createdAt && (
-        <p className="text-xs text-gray-400 mt-3 md:mt-4">
-          Solicitado em:{' '}
-          {new Date(quote.createdAt).toLocaleDateString('pt-PT')}
-        </p>
-      )}
-    </div>
-  ))}
-</div>
-
-
+                        {/* CREATED DATE */}
+                        {quote.createdAt && (
+                          <p className="text-xs text-gray-400 mt-3 md:mt-4">
+                            Solicitado em:{' '}
+                            {new Date(quote.createdAt).toLocaleDateString('pt-PT')}
+                          </p>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 )}
               </div>
             )}
 
             {/* Submit Button - Desktop */}
             <div className="hidden md:block mt-8 pt-6 border-t border-gray-100">
-              <button
-                type="submit"
-                disabled={saving}
-                className="w-full md:w-auto px-8 py-4 bg-[#9CAA8E] text-white font-medium rounded-full hover:bg-[#8A9A7E] focus:ring-4 focus:ring-[#9CAA8E]/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl"
-              >
-                {saving ? (
-                  <span className="flex items-center justify-center">
-                    <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Guardando...
-                  </span>
-                ) : (
-                  'Guardar Alterações'
-                )}
-              </button>
+              {!isPartner && (
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="w-full md:w-auto px-8 py-4 bg-[#9CAA8E] text-white font-medium rounded-full hover:bg-[#8A9A7E] focus:ring-4 focus:ring-[#9CAA8E]/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg hover:shadow-xl"
+                >
+                  {saving ? (
+                    <span className="flex items-center justify-center">
+                      <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Guardando...
+                    </span>
+                  ) : (
+                    'Guardar Alterações'
+                  )}
+                </button>
+              )}
             </div>
 
             {/* Submit Button - Mobile Sticky Bottom */}
             <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-10">
-              <button
-                type="submit"
-                disabled={saving}
-                className="w-full py-3 bg-[#9CAA8E] text-white font-medium rounded-xl hover:bg-[#8A9A7E] disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg"
-              >
-                {saving ? (
-                  <span className="flex items-center justify-center">
-                    <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Guardando...
-                  </span>
-                ) : (
-                  'Guardar Alterações'
-                )}
-              </button>
+              {!isPartner && (
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="w-full py-3 bg-[#9CAA8E] text-white font-medium rounded-xl hover:bg-[#8A9A7E] disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg"
+                >
+                  {saving ? (
+                    <span className="flex items-center justify-center">
+                      <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Guardando...
+                    </span>
+                  ) : (
+                    'Guardar Alterações'
+                  )}
+                </button>
+              )}
             </div>
           </form>
         )}
@@ -2678,6 +3389,119 @@ const ProfilePage = () => {
             getPriceRangeColor={getPriceRangeColor}
             getPriceRangeLabel={getPriceRangeLabel}
           />
+        )}
+
+        {/* Partner Confirmation Modal */}
+        {showPartnerConfirmModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-[#9CAA8E]/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Send className="w-8 h-8 text-[#9CAA8E]" />
+                </div>
+                <h3 className="text-xl font-bold text-[#2a2a2a]">Confirmar Envio de Convite</h3>
+                <p className="text-[#6b6b6b] text-sm mt-2">
+                  Está prestes a enviar um convite para o seguinte e-mail:
+                </p>
+              </div>
+
+              <div className="bg-gray-50 rounded-xl p-4 mb-6">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-[#9CAA8E]/20 rounded-full flex items-center justify-center">
+                    <Mail className="w-5 h-5 text-[#9CAA8E]" />
+                  </div>
+                  <div>
+                    <p className="font-medium text-[#2a2a2a]">{formData.partnerName}</p>
+                    <p className="text-sm text-[#6b6b6b]">{formData.partnerEmail}</p>
+                  </div>
+                </div>
+              </div>
+
+              <p className="text-sm text-[#6b6b6b] mb-6">
+                O seu parceiro(a) receberá um e-mail com instruções para criar uma conta e aceder ao planeamento do casamento.
+                <br/>
+                <strong>Nota:</strong> O e-mail será guardado no seu perfil automaticamente.
+              </p>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowPartnerConfirmModal(false)}
+                  className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleConfirmInvite}
+                  disabled={invitingPartner}
+                  className="flex-1 px-4 py-3 bg-[#9CAA8E] text-white rounded-xl hover:bg-[#8A9A7E] transition-colors font-medium disabled:opacity-50"
+                >
+                  {invitingPartner ? 'A enviar...' : 'Confirmar Envio'}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Delete Partner Modal */}
+        {showDeletePartnerModal && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
+              <div className="text-center mb-6">
+                <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <AlertCircle className="w-8 h-8 text-red-500" />
+                </div>
+                <h3 className="text-xl font-bold text-[#2a2a2a]">
+                  {deletePartnerType === 'pending' ? 'Cancelar Convite' : 'Remover Parceiro(a)'}
+                </h3>
+                <p className="text-[#6b6b6b] text-sm mt-2">
+                  {deletePartnerType === 'pending' 
+                    ? 'Tem certeza que deseja cancelar o convite pendente?'
+                    : 'Tem certeza que deseja remover o acesso do seu parceiro(a)?'
+                  }
+                </p>
+              </div>
+
+              {profile?.partner?.email && (
+                <div className="bg-gray-50 rounded-xl p-4 mb-6">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
+                      <Mail className="w-5 h-5 text-red-500" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-[#2a2a2a]">{profile.partner.name}</p>
+                      <p className="text-sm text-[#6b6b6b]">{profile.partner.email}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <p className="text-sm text-[#6b6b6b] mb-6">
+                {deletePartnerType === 'pending'
+                  ? 'O convite será cancelado e o e-mail será removido do seu perfil.'
+                  : 'O seu parceiro(a) perderá acesso à sua conta e não poderá mais gerir o casamento consigo.'
+                }
+              </p>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowDeletePartnerModal(false)}
+                  className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium"
+                >
+                  Manter
+                </button>
+                <button
+                  onClick={deletePartnerType === 'pending' ? handleCancelInvitation : handleRemovePartner}
+                  disabled={invitingPartner}
+                  className="flex-1 px-4 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors font-medium disabled:opacity-50"
+                >
+                  {invitingPartner 
+                    ? (deletePartnerType === 'pending' ? 'A cancelar...' : 'A remover...') 
+                    : (deletePartnerType === 'pending' ? 'Cancelar Convite' : 'Remover Parceiro(a)')
+                  }
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>

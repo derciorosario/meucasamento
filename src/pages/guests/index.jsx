@@ -172,6 +172,13 @@ export default function GuestsPage() {
   const [showTutorialDropdown, setShowTutorialDropdown] = useState(false);
   const [showTutorialDesktop, setShowTutorialDesktop] = useState(false);
 
+  // Tips state
+  const [guestsTips, setGuestsTips] = useState([
+    'A média de confirmações é de 60% dos convidados',
+    'Considere reservar 10% a mais de lugares para imprevistos',
+    'Famílias geralmente representam 40% dos convidados'
+  ]);
+
   // Default invitation message
   const defaultInvitationMessage = "Olá! Estamos muito felizes em compartilhar este momento especial contigo. Confirmas a tua presença?";
 
@@ -262,7 +269,7 @@ export default function GuestsPage() {
     try {
       setLoading(true);
       
-      // Fetch tutorial videos
+      // Fetch tutorial videos and tips
       try {
         const tutorialsRes = await getTutorials();
         if (tutorialsRes.data?.tutorialVideos?.guests) {
@@ -272,8 +279,12 @@ export default function GuestsPage() {
             videoId
           });
         }
+        // Fetch dynamic tips
+        if (tutorialsRes.data?.tips?.guests && tutorialsRes.data.tips.guests.length > 0) {
+          setGuestsTips(tutorialsRes.data.tips.guests);
+        }
       } catch (tutError) {
-        console.log('No tutorial videos available');
+        console.log('No tutorial videos or tips available');
       }
       
       await initGuestData();
@@ -1529,24 +1540,12 @@ export default function GuestsPage() {
                 </div>
 
                 <div className="space-y-4 mb-6">
-                  <div className="flex items-start space-x-3">
-                    <div className="w-1.5 h-1.5 bg-primary-500 rounded-full mt-2"></div>
-                    <p className="text-sm text-gray-700">
-                      A média de confirmações é de <span className="font-semibold text-gray-900">60%</span> dos convidados
-                    </p>
-                  </div>
-                  <div className="flex items-start space-x-3">
-                    <div className="w-1.5 h-1.5 bg-primary-500 rounded-full mt-2"></div>
-                    <p className="text-sm text-gray-700">
-                      Considere reservar <span className="font-semibold text-gray-900">10%</span> a mais de lugares para imprevistos
-                    </p>
-                  </div>
-                  <div className="flex items-start space-x-3">
-                    <div className="w-1.5 h-1.5 bg-primary-500 rounded-full mt-2"></div>
-                    <p className="text-sm text-gray-700">
-                      Famílias geralmente representam <span className="font-semibold text-gray-900">40%</span> dos convidados
-                    </p>
-                  </div>
+                  {guestsTips.map((tip, index) => (
+                    <div key={index} className="flex items-start space-x-3">
+                      <div className="w-1.5 h-1.5 bg-primary-500 rounded-full mt-2"></div>
+                      <p className="text-sm text-gray-700">{tip}</p>
+                    </div>
+                  ))}
                 </div>
 
                  {/* Tutorial Video - Desktop Only */}

@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import weddingBg from '../../assets/wedding.png';
 import { toast } from '../../lib/toast';
-import client from '../../api/client';
+import client, { loginAsUser } from '../../api/client';
 
 // Email validation function
 const emailOK = (v) => /^[^\s@]+@[^\s@]+\.[a-zA-Z]{2,}$/.test(String(v || "").toLowerCase());
@@ -38,6 +38,11 @@ export default function WeddingLogin() {
     name: '',
     avatar: ''
   });
+  
+  // Account selection modal state
+  const [showAccountModal, setShowAccountModal] = useState(false);
+  const [accountOptions, setAccountOptions] = useState([]);
+  const [selectedAccount, setSelectedAccount] = useState(null);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -105,6 +110,17 @@ export default function WeddingLogin() {
         password: formData.password
       });
 
+       // Check if account selection is required
+      if (response?.data?.requiresAccountSelection) {
+        setAccountOptions(response.data.accounts || []);
+        setShowAccountModal(true);
+        setLoading(false);
+        return;
+      }
+
+
+      localStorage.setItem('isPartner', 'false');
+
       // Store tokens
       localStorage.setItem('accessToken', response.data.accessToken || response.data?.data?.accessToken);
       
@@ -114,6 +130,8 @@ export default function WeddingLogin() {
       } else {
         localStorage.removeItem('rememberEmail');
       }
+
+      
       
       toast.success('Login realizado com sucesso!');
 
@@ -125,6 +143,8 @@ export default function WeddingLogin() {
     } catch (err) {
       const errorCode = err.response?.data?.code;
       const errorMsg = err.response?.data?.message || 'Erro ao fazer login. Tente novamente.';
+      
+     
       
       // Handle specific error codes
       if (errorCode === 'EMAIL_NOT_FOUND') {
@@ -150,7 +170,48 @@ export default function WeddingLogin() {
     }
   };
 
-  // Google OAuth - connect but don't submit yet
+  // Handle account selection from modal
+  const handleAccountSelect = async (account) => {
+    setSelectedAccount(account);
+    setLoading(true);
+    setShowAccountModal(false);
+    
+    try {
+      // Store tokens directly from the account data
+      const accessToken = account.accessToken;
+      const refreshToken = account.refreshToken;
+      
+      if (accessToken) {
+        localStorage.setItem('accessToken', accessToken);
+      }
+      
+      // If partner account selected, save partner info to localStorage
+      if (account.type === 'partner') {
+        localStorage.setItem('isPartner', 'true');
+        localStorage.setItem('partnerName', account.name || '');
+      } else {
+        localStorage.setItem('isPartner', 'false');
+        localStorage.removeItem('partnerName');
+      }
+      
+      // Store remember me preference
+      if (rememberMe) {
+        localStorage.setItem('rememberEmail', formData.email);
+      } else {
+        localStorage.removeItem('rememberEmail');
+      }
+      
+      toast.success('Login realizado com sucesso!');
+      window.location.href="/"
+      
+    } catch (err) {
+      const errorMsg = err.response?.data?.message || 'Erro ao fazer login. Tente novamente.';
+      toast.error(errorMsg);
+    } finally {
+      setLoading(false);
+      setSelectedAccount(null);
+    }
+  };
   const googleLogin = useGoogleLogin({
     scope: 'openid profile email',
     onSuccess: async (tokenResponse) => {
@@ -232,6 +293,17 @@ export default function WeddingLogin() {
 
       });
 
+
+      // Check if account selection is required (for partner associations)
+      if (response?.data?.requiresAccountSelection) {
+        setAccountOptions(response.data.accounts || []);
+        setShowAccountModal(true);
+        setLoading(false);
+        return;
+      }
+
+
+      localStorage.setItem('isPartner', 'false');
 
       // Store tokens
       localStorage.setItem('accessToken', response.data.data.accessToken);
@@ -525,8 +597,76 @@ export default function WeddingLogin() {
           .animate-float {
             animation: float 6s ease-in-out infinite;
           }
+          @keyframes fadeIn {
+            from {
+              opacity: 0;
+              transform: scale(0.95);
+            }
+            to {
+              opacity: 1;
+              transform: scale(1);
+            }
+          }
+          .animate-fade-in {
+            animation: fadeIn 0.2s ease-out forwards;
+          }
         `}</style>
       </div>
+
+      {/* Account Selection Modal */}
+      {showAccountModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 animate-fade-in">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-[#9CAF88]/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-[#9CAF88]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-[#2a2a2a]">Escolha uma conta</h3>
+              <p className="text-[#6b6b6b] text-sm mt-2">
+                Este e-mail está associado a múltiplas contas. Selecione qual conta deseja acessar.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              {accountOptions.map((account, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleAccountSelect(account)}
+                  className="w-full p-4 border-2 border-[#d4d4d4] rounded-xl hover:border-[#9CAF88] hover:bg-[#9CAF88]/5 transition-all duration-200 flex items-center gap-4 text-left"
+                >
+                  <div className="w-12 h-12 bg-[#9CAF88]/10 rounded-full flex items-center justify-center">
+                    {account.type === 'user' ? (
+                      <svg className="w-6 h-6 text-[#9CAF88]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                      </svg>
+                    ) : (
+                      <svg className="w-6 h-6 text-[#9CAF88]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                      </svg>
+                    )}
+                  </div>
+                  <div>
+                    <p className="font-medium text-[#2a2a2a]">{account.name}{account.userType ? ` (${account.userType})` : ''}</p>
+                    <p className="text-sm text-[#6b6b6b]">{account.type === 'user' ? 'Conta principal' : `Convidado por ${account.inviterName}`}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+
+            <button
+              onClick={() => {
+                setShowAccountModal(false);
+                setAccountOptions([]);
+              }}
+              className="w-full mt-4 py-3 text-[#6b6b6b] hover:text-[#4a4a4a] transition-colors"
+            >
+              Cancelar
+            </button>
+          </div>
+        </div>
+      )}
     </GoogleOAuthProvider>
   );
 }

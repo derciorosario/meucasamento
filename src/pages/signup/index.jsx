@@ -50,7 +50,6 @@ export default function WeddingSignUp() {
     if (asParam) {
       // Map URL param values to userType values
       const userTypeMap = {
-        'vendor': 'vendor',
         'groom': 'groom',
         'bride': 'bride',
         'planner': 'wedding_planner',
@@ -61,8 +60,6 @@ export default function WeddingSignUp() {
       if (mappedType) {
         setFormData(prev => ({ ...prev, userType: mappedType }));
       }
-
-
     }
   }, [searchParams]);
 
@@ -237,7 +234,7 @@ export default function WeddingSignUp() {
 
     // Wedding date validation
     const dateError = validateWeddingDate(formData.weddingDate);
-    if (dateError && formData.userType!="vendor") {
+    if (dateError) {
       newErrors.weddingDate = dateError;
       isValid = false;
     }
@@ -377,9 +374,8 @@ export default function WeddingSignUp() {
   const userTypeOptions = [
     { value: 'bride', label: 'Noiva' },
     { value: 'groom', label: 'Noivo' },
-    //{ value: 'wedding_planner', label: 'Wedding Planner' },
-    { value: 'vendor', label: 'Fornecedor' },
-   // { value: 'other', label: 'Outros' }
+    { value: 'wedding_planner', label: 'Organizador' },
+    // vendor option removed - use vendor-signup page instead
   ];
 
   const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID || 'YOUR_GOOGLE_CLIENT_ID';
@@ -679,9 +675,8 @@ export default function WeddingSignUp() {
                 )}
               </div>
 
-              
               {/* Wedding Date */}
-              {formData.userType!="vendor" && <div>
+              <div>
                 <label className="block text-sm font-medium text-[#4a4a4a] mb-2">Data do Casamento</label>
                 <input
                   type="date"
@@ -695,7 +690,7 @@ export default function WeddingSignUp() {
                 {errors.weddingDate && (
                   <p className="mt-1 text-xs text-red-600">{errors.weddingDate}</p>
                 )}
-              </div>}
+              </div>
 
 
               {/* Terms and Conditions */}
@@ -736,6 +731,26 @@ export default function WeddingSignUp() {
               >
                 {loading ? 'Criando conta...' : 'Criar Conta'}
               </button>
+
+              {/* Vendor Sign Up Link */}
+              <div className="relative my-6">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-[#d4d4d4]"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-4 bg-[#f8f6f3] text-[#6b6b6b]">ou</span>
+                </div>
+              </div>
+
+              <a
+                href="/vendor-signup"
+                className="w-full bg-white border-2 border-[#9CAF88] hover:bg-[#9CAF88] hover:text-white text-[#9CAF88] font-medium py-3.5 rounded-lg transition-all duration-300 flex items-center justify-center gap-2"
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                </svg>
+                Criar conta de fornecedor
+              </a>
             </form>
 
             {/* Sign In Link */}

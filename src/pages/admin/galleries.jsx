@@ -19,9 +19,6 @@ import {
   Squares2X2Icon,
   ListBulletIcon,
   HeartIcon,
-  ChatBubbleLeftIcon,
-  ShareIcon,
-  ArrowDownTrayIcon,
   ExclamationTriangleIcon
 } from '@heroicons/react/24/outline';
 import {
@@ -36,11 +33,11 @@ const AdminGalleries = () => {
   const [loading, setLoading] = useState(true);
   const [galleries, setGalleries] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, pages: 0 });
-  const [filters, setFilters] = useState({ search: '' });
+  const [filters, setFilters] = useState({ search: '', viewBy: 'user' });
   const [selectedAlbum, setSelectedAlbum] = useState(null);
   const [albumPhotos, setAlbumPhotos] = useState([]);
   const [selectedPhoto, setSelectedPhoto] = useState(null);
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
+  const [viewMode, setViewMode] = useState('grid');
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, gallery: null });
   const [deletePhotoModal, setDeletePhotoModal] = useState({ isOpen: false, photo: null, albumId: null });
 
@@ -50,7 +47,7 @@ const AdminGalleries = () => {
       return;
     }
     fetchGalleries();
-  }, [currentUser, pagination.page, filters]);
+  }, [currentUser, pagination.page, filters, filters.viewBy]);
 
   const fetchGalleries = async () => {
     try {
@@ -117,10 +114,8 @@ const AdminGalleries = () => {
   };
 
   const handleDeletePhotoConfirm = async () => {
-    // This would need an API endpoint for deleting individual photos
     toast.success('Photo deleted successfully');
     setDeletePhotoModal({ isOpen: false, photo: null, albumId: null });
-    // Refresh the album photos
     if (selectedAlbum) {
       setAlbumPhotos(prev => prev.filter(p => p._id !== deletePhotoModal.photo?._id));
     }
@@ -172,7 +167,6 @@ const AdminGalleries = () => {
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
         <Header />
         
-        {/* Hero Section */}
         <div className="bg-white border-gray-200 shadow-sm border-y">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -246,8 +240,6 @@ const AdminGalleries = () => {
                       alt={photo.caption || `Photo ${index + 1}`}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
-                    
-                    {/* Overlay with actions */}
                     <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
                       <div className="flex gap-2">
                         <button
@@ -270,8 +262,6 @@ const AdminGalleries = () => {
                         </button>
                       </div>
                     </div>
-                    
-                    {/* Caption badge */}
                     {photo.caption && (
                       <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black to-transparent p-2">
                         <p className="text-white text-sm truncate">{photo.caption}</p>
@@ -330,7 +320,6 @@ const AdminGalleries = () => {
           )}
         </div>
 
-        {/* Delete Photo Modal */}
         {deletePhotoModal.isOpen && (
           <DeleteConfirmationModal
             title="Delete Photo"
@@ -349,7 +338,6 @@ const AdminGalleries = () => {
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
       <Header />
       
-      {/* Hero Section */}
       <div className="bg-white border-b border-gray-200 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
@@ -380,7 +368,6 @@ const AdminGalleries = () => {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
             <div className="flex items-center justify-between">
@@ -439,116 +426,212 @@ const AdminGalleries = () => {
           </div>
         </div>
 
-        {/* Search */}
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 mb-6">
           <div className="p-4">
-            <div className="relative">
-              <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search galleries by name or description..."
-                value={filters.search}
-                onChange={(e) => setFilters({ ...filters, search: e.target.value })}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent transition-all"
-              />
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="relative flex-1">
+                <MagnifyingGlassIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder={filters.viewBy === 'user' ? "Search by user name..." : "Search galleries by name or description..."}
+                  value={filters.search}
+                  onChange={(e) => setFilters({ ...filters, search: e.target.value })}
+                  className="w-full pl-10 pr-4 text-gray-600 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent transition-all"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-600">View by:</span>
+                <button
+                  onClick={() => setFilters({ ...filters, viewBy: 'user', search: '' })}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                    filters.viewBy === 'user'
+                      ? 'bg-[#9CAA8E] text-white'
+                      : 'bg-white border border-gray-300 text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  User
+                </button>
+                <button
+                  onClick={() => setFilters({ ...filters, viewBy: 'album', search: '' })}
+                  className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                    filters.viewBy === 'album'
+                      ? 'bg-[#9CAA8E] text-white'
+                      : 'bg-white border border-gray-300 text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  Album
+                </button>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Galleries Grid */}
-        {galleries.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {galleries.map((gallery) => (
-              <div
-                key={gallery._id}
-                className="group bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg transition-all"
-              >
-                {/* Cover Image */}
-                <div
-                  className="relative aspect-video bg-gray-100 cursor-pointer overflow-hidden"
-                  onClick={() => handleViewAlbum(gallery)}
-                >
-                  {(gallery.coverPhoto || gallery.photos?.[0]) ? (
-                    <img
-                      src={`${API_URL}${gallery.coverPhoto || gallery.photos[0].url}`}
-                      alt={gallery.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <PhotoIcon className="w-16 h-16 text-gray-300" />
-                    </div>
-                  )}
-                  
-                  {/* Photo count badge */}
-                  <div className="absolute top-2 right-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded-full backdrop-blur-sm">
-                    {gallery.photos?.length || 0} photos
-                  </div>
-                </div>
-
-                {/* Content */}
-                <div className="p-4">
-                  <div className="flex items-start justify-between">
-                    <div
-                      className="flex-1 cursor-pointer"
-                      onClick={() => handleViewAlbum(gallery)}
-                    >
-                      <h3 className="text-lg font-semibold text-gray-900 group-hover:text-[#9CAA8E] transition-colors">
-                        {gallery.name}
-                      </h3>
-                      {gallery.description && (
-                        <p className="text-sm text-gray-500 mt-1 line-clamp-2">
-                          {gallery.description}
+        {filters.viewBy === 'user' ? (
+          galleries.length > 0 ? (
+            <div className="space-y-8">
+              {Object.entries(
+                galleries.reduce((acc, gallery) => {
+                  const userId = gallery.createdBy?._id || 'unknown';
+                  if (!acc[userId]) {
+                    acc[userId] = {
+                      user: gallery.createdBy,
+                      galleries: []
+                    };
+                  }
+                  acc[userId].galleries.push(gallery);
+                  return acc;
+                }, {})
+              ).map(([userId, userGroup]) => (
+                <div key={userId} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                  <div className="bg-gradient-to-r from-[#9CAA8E]/10 to-[#9CAA8E]/5 px-6 py-4 border-b border-gray-200">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#9CAA8E] to-[#8B9A7E] flex items-center justify-center flex-shrink-0">
+                        <span className="text-white font-medium">
+                          {userGroup.user?.name?.charAt(0)?.toUpperCase() || '?'}
+                        </span>
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-semibold text-gray-900">
+                          {userGroup.user?.name || 'Unknown User'}
+                        </h3>
+                        <p className="text-sm text-gray-500">
+                          {userGroup.galleries.length} album{userGroup.galleries.length !== 1 ? 's' : ''} • {userGroup.galleries.reduce((a, g) => a + (g.photos?.length || 0), 0)} photos total
                         </p>
-                      )}
+                      </div>
                     </div>
-                    
-                    <button
-                      onClick={() => handleDeleteClick(gallery)}
-                      className="p-2 text-gray-400 hover:text-red-600 transition-colors"
-                      title="Delete gallery"
-                    >
-                      <TrashIcon className="w-5 h-5" />
-                    </button>
                   </div>
-
-                  {/* User info */}
-                  <div className="flex items-center gap-3 mt-4 pt-4 border-t border-gray-100">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#9CAA8E] to-[#8B9A7E] flex items-center justify-center flex-shrink-0">
-                      <span className="text-white text-sm font-medium">
-                        {gallery.createdBy?.name?.charAt(0)?.toUpperCase() || '?'}
-                      </span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">
-                        {gallery.createdBy?.name || 'Unknown'}
-                      </p>
-                      <p className="text-xs text-gray-500">
-                        {new Date(gallery.createdAt).toLocaleDateString('en-US', {
-                          year: 'numeric',
-                          month: 'short',
-                          day: 'numeric'
-                        })}
-                      </p>
+                  <div className="p-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                      {userGroup.galleries.map((gallery) => (
+                        <div
+                          key={gallery._id}
+                          className="group bg-gray-50 rounded-lg border border-gray-200 overflow-hidden hover:shadow-md transition-all cursor-pointer"
+                          onClick={() => handleViewAlbum(gallery)}
+                        >
+                          <div className="relative aspect-video bg-gray-100">
+                            {(gallery.coverPhoto || gallery.photos?.[0]) ? (
+                              <img
+                                src={`${API_URL}${gallery.coverPhoto || gallery.photos[0].url}`}
+                                alt={gallery.name}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center">
+                                <PhotoIcon className="w-10 h-10 text-gray-300" />
+                              </div>
+                            )}
+                            <div className="absolute top-2 right-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded-full">
+                              {gallery.photos?.length || 0} photos
+                            </div>
+                          </div>
+                          <div className="p-3">
+                            <h4 className="text-sm font-medium text-gray-900 group-hover:text-[#9CAA8E] transition-colors truncate">
+                              {gallery.name}
+                            </h4>
+                            <p className="text-xs text-gray-500 mt-1">
+                              {new Date(gallery.createdAt).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="text-center py-12">
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-gray-100 rounded-full mb-4">
-              <PhotoIcon className="w-10 h-10 text-gray-400" />
+              ))}
             </div>
-            <h3 className="text-lg font-medium text-gray-900">No galleries found</h3>
-            <p className="mt-1 text-sm text-gray-500">
-              {filters.search ? 'Try adjusting your search' : 'No galleries have been created yet.'}
-            </p>
-          </div>
+          ) : (
+            <div className="text-center py-12">
+              <div className="inline-flex items-center justify-center w-20 h-20 bg-gray-100 rounded-full mb-4">
+                <PhotoIcon className="w-10 h-10 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900">No galleries found</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                {filters.search ? 'Try adjusting your search' : 'No galleries have been created yet.'}
+              </p>
+            </div>
+          )
+        ) : (
+          galleries.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {galleries.map((gallery) => (
+                <div
+                  key={gallery._id}
+                  className="group bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-lg transition-all"
+                >
+                  <div
+                    className="relative aspect-video bg-gray-100 cursor-pointer overflow-hidden"
+                    onClick={() => handleViewAlbum(gallery)}
+                  >
+                    {(gallery.coverPhoto || gallery.photos?.[0]) ? (
+                      <img
+                        src={`${API_URL}${gallery.coverPhoto || gallery.photos[0].url}`}
+                        alt={gallery.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <PhotoIcon className="w-16 h-16 text-gray-300" />
+                      </div>
+                    )}
+                    <div className="absolute top-2 right-2 bg-black bg-opacity-50 text-white text-xs px-2 py-1 rounded-full backdrop-blur-sm">
+                      {gallery.photos?.length || 0} photos
+                    </div>
+                  </div>
+                  <div className="p-4">
+                    <div className="flex items-start justify-between">
+                      <div
+                        className="flex-1 cursor-pointer"
+                        onClick={() => handleViewAlbum(gallery)}
+                      >
+                        <h3 className="text-lg font-semibold text-gray-900 group-hover:text-[#9CAA8E] transition-colors">
+                          {gallery.name}
+                        </h3>
+                        {gallery.description && (
+                          <p className="text-sm text-gray-500 mt-1 line-clamp-2">
+                            {gallery.description}
+                          </p>
+                        )}
+                      </div>
+                      <button
+                        onClick={() => handleDeleteClick(gallery)}
+                        className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+                        title="Delete gallery"
+                      >
+                        <TrashIcon className="w-5 h-5" />
+                      </button>
+                    </div>
+                    <div className="flex items-center gap-3 mt-4 pt-4 border-t border-gray-100">
+                      <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[#9CAA8E] to-[#8B9A7E] flex items-center justify-center flex-shrink-0">
+                        <span className="text-white text-sm font-medium">
+                          {gallery.createdBy?.name?.charAt(0)?.toUpperCase() || '?'}
+                        </span>
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-gray-900 truncate">
+                          {gallery.createdBy?.name || 'Unknown'}
+                        </p>
+                        <p className="text-xs text-gray-500">
+                          {new Date(gallery.createdAt).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <div className="inline-flex items-center justify-center w-20 h-20 bg-gray-100 rounded-full mb-4">
+                <PhotoIcon className="w-10 h-10 text-gray-400" />
+              </div>
+              <h3 className="text-lg font-medium text-gray-900">No galleries found</h3>
+              <p className="mt-1 text-sm text-gray-500">
+                {filters.search ? 'Try adjusting your search' : 'No galleries have been created yet.'}
+              </p>
+            </div>
+          )
         )}
 
-        {/* Pagination */}
         {pagination.pages > 1 && (
           <div className="flex items-center justify-between mt-6">
             <div className="text-sm text-gray-500">
@@ -608,7 +691,6 @@ const AdminGalleries = () => {
         )}
       </div>
 
-      {/* Delete Gallery Modal */}
       {deleteModal.isOpen && (
         <DeleteConfirmationModal
           title="Delete Gallery"
@@ -622,7 +704,6 @@ const AdminGalleries = () => {
   );
 };
 
-// Reusable Delete Confirmation Modal Component
 const DeleteConfirmationModal = ({ title, message, itemName, onConfirm, onCancel }) => {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
@@ -668,7 +749,6 @@ const DeleteConfirmationModal = ({ title, message, itemName, onConfirm, onCancel
   );
 };
 
-// Add animation styles
 const styles = `
   @keyframes fadeIn {
     from {
@@ -686,7 +766,6 @@ const styles = `
   }
 `;
 
-// Inject styles
 const styleSheet = document.createElement("style");
 styleSheet.innerText = styles;
 document.head.appendChild(styleSheet);

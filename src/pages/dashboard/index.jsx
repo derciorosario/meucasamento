@@ -13,6 +13,7 @@ import VendorProfileModal from '../../components/VendorProfileModal';
 import WelcomeDialog from '../../components/WelcomeDialog';
 import { toast } from 'react-hot-toast';
 import { useData } from '../../contexts/DataContext';
+import Header from '../../components/Header';
 
 export default function WeddingDashboard() {
   const [activeTab, setActiveTab] = useState('inicio');
@@ -430,7 +431,9 @@ export default function WeddingDashboard() {
     <div className={`min-h-screen ${!user ? 'hidden' : ''} bg-gray-50 pb-16 md:pb-0`}>
       {/* Header */}
 
-      <header className="bg-white border-b border-gray-200 px-6 py-4 sticky top-0 z-50">
+      <Header/>
+
+      <header className="bg-white hidden border-b border-gray-200 px-6 py-4 sticky top-0 z-50">
         <div className="max-w-7xl mx-auto flex items-center justify-between">
           <Link to="/" className="flex items-center gap-2 group">
             <div className="w-8 h-8 bg-primary-500 rounded-lg flex items-center justify-center shadow-sm group-hover:shadow transition-all">
@@ -552,9 +555,12 @@ export default function WeddingDashboard() {
                   <Heart className="w-5 h-5 text-primary-500" fill="currentColor" />
                   <span className="text-sm font-medium text-primary-600 uppercase tracking-wider">O Grande Dia</span>
                 </div>
-                <h1 className="text-3xl md:text-4xl font-light text-gray-800 mb-4" style={{ fontFamily: 'Georgia, serif' }}>
+                {user?.userType!="wedding_planner" && <h1 className="text-3xl md:text-4xl font-light text-gray-800 mb-4" style={{ fontFamily: 'Georgia, serif' }}>
                   {user?.name} & <span className="text-primary-600">{partnerName}</span>
-                </h1>
+                </h1>}
+                {user?.userType=="wedding_planner" && <h1 className="text-3xl md:text-4xl font-light text-gray-800 mb-4" style={{ fontFamily: 'Georgia, serif' }}>
+                 Bem-vindo, {user?.name}!
+                </h1>}
                 <div className="flex flex-wrap items-center gap-4 text-gray-600">
                   <div className="flex items-center gap-2 bg-gray-100 px-4 py-2 rounded-lg">
                     <Calendar className="w-4 h-4 text-primary-500" />
@@ -580,7 +586,7 @@ export default function WeddingDashboard() {
       </div>
 
       {/* Desktop Navigation Tabs - Hidden on mobile */}
-      <div className="hidden md:block bg-white border-b border-gray-200 px-6 sticky top-[73px] z-40">
+      <div className="hidden md:_block bg-white border-b border-gray-200 px-6 sticky top-[73px] z-40">
         <div className="max-w-7xl mx-auto">
           <div className="flex gap-8 overflow-x-auto">
             {tabs.map((tab) => (

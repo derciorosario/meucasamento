@@ -6,7 +6,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useTranslation } from 'react-i18next';
 import Loader from '../../components/loader';
 import WeddingDashboard from '../dashboard';
-import { getFeaturedVendors, getVendorCategories, getVendor } from '../../api/client';
+import { getFeaturedVendors, getVendorCategories, getVendor, getInspirationCards, API_URL } from '../../api/client';
 import VendorProfileModal from '../../components/VendorProfileModal';
 import { toast } from 'react-hot-toast';
 
@@ -108,9 +108,11 @@ export default function WeddingLanding() {
     : vendors.filter(v => v.category?.slug === selectedCategory);
 
   // Get categories that have vendors associated with them
-  const categoriesWithVendors = categories.filter(cat => 
-    vendors.some(vendor => vendor.category?.slug === cat.slug || vendor.category?._id === cat._id)
-  );
+  const categoriesWithVendors = categories
+    .filter(cat => 
+      vendors.some(vendor => vendor.category?.slug === cat.slug || vendor.category?._id === cat._id)
+    )
+    .sort((a, b) => (a.displayOrder || 0) - (b.displayOrder || 0));
 
   const handleViewProfile = async (vendor) => {
     try {
@@ -203,11 +205,13 @@ export default function WeddingLanding() {
 
   // Inspiration gallery navigation
   const nextInspirationSlide = () => {
-    setCurrentInspirationSlide((prev) => (prev + 1) % inspirationImages.length);
+    const items = getInspirationItems();
+    setCurrentInspirationSlide((prev) => (prev + 1) % items.length);
   };
 
   const prevInspirationSlide = () => {
-    setCurrentInspirationSlide((prev) => (prev - 1 + inspirationImages.length) % inspirationImages.length);
+    const items = getInspirationItems();
+    setCurrentInspirationSlide((prev) => (prev - 1 + items.length) % items.length);
   };
 
   const openInspirationModal = (index) => {
@@ -240,16 +244,40 @@ export default function WeddingLanding() {
     }
   ];
 
-  const inspirationImages = [
-    'https://images.unsplash.com/photo-1478146896981-b80fe463b330?w=400&h=300&fit=crop',
-    'https://images.unsplash.com/photo-1606216794074-735e91aa2c92?w=400&h=300&fit=crop',
-    'https://images.unsplash.com/photo-1519741497674-611481863552?w=400&h=300&fit=crop',
-    'https://images.unsplash.com/photo-1535254973040-607b474cb50d?w=400&h=300&fit=crop',
-    'https://images.unsplash.com/photo-1465495976277-4387d4b0b4c6?w=400&h=300&fit=crop',
-    'https://images.unsplash.com/photo-1464366400600-7168b8af9bc3?w=400&h=300&fit=crop',
-    'https://images.unsplash.com/photo-1511285560929-80b456fea0bc?w=400&h=300&fit=crop',
-    'https://images.unsplash.com/photo-1583939003579-730e3918a45a?w=400&h=300&fit=crop'
-  ];
+  const inspirationImages = [];
+
+  // State for inspiration cards from database
+  const [inspirationCards, setInspirationCards] = useState([]);
+
+  // Fetch inspiration cards on mount
+  useEffect(() => {
+    const fetchInspirationCards = async () => {
+      try {
+        const response = await getInspirationCards();
+        setInspirationCards(response.data || []);
+      } catch (error) {
+        console.error('Error fetching inspiration cards:', error);
+      }
+    };
+    fetchInspirationCards();
+  }, []);
+
+  // Combine photos and cards for display
+  const getInspirationItems = () => {
+    const items = [];
+    
+    // Add photos
+    inspirationImages.forEach((img, idx) => {
+      items.push({ type: 'photo', id: `photo-${idx}`, image: img });
+    });
+    
+    // Add advice cards from database
+    inspirationCards.forEach((card) => {
+      items.push({ type: 'card', id: card._id, card });
+    });
+    
+    return items;
+  };
 
   if (loading) {
     return <Loader />;
@@ -552,8 +580,8 @@ export default function WeddingLanding() {
         
         {/* Content */}
         <div className="relative z-10 text-center text-white px-8 max-w-4xl mx-auto">
-          <h1 className="text-5xl md:text-6xl font-serif mb-6">
-            {t('hero.title')}
+          <h1 className="text-4xl md:text-6xl font-serif mb-6">
+            Planeie e organize o seu casamento em um só lugar
           </h1>
           <p className="text-xl md:text-2xl mb-12 text-white/95 max-lg:opacity-0 pointer-none:">
             {t('hero.subtitle')}
@@ -562,67 +590,81 @@ export default function WeddingLanding() {
         
         {/* White Card Overlay */}
         <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-[70%] max-md:translate-y-[75%]  w-[95%] max-w-6xl bg-white rounded-3xl shadow-2xl z-20 p-8 md:p-12">
-          <h2 className="text-3xl md:text-4xl font-serif text-center mb-12 text-black">{t('features.title')}</h2>
+          <h2 className="text-3xl md:text-4xl font-serif text-center mb-12 text-black">Tudo o que você precisa</h2>
           
-          <div className="grid grid-cols-2 md:grid-cols-6 gap-6 md:gap-8 mb-8">
-            <button onClick={() => navigate('/checklist')} className="text-center cursor-pointer">
-              <div className="text-center">
-              <div className="w-14 h-14 md:w-16 md:h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3 hover:bg-primary-100 transition-colors">
-                <CheckSquare className="w-7 h-7 md:w-8 md:h-8 text-[#9CAA8E]" />
-              </div>
-              <h3 className="font-semibold text-sm md:text-base mb-1 text-black">{t('features.checklist.title')}</h3>
-              <p className="text-xs md:text-sm text-gray-600">{t('features.checklist.description')}</p>
-              </div>
-            </button>
-            
-            <button onClick={() => navigate('/budget')} className="text-center cursor-pointer">
-              <div className="text-center">
-              <div className="w-14 h-14 md:w-16 md:h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3 hover:bg-primary-100 transition-colors">
-                <DollarSign className="w-7 h-7 md:w-8 md:h-8 text-[#9CAA8E]" />
-              </div>
-              <h3 className="font-semibold text-sm md:text-base mb-1 text-black">{t('features.budget.title')}</h3>
-              <p className="text-xs md:text-sm text-gray-600">{t('features.budget.description')}</p>
-              </div>
-            </button>
-            
-            <button onClick={() => navigate('/vendors')} className="text-center cursor-pointer">
-              <div className="text-center">
-              <div className="w-14 h-14 md:w-16 md:h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3 hover:bg-primary-100 transition-colors">
-                <Users className="w-7 h-7 md:w-8 md:h-8 text-[#9CAA8E]" />
-              </div>
-              <h3 className="font-semibold text-sm md:text-base mb-1 text-black">{t('features.vendors.title')}</h3>
-              <p className="text-xs md:text-sm text-gray-600">{t('features.vendors.description')}</p>
-              </div>
-            </button>
-            
-            <button onClick={() => navigate('/guests')} className="text-center cursor-pointer">
-              <div className="text-center">
-              <div className="w-14 h-14 md:w-16 md:h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3 hover:bg-primary-100 transition-colors">
-                <Mail className="w-7 h-7 md:w-8 md:h-8 text-[#9CAA8E]" />
-              </div>
-              <h3 className="font-semibold text-sm md:text-base mb-1 text-black">{t('features.invitations.title')}</h3>
-              <p className="text-xs md:text-sm text-gray-600">{t('features.invitations.description')}</p>
-              </div>
-            </button>
-            
-            <button onClick={() => navigate('/gifts')} className="text-center cursor-pointer">
-              <div className="text-center">
-              <div className="w-14 h-14 md:w-16 md:h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3 hover:bg-primary-100 transition-colors">
-                <Gift className="w-7 h-7 md:w-8 md:h-8 text-[#9CAA8E]" />
-              </div>
-              <h3 className="font-semibold text-sm md:text-base mb-1 text-black">Lista de Presentes</h3>
-              <p className="text-xs md:text-sm text-gray-600">Gerencie seus presentes de casamento</p>
-              </div>
-            </button>
-            
-            <div onClick={() => navigate('/public-gallery')} className="text-center cursor-pointer">
-             <div className="w-14 h-14 md:w-16 md:h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3 hover:bg-primary-100 transition-colors">
-              <Camera className="w-8 h-8 text-[#9CAA8E]" />
-            </div>
-        <h3 className="font-semibold mb-2 text-black">Galeria de Fotos</h3>
-        <p className="text-sm text-gray-600">Partilhe fotos com os convidados</p>
-            </div>
-          </div>
+         
+         
+         <div className="grid grid-cols-2 md:grid-cols-7 gap-6 md:gap-8 mb-8">
+  <button onClick={() => navigate('/checklist')} className="text-center cursor-pointer">
+    <div className="flex flex-col items-start h-full">
+      <div className="w-14 h-14 md:w-16 md:h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3 hover:bg-primary-100 transition-colors">
+        <CheckSquare className="w-7 h-7 md:w-8 md:h-8 text-[#9CAA8E]" />
+      </div>
+      <h3 className="font-semibold text-sm md:text-base mb-1 text-black w-full">{t('features.checklist.title')}</h3>
+      <p className="text-xs md:text-sm text-gray-600 w-full">{t('features.checklist.description')}</p>
+    </div>
+  </button>
+  
+  <button onClick={() => navigate('/budget')} className="text-center cursor-pointer">
+    <div className="flex flex-col items-start h-full">
+      <div className="w-14 h-14 md:w-16 md:h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3 hover:bg-primary-100 transition-colors">
+        <DollarSign className="w-7 h-7 md:w-8 md:h-8 text-[#9CAA8E]" />
+      </div>
+      <h3 className="font-semibold text-sm md:text-base mb-1 text-black w-full">{t('features.budget.title')}</h3>
+      <p className="text-xs md:text-sm text-gray-600 w-full">{t('features.budget.description')}</p>
+    </div>
+  </button>
+  
+  <button onClick={() => navigate('/vendors')} className="text-center cursor-pointer">
+    <div className="flex flex-col items-start h-full">
+      <div className="w-14 h-14 md:w-16 md:h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3 hover:bg-primary-100 transition-colors">
+        <Users className="w-7 h-7 md:w-8 md:h-8 text-[#9CAA8E]" />
+      </div>
+      <h3 className="font-semibold text-sm md:text-base mb-1 text-black w-full">{t('features.vendors.title')}</h3>
+      <p className="text-xs md:text-sm text-gray-600 w-full">{t('features.vendors.description')}</p>
+    </div>
+  </button>
+  
+  <button onClick={() => navigate('/guests')} className="text-center cursor-pointer">
+    <div className="flex flex-col items-start h-full">
+      <div className="w-14 h-14 md:w-16 md:h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3 hover:bg-primary-100 transition-colors">
+        <Mail className="w-7 h-7 md:w-8 md:h-8 text-[#9CAA8E]" />
+      </div>
+      <h3 className="font-semibold text-sm md:text-base mb-1 text-black w-full">{t('features.invitations.title')}</h3>
+      <p className="text-xs md:text-sm text-gray-600 w-full">{t('features.invitations.description')}</p>
+    </div>
+  </button>
+  
+  <button onClick={() => navigate('/gifts')} className="text-center cursor-pointer">
+    <div className="flex flex-col items-start h-full">
+      <div className="w-14 h-14 md:w-16 md:h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3 hover:bg-primary-100 transition-colors">
+        <Gift className="w-7 h-7 md:w-8 md:h-8 text-[#9CAA8E]" />
+      </div>
+      <h3 className="font-semibold text-sm md:text-base mb-1 text-black w-full">Lista de Presentes</h3>
+      <p className="text-xs md:text-sm text-gray-600 w-full">Gerencie seus presentes de casamento</p>
+    </div>
+  </button>
+  
+  <button onClick={() => navigate('/public-gallery')} className="text-center cursor-pointer">
+    <div className="flex flex-col items-start h-full">
+      <div className="w-14 h-14 md:w-16 md:h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3 hover:bg-primary-100 transition-colors">
+        <Camera className="w-8 h-8 text-[#9CAA8E]" />
+      </div>
+      <h3 className="font-semibold mb-2 text-black w-full">Galeria de Fotos</h3>
+      <p className="text-sm text-gray-600 w-full">Partilhe fotos com os convidados</p>
+    </div>
+  </button>
+
+  <button onClick={() => navigate('/program')} className="text-center cursor-pointer">
+    <div className="flex flex-col items-start h-full">
+      <div className="w-14 h-14 md:w-16 md:h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3 hover:bg-primary-100 transition-colors">
+        <Calendar className="w-7 h-7 md:w-8 md:h-8 text-[#9CAA8E]" />
+      </div>
+      <h3 className="font-semibold text-sm md:text-base mb-1 text-black w-full">Programa de Casamento</h3>
+      <p className="text-xs md:text-sm text-gray-600 w-full">Planeie o programa do grande dia</p>
+    </div>
+  </button>
+</div>
           
           <div className="flex flex-col md:flex-row items-center justify-between gap-6 pt-6 border-t">
             <div className="flex items-center gap-3">
@@ -666,7 +708,7 @@ export default function WeddingLanding() {
               <button onClick={()=>navigate('/signup')} className="px-8  py-3 bg-[#9CAA8E] text-white rounded-full hover:bg-[#8A9A7E] font-medium">
                 {t('cta.startNow')}
               </button>
-              <button onClick={()=>navigate('/signup?as=vendor')} className="px-8 py-3 border-2 border-gray-300 text-gray-700 rounded-full hover:border-[#9CAA8E] hover:text-[#9CAA8E] font-medium">
+              <button onClick={()=>navigate('/vendor-landing')} className="px-8 py-3 border-2 border-gray-300 text-gray-700 rounded-full hover:border-[#9CAA8E] hover:text-[#9CAA8E] font-medium">
                 {t('cta.vendor')}
               </button>
             </div>
@@ -1001,17 +1043,37 @@ export default function WeddingLanding() {
           </div>
           
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {inspirationImages.map((img, idx) => (
+            {getInspirationItems().map((item, idx) => (
               <div 
-                key={idx} 
-                className="rounded-2xl overflow-hidden hover:scale-105 transition-transform cursor-pointer"
+                key={item.id || idx} 
+                className="rounded-2xl overflow-hidden hover:scale-105 transition-transform cursor-pointer bg-white"
                 onClick={() => openInspirationModal(idx)}
               >
-                <img 
-                  src={img} 
-                  alt={`Inspiration ${idx + 1}`}
-                  className="w-full h-64 object-cover"
-                />
+                {item.type === 'photo' ? (
+                  <img 
+                    src={item.image} 
+                    alt={`Inspiration ${idx + 1}`}
+                    className="w-full h-64 object-cover"
+                  />
+                ) : (
+                  <>
+                    {item.card.image && (
+                      <div className="h-48 overflow-hidden">
+                        <img 
+                          src={item.card.image?.startsWith('http') ? item.card.image : `${API_URL}${item.card.image}`}
+                          alt={item.card.title}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    )}
+                    <div className="p-3">
+                      <h3 className="font-semibold text-gray-800 text-sm">{item.card.title}</h3>
+                      {item.card.content && (
+                        <p className="text-xs text-gray-600 mt-1 line-clamp-2">{item.card.content}</p>
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
             ))}
           </div>
@@ -1072,7 +1134,7 @@ export default function WeddingLanding() {
             <div>
               <h4 className="font-semibold mb-4">{t('footer.vendors.title')}</h4>
               <ul className="space-y-2 text-gray-400 text-sm">
-                <li><a href="/signup?as=vendor" className="hover:text-white !text-gray-400">{t('footer.vendors.register')}</a></li>
+                <li><button onClick={() => navigate('/vendor-landing')} className="hover:text-white !text-gray-400">Cadastre-se</button></li>
                 <li><a href="/vendors/plans" className="hover:text-white hidden !text-gray-400">{t('footer.vendors.plans')}</a></li>
                 <li><a href="/support" className="hover:text-white !text-gray-400">{t('footer.vendors.support')}</a></li>
               </ul>
@@ -1145,13 +1207,48 @@ export default function WeddingLanding() {
             <ChevronLeft className="w-6 h-6 text-white" />
           </button>
 
-          {/* Image */}
-          <img 
-            src={inspirationImages[currentInspirationSlide]}
-            alt={`Inspiration ${currentInspirationSlide + 1}`}
-            className="max-w-[90vw] max-h-[90vh] object-contain"
-            onClick={(e) => e.stopPropagation()}
-          />
+          {/* Image - handle both photos and cards */}
+          {(() => {
+            const items = getInspirationItems();
+            const currentItem = items[currentInspirationSlide];
+            if (!currentItem) return null;
+            
+            if (currentItem.type === 'photo') {
+              return (
+                <img 
+                  src={currentItem.image}
+                  alt={`Inspiration ${currentInspirationSlide + 1}`}
+                  className="max-w-[90vw] max-h-[90vh] object-contain"
+                  onClick={(e) => e.stopPropagation()}
+                />
+              );
+            } else {
+              // Card type - show the card image
+              const imageUrl = currentItem.card.image?.startsWith('http') 
+                ? currentItem.card.image 
+                : `${API_URL}${currentItem.card.image}`;
+              return (
+                <div 
+                  className="max-w-[90vw] max-h-[90vh] bg-white rounded-lg overflow-hidden"
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {currentItem.card.image && (
+                    <img 
+                      src={imageUrl}
+                      alt={currentItem.card.title}
+                      className="max-w-full max-h-[70vh] object-contain"
+                    />
+                  )}
+                  <div className="p-6">
+                    <h3 className="text-xl font-semibold text-gray-800 mb-2">{currentItem.card.title}</h3>
+                    {currentItem.card.content && (
+                      <p className="text-gray-600">{currentItem.card.content}</p>
+                    )}
+                  </div>
+                </div>
+              );
+            }
+          })()}
 
           {/* Next button */}
           <button 
@@ -1163,7 +1260,7 @@ export default function WeddingLanding() {
 
           {/* Slide indicators */}
           <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-            {inspirationImages.map((_, idx) => (
+            {getInspirationItems().map((_, idx) => (
               <button
                 key={idx}
                 onClick={() => setCurrentInspirationSlide(idx)}
@@ -1178,7 +1275,7 @@ export default function WeddingLanding() {
 
           {/* Image counter */}
           <div className="absolute top-4 left-4 px-3 py-1 bg-white/10 backdrop-blur-sm text-white text-sm rounded-full">
-            {currentInspirationSlide + 1} / {inspirationImages.length}
+            {currentInspirationSlide + 1} / {getInspirationItems().length}
           </div>
         </div>
       </>
@@ -1186,3 +1283,4 @@ export default function WeddingLanding() {
   </div>
   );
 }
+

@@ -12,7 +12,10 @@ import {
   ExclamationCircleIcon,
   ArrowPathIcon,
   PlayIcon,
-  XMarkIcon
+  XMarkIcon,
+  LightBulbIcon,
+  PlusIcon,
+  TrashIcon
 } from '@heroicons/react/24/outline';
 
 const AdminSettings = () => {
@@ -31,6 +34,13 @@ const AdminSettings = () => {
       gifts: '',
       program: '',
     //  home: ''
+    },
+    tips: {
+      checklist: [],
+      budget: [],
+      vendors: [],
+      guests: [],
+      gifts: []
     },
     siteSettings: {
       maintenanceMode: false,
@@ -116,6 +126,54 @@ const AdminSettings = () => {
     { key: 'program', label: 'Program Page', placeholder: 'Enter YouTube URL for program tutorial', color: 'indigo' },
     //{ key: 'home', label: 'Home/Dashboard Page', placeholder: 'Enter YouTube URL for home tutorial', color: 'orange' }
   ];
+
+  const tipsSections = [
+    { key: 'checklist', label: 'Checklist Page Tips', color: 'blue' },
+    { key: 'budget', label: 'Budget Page Tips', color: 'yellow' },
+   // { key: 'vendors', label: 'Vendors Page Tips', color: 'purple' },
+    { key: 'guests', label: 'Guests Page Tips', color: 'green' },
+    //{ key: 'gifts', label: 'Gifts Page Tips', color: 'red' }
+  ];
+
+  // Handle adding a new tip
+  const handleAddTip = (sectionKey) => {
+    setSettings(prev => ({
+      ...prev,
+      tips: {
+        ...prev.tips,
+        [sectionKey]: [...(prev.tips[sectionKey] || []), '']
+      }
+    }));
+  };
+
+  // Handle updating a tip
+  const handleTipChange = (sectionKey, index, value) => {
+    setSettings(prev => {
+      const updatedTips = [...(prev.tips[sectionKey] || [])];
+      updatedTips[index] = value;
+      return {
+        ...prev,
+        tips: {
+          ...prev.tips,
+          [sectionKey]: updatedTips
+        }
+      };
+    });
+  };
+
+  // Handle deleting a tip
+  const handleDeleteTip = (sectionKey, index) => {
+    setSettings(prev => {
+      const updatedTips = (prev.tips[sectionKey] || []).filter((_, i) => i !== index);
+      return {
+        ...prev,
+        tips: {
+          ...prev.tips,
+          [sectionKey]: updatedTips
+        }
+      };
+    });
+  };
 
   const getColorClasses = (color) => {
     const colors = {
@@ -280,6 +338,58 @@ const AdminSettings = () => {
                 );
               })}
             </div>
+          </div>
+        </div>
+
+        {/* Tips Section */}
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-8">
+          <div className="px-6 py-4 border-b border-gray-200 bg-blue-50">
+            <div className="flex items-center gap-2">
+              <LightBulbIcon className="w-5 h-5 text-blue-600" />
+              <h2 className="text-lg font-semibold text-gray-900">Page Tips</h2>
+            </div>
+            <p className="text-sm text-gray-600 mt-1">
+              Edit the smart tips displayed on each page for users. Add, edit or remove tips as needed.
+            </p>
+          </div>
+          
+          <div className="p-6">
+            {tipsSections.map((section) => (
+              <div key={section.key} className="mb-8 last:mb-0">
+                <h3 className="text-md font-semibold text-gray-800 mb-4 pb-2 border-b border-gray-200">
+                  {section.label}
+                </h3>
+                <div className="space-y-3">
+                  {(settings.tips[section.key] || []).map((tip, index) => (
+                    <div key={index} className="flex items-start gap-2">
+                      <div className="flex-1">
+                        <input
+                          type="text"
+                          value={tip || ''}
+                          onChange={(e) => handleTipChange(section.key, index, e.target.value)}
+                          placeholder="Enter tip text..."
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#9CAA8E] focus:border-[#9CAA8E]"
+                        />
+                      </div>
+                      <button
+                        onClick={() => handleDeleteTip(section.key, index)}
+                        className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors"
+                        title="Delete tip"
+                      >
+                        <TrashIcon className="w-5 h-5" />
+                      </button>
+                    </div>
+                  ))}
+                  <button
+                    onClick={() => handleAddTip(section.key)}
+                    className="inline-flex items-center gap-1 px-3 py-2 text-sm text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-colors"
+                  >
+                    <PlusIcon className="w-4 h-4" />
+                    Add Tip
+                  </button>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
 

@@ -1,5 +1,10 @@
 @import "tailwindcss";
 
+
+._vendor_section section{
+  margin-bottom: 0.5rem;
+}
+
 /* Custom styles for react-datepicker */
 .react-datepicker-wrapper {
   width: 100%;
@@ -8,6 +13,8 @@
 .react-datepicker__input-container {
   width: 100%;
 }
+
+
 
 .react-datepicker__input-container input {
   width: 100%;
@@ -107,6 +114,26 @@ button{
   background-size: cover;
   background-position: center;
 }
+
+
+.bg_vendor_1 {
+  background-image: url('../assets/vendor-1.jpg');
+  background-size: cover;
+  background-position: center;
+}
+
+.bg_vendor_2 {
+  background-image: url('../assets/vendor-2.jpg');
+  background-size: cover;
+  background-position: center;
+}
+
+.bg_vendor_3 {
+  background-image: url('../assets/vendor-3.jpg');
+  background-size: cover;
+  background-position: center;
+}
+
 
 /* Safe area padding for mobile bottom sheets */
 .pb-safe {

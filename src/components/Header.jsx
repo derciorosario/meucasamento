@@ -6,7 +6,8 @@ import {
   User, LogOut, Settings, X, Menu, Shield, 
   Home, Calendar, CheckSquare, Users, Gift, Image, 
   DollarSign, Briefcase, Heart, Bell, ChevronDown,
-  MapPin, MessageSquare, Star, ShoppingBag, Users2, Wallet, List, Clock
+  MapPin, MessageSquare, Star, ShoppingBag, Users2, Wallet, List, Clock,
+  CheckCheck
 } from 'lucide-react';
 import { useData } from '../contexts/DataContext';
 
@@ -17,15 +18,15 @@ const Header = ({notSticky, returnEmpty}) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
-  const [isMoreMenuOpen, setIsMoreMenuOpen] = useState(false);
+  const [isDesktopMoreMenuOpen, setIsDesktopMoreMenuOpen] = useState(false);
+  const [isMobileMoreMenuOpen, setIsMobileMoreMenuOpen] = useState(false);
   const profileMenuRef = useRef(null);
-  const moreMenuRef = useRef(null);
-
+  const desktopMoreMenuRef = useRef(null);
+  const mobileMoreMenuRef = useRef(null);
 
   const data=useData()
 
-    useEffect(() => {
-
+  useEffect(() => {
     let backListener;
 
     // -------------------------
@@ -55,10 +56,7 @@ const Header = ({notSticky, returnEmpty}) => {
     };
   }, [data.postDialogOpen, location.pathname]);
 
-
-  
   console.log({postOpen:data.postDialogOpen})
-
 
   // Close profile menu when clicking outside
   useEffect(() => {
@@ -66,8 +64,11 @@ const Header = ({notSticky, returnEmpty}) => {
       if (profileMenuRef.current && !profileMenuRef.current.contains(event.target)) {
         setIsProfileMenuOpen(false);
       }
-      if (moreMenuRef.current && !moreMenuRef.current.contains(event.target)) {
-        setIsMoreMenuOpen(false);
+      if (desktopMoreMenuRef.current && !desktopMoreMenuRef.current.contains(event.target)) {
+        setIsDesktopMoreMenuOpen(false);
+      }
+      if (mobileMoreMenuRef.current && !mobileMoreMenuRef.current.contains(event.target)) {
+        setIsMobileMoreMenuOpen(false);
       }
     };
     document.addEventListener('mousedown', handleClickOutside);
@@ -77,7 +78,8 @@ const Header = ({notSticky, returnEmpty}) => {
   // Scroll to top when pathname changes
   useEffect(() => {
     window.scrollTo(0, 0);
-    setIsMoreMenuOpen(false);
+    setIsDesktopMoreMenuOpen(false);
+    setIsMobileMoreMenuOpen(false);
     setIsMenuOpen(false);
   }, [location.pathname]);
 
@@ -123,20 +125,6 @@ const Header = ({notSticky, returnEmpty}) => {
     if (user?.role === "couple") {
       items.push(
         {
-          label: 'Agenda e Tarefas',
-          short_label: 'Agenda',
-          path: '/checklist',
-          icon: List,
-          show: true
-        },
-        {
-          label: 'Programa',
-          short_label: 'Programa',
-          path: '/program',
-          icon: Clock,
-          show: true
-        },
-        {
           label: 'Fornecedores',
           path: '/vendors',
           icon: ShoppingBag,
@@ -149,23 +137,37 @@ const Header = ({notSticky, returnEmpty}) => {
           show: true
         },
         {
-          label: 'Convidados',
+          label: 'Lista de Tarefas',
+          short_label: 'Tarefas',
+          path: '/checklist',
+          icon: CheckCheck,
+          show: true
+        },
+        {
+          label: 'Lista de Convidados',
           path: '/guests',
           icon: Users2,
           show: true
         },
         {
-          label: 'Galeria',
+          label: 'Lista de Presentes',
+          path: '/gifts',
+          icon: Gift,
+          show: true
+        },
+        {
+          label: 'Programa de Casamento',
+          short_label: 'Programa',
+          path: '/program',
+          icon: Clock,
+          show: true
+        },
+        {
+          label: 'Partilha de Fotos',
           path: '/gallery',
           icon: Image,
           show: true
         },
-        {
-          label: 'Presentes',
-          path: '/gifts',
-          icon: Gift,
-          show: true
-        }
       );
     }
 
@@ -206,9 +208,21 @@ const Header = ({notSticky, returnEmpty}) => {
 
   const navigationItems = getNavigationItems();
   
-  // For mobile bottom nav: show first 4 items, rest go in "Mais" menu
-  const mainNavItems = navigationItems.slice(0, 4);
-  const moreNavItems = navigationItems.slice(4);
+  // For desktop: show first 5 items, rest in "Mais" menu
+  const DESKTOP_VISIBLE_ITEMS = 5;
+  const desktopMainNavItems = navigationItems.slice(0, DESKTOP_VISIBLE_ITEMS);
+  const desktopMoreNavItems = navigationItems.slice(DESKTOP_VISIBLE_ITEMS);
+  
+  // For mobile bottom nav: show first 4 items, rest in "Mais" menu (ORIGINAL BEHAVIOR)
+  const mobileMainNavItems = navigationItems.slice(0, 4);
+  const mobileMoreNavItems = navigationItems.slice(4);
+  
+  // Check if any item in the desktop more menu is active
+  const isDesktopMoreMenuActive = desktopMoreNavItems.some(item => 
+    item.path === '/' 
+      ? location.pathname === item.path 
+      : location.pathname.startsWith(item.path)
+  );
 
   if(returnEmpty) return
 
@@ -225,13 +239,14 @@ const Header = ({notSticky, returnEmpty}) => {
           <button className="text-lg sm:text-xl font-serif font-bold text-black">Meu Casamento</button>
         </div>
         
-        {/* Desktop Navigation - Hidden on mobile/tablet - NO ICONS */}
-        <div className="hidden lg:flex gap-6 xl:gap-8 text-gray-600">
-          {navigationItems.map((item) => (
+        {/* Desktop Navigation - Hidden on mobile/tablet - WITH MORE BUTTON */}
+        <div className="hidden lg:flex gap-6 xl:gap-8 text-gray-600 items-center">
+          {/* Main navigation items */}
+          {desktopMainNavItems.map((item) => (
             <button
               key={item.path}
               onClick={() => navigate(item.path)}
-              className={`transition-colors font-medium ${
+              className={`transition-colors font-medium whitespace-nowrap ${
                 (item.path === '/' ? location.pathname === item.path : location.pathname.startsWith(item.path))
                   ? 'text-[#9CAA8E] font-bold' 
                   : 'hover:text-[#9CAA8E]'
@@ -240,6 +255,51 @@ const Header = ({notSticky, returnEmpty}) => {
               {item.label}
             </button>
           ))}
+
+          {/* More button - only show if there are items in the more menu */}
+          {desktopMoreNavItems.length > 0 && (
+            <div className="relative" ref={desktopMoreMenuRef}>
+              <button
+                onClick={() => setIsDesktopMoreMenuOpen(!isDesktopMoreMenuOpen)}
+                className={`flex items-center gap-1 transition-colors font-medium whitespace-nowrap ${
+                  isDesktopMoreMenuActive || isDesktopMoreMenuOpen
+                    ? 'text-[#9CAA8E] font-bold' 
+                    : 'hover:text-[#9CAA8E]'
+                }`}
+              >
+                Mais
+                <ChevronDown className={`w-4 h-4 transition-transform ${isDesktopMoreMenuOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {/* Desktop More Menu Dropdown */}
+              {isDesktopMoreMenuOpen && (
+                <div className="absolute left-0 mt-2 w-56 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50">
+                  {desktopMoreNavItems.map((item) => {
+                    const isActive = item.path === '/' 
+                      ? location.pathname === item.path 
+                      : location.pathname.startsWith(item.path);
+                    
+                    return (
+                      <button
+                        key={item.path}
+                        onClick={() => {
+                          navigate(item.path);
+                          setIsDesktopMoreMenuOpen(false);
+                        }}
+                        className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors ${
+                          isActive 
+                            ? 'text-[#9CAA8E] bg-[#9CAA8E]/10 font-bold' 
+                            : 'text-gray-700 hover:bg-gray-50'
+                        }`}
+                      >
+                        {item.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
         </div>
         
         {/* Right side: Auth buttons and mobile menu */}
@@ -267,14 +327,7 @@ const Header = ({notSticky, returnEmpty}) => {
                     </div>
                   )}
                   <span className="text-gray-700 font-medium hidden xl:block">{user?.name}</span>
-                  <svg 
-                    className={`w-4 h-4 text-gray-500 transition-transform ${isProfileMenuOpen ? 'rotate-180' : ''}`} 
-                    fill="none" 
-                    stroke="currentColor" 
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </svg>
+                  <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isProfileMenuOpen ? 'rotate-180' : ''}`} />
                 </button>
 
                 {/* Profile Dropdown Menu */}
@@ -510,10 +563,10 @@ const Header = ({notSticky, returnEmpty}) => {
         )}
       </nav>
 
-      {/* Mobile Bottom Navigation - Only visible on mobile/tablet - WITH ICONS from WeddingDashboard */}
+      {/* Mobile Bottom Navigation - EXACTLY AS BEFORE - Only visible on mobile/tablet */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 z-50 shadow-lg">
         <div className="flex items-center justify-around px-2 py-1">
-          {mainNavItems.map((item) => {
+          {mobileMainNavItems.map((item) => {
             const Icon = item.icon;
             const isActive = item.path === '/' 
               ? location.pathname === item.path 
@@ -524,7 +577,7 @@ const Header = ({notSticky, returnEmpty}) => {
                 key={item.path}
                 onClick={() => {
                   navigate(item.path);
-                  setIsMoreMenuOpen(false);
+                  setIsMobileMoreMenuOpen(false);
                 }}
                 className={`flex flex-col items-center py-2 px-3 rounded-lg transition-colors ${
                   isActive 
@@ -538,23 +591,23 @@ const Header = ({notSticky, returnEmpty}) => {
             );
           })}
           
-          {/* More Menu Button */}
-          {moreNavItems.length > 0 && (
-            <div className="relative" ref={moreMenuRef}>
+          {/* More Menu Button - Original behavior with separate ref */}
+          {mobileMoreNavItems.length > 0 && (
+            <div className="relative" ref={mobileMoreMenuRef}>
               <button
-                onClick={() => setIsMoreMenuOpen(!isMoreMenuOpen)}
+                onClick={() => setIsMobileMoreMenuOpen(!isMobileMoreMenuOpen)}
                 className={`flex flex-col items-center py-2 px-3 rounded-lg transition-colors ${
-                  isMoreMenuOpen ? 'text-[#9CAA8E] font-bold' : 'text-gray-500 hover:text-[#9CAA8E]'
+                  isMobileMoreMenuOpen ? 'text-[#9CAA8E] font-bold' : 'text-gray-500 hover:text-[#9CAA8E]'
                 }`}
               >
                 <Menu className="w-5 h-5" />
                 <span className="text-xs mt-1 font-medium">Mais</span>
               </button>
 
-              {/* More Menu Dropdown */}
-              {isMoreMenuOpen && (
+              {/* Mobile More Menu Dropdown */}
+              {isMobileMoreMenuOpen && (
                 <div className="absolute bottom-full right-0 mb-2 w-48 bg-white rounded-xl shadow-lg border border-gray-200 py-2 z-50">
-                  {moreNavItems.map((item) => {
+                  {mobileMoreNavItems.map((item) => {
                     const Icon = item.icon;
                     const isActive = item.path === '/' 
                       ? location.pathname === item.path 
@@ -565,7 +618,7 @@ const Header = ({notSticky, returnEmpty}) => {
                         key={item.path}
                         onClick={() => {
                           navigate(item.path);
-                          setIsMoreMenuOpen(false);
+                          setIsMobileMoreMenuOpen(false);
                         }}
                         className={`w-full px-4 py-3 text-left flex items-center gap-3 transition-colors ${
                           isActive 
@@ -584,8 +637,6 @@ const Header = ({notSticky, returnEmpty}) => {
           )}
         </div>
       </div>
-
-     
 
       {/* Logout Confirmation Modal */}
       {showLogoutModal && (

@@ -43,6 +43,13 @@ const WeddingBudgetManager = () => {
   const [showTutorialDropdown, setShowTutorialDropdown] = useState(false);
   const [showTutorialDesktop, setShowTutorialDesktop] = useState(false);
 
+  // Tips state
+  const [budgetTips, setBudgetTips] = useState([
+    'A média dos casamentos em Maputo é MT 600,000',
+    'Sugere-se gastar cerca de 30% com salão e 20% com catering',
+    'Reserve 10-15% do orçamento para imprevistos'
+  ]);
+
   const data=useData()
   
   useEffect(()=>{
@@ -60,7 +67,7 @@ const WeddingBudgetManager = () => {
     try {
       setLoading(true);
       
-      // Fetch tutorial videos
+      // Fetch tutorial videos and tips
       try {
         const tutorialsRes = await getTutorials();
         if (tutorialsRes.data?.tutorialVideos?.budget) {
@@ -70,8 +77,12 @@ const WeddingBudgetManager = () => {
             videoId
           });
         }
+        // Fetch dynamic tips
+        if (tutorialsRes.data?.tips?.budget && tutorialsRes.data.tips.budget.length > 0) {
+          setBudgetTips(tutorialsRes.data.tips.budget);
+        }
       } catch (tutError) {
-        console.log('No tutorial videos available');
+        console.log('No tutorial videos or tips available');
       }
 
       // Fetch budget
@@ -903,24 +914,12 @@ const WeddingBudgetManager = () => {
               <div className="space-y-4 mb-6">
                
 
-                <div className="flex items-start space-x-3">
-                  <div className="w-1.5 h-1.5 bg-primary-500 rounded-full mt-2 flex-shrink-0"></div>
-                  <p className="text-sm text-gray-700">
-                    A média dos casamentos em Maputo é <span className="font-semibold text-gray-900">MT 600,000</span>
-                  </p>
-                </div>
-                <div className="flex items-start space-x-3">
-                  <div className="w-1.5 h-1.5 bg-primary-500 rounded-full mt-2 flex-shrink-0"></div>
-                  <p className="text-sm text-gray-700">
-                    Sugere-se gastar cerca de <span className="font-semibold text-gray-900">30%</span> com salão e <span className="font-semibold text-gray-900">20%</span> com catering
-                  </p>
-                </div>
-                <div className="flex items-start space-x-3">
-                  <div className="w-1.5 h-1.5 bg-primary-500 rounded-full mt-2 flex-shrink-0"></div>
-                  <p className="text-sm text-gray-700">
-                    Reserve <span className="font-semibold text-gray-900">10-15%</span> do orçamento para imprevistos
-                  </p>
-                </div>
+                {budgetTips.map((tip, index) => (
+                  <div key={index} className="flex items-start space-x-3">
+                    <div className="w-1.5 h-1.5 bg-primary-500 rounded-full mt-2 flex-shrink-0"></div>
+                    <p className="text-sm text-gray-700">{tip}</p>
+                  </div>
+                ))}
 
                  {/* Tutorial Video - Desktop Only */}
                 {budgetTutorial && (
