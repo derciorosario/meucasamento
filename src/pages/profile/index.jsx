@@ -309,8 +309,11 @@ const ProfilePage = () => {
   const [showPartnerConfirmModal, setShowPartnerConfirmModal] = useState(false);
   const [showDeletePartnerModal, setShowDeletePartnerModal] = useState(false);
   const [deletePartnerType, setDeletePartnerType] = useState(''); // 'pending' or 'approved'
+  const [invitingPartnerIndex, setInvitingPartnerIndex] = useState(null); // Track which partner slot is being invited
+  const [deletingPartnerIndex, setDeletingPartnerIndex] = useState(null); // Track which partner to delete
+  const [showPartnerInputs, setShowPartnerInputs] = useState([false, false]); // Track which partner input sections to show
   
-  // Check if user is logged in as partner
+  // Handler to show partner input fields
   const isPartner = localStorage.getItem('isPartner') === 'true';
   const partnerName = localStorage.getItem('partnerName') || '';
   
@@ -334,8 +337,14 @@ const ProfilePage = () => {
     weddingDate: '',
     weddingVenue: '',
     weddingGuestCount: '',
+    // Partner info for bride/groom users
     partnerName: '',
     partnerEmail: '',
+    // Partners array - supports up to 2 partners
+    partners: [
+      { name: '', email: '', role: '' },
+      { name: '', email: '', role: '' }
+    ],
     // Vendor fields
     vendorCompanyName: '',
     vendorDescription: '',
@@ -417,8 +426,19 @@ const ProfilePage = () => {
           weddingDate: profile?.wedding?.date ? new Date(profile.wedding.date).toISOString().split('T')[0] : '',
           weddingVenue: profile?.wedding?.venue || '',
           weddingGuestCount: profile?.wedding?.guestCount?.estimated || '',
-          partnerName: profile?.partner?.name || '',
-          partnerEmail: profile?.partner?.email || '',
+          // Populate partnerName and partnerEmail from profile
+          partnerName: profile?.partnerName || '',
+          partnerEmail: profile?.partnerEmail || '',
+          // Populate partners array from profile
+          partners: profile?.partners && profile.partners.length > 0 
+            ? [
+                ...profile.partners,
+                ...Array(2 - profile.partners.length).fill({ name: '', email: '', role: '' })
+              ].slice(0, 2)
+            : [
+                { name: '', email: '', role: '' },
+                { name: '', email: '', role: '' }
+              ],
           // Vendor fields
           vendorCompanyName: currentVendor?.name || '',
           vendorDescription: currentVendor?.description || '',
@@ -434,8 +454,6 @@ const ProfilePage = () => {
           vendorMaxCapacity: currentVendor?.maxCapacity || '',
           vendorFaqs: currentVendor?.faqs || [],
           vendorMapLink: currentVendor?.mapLink || '',
-          ...profile,
-          ...user
         });
       }
     } catch (error) {
@@ -509,6 +527,27 @@ const ProfilePage = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+    
+    // Handle partner array changes (format: partners[0].name, partners[0].email, partners[0].role)
+    if (name.startsWith('partners[')) {
+      const match = name.match(/partners\[(\d+)\]\.(.+)/);
+      if (match) {
+        const index = parseInt(match[1]);
+        const field = match[2];
+        setFormData(prev => {
+          const newPartners = [...prev.partners];
+          newPartners[index] = {
+            ...newPartners[index],
+            [field]: value
+          };
+          return {
+            ...prev,
+            partners: newPartners
+          };
+        });
+        return;
+      }
+    }
     
     // When vendor category changes, clear the FAQs and show notification
     if (name === 'vendorCategory' && value !== formData.vendorCategory) {
@@ -705,17 +744,31 @@ const ProfilePage = () => {
   };
 
   // Handle inviting a partner - show confirmation modal first
-  const handleInvitePartnerClick = () => {
-    if (!formData.partnerEmail) {
-      toast.error('Por favor, insira o email do parceiro');
+  const handleInvitePartnerClick = (index) => {
+    const partner = formData.partners[index];
+    
+    if (!partner.email) {
+      toast.error('Por favor, insira o e-mail do parceiro');
       return;
     }
     
-    if (!formData.partnerName) {
+    if (!partner.name) {
       toast.error('Por favor, insira o nome do parceiro');
       return;
     }
 
+    if (!partner.role) {
+      toast.error('Por favor, selecione o tipo de parceiro');
+      return;
+    }
+
+    // Check if role is already taken by another partner
+    if (isRoleTaken(partner.role, index)) {
+      toast.error('Já tem um parceiro com este tipo');
+      return;
+    }
+    
+    setInvitingPartnerIndex(index);
     setShowPartnerConfirmModal(true);
   };
 
@@ -723,6 +776,8 @@ const ProfilePage = () => {
   const handleConfirmInvite = async () => {
     setShowPartnerConfirmModal(false);
     setInvitingPartner(true);
+    
+    const partner = formData.partners[invitingPartnerIndex];
     
     try {
       // First save the profile with partner info
@@ -736,18 +791,15 @@ const ProfilePage = () => {
         weddingDate: formData.weddingDate,
         weddingVenue: formData.weddingVenue,
         weddingGuestCount: formData.weddingGuestCount ? parseInt(formData.weddingGuestCount) : null,
-        partner: formData.partnerName || formData.partnerEmail ? {
-          name: formData.partnerName,
-          email: formData.partnerEmail,
-        } : undefined,
       };
 
       await updateProfile(updateData);
       
-      // Then send the invitation
+      // Then send the invitation with role
       const response = await invitePartner({
-        email: formData.partnerEmail,
-        name: formData.partnerName,
+        email: partner.email,
+        name: partner.name,
+        role: partner.role,
       });
       
       if (response.data.success) {
@@ -763,17 +815,19 @@ const ProfilePage = () => {
       }
     } finally {
       setInvitingPartner(false);
+      setInvitingPartnerIndex(null);
     }
   };
 
   // Handle resending invitation
-  const handleResendInvitation = async () => {
-    if (!formData.partnerEmail) return;
+  const handleResendInvitation = async (index) => {
+    const partner = formData.partners[index];
+    if (!partner.email) return;
     
     setInvitingPartner(true);
     try {
       const response = await resendPartnerInvitation({
-        email: formData.partnerEmail,
+        email: partner.email,
       });
       
       if (response.data.success) {
@@ -788,18 +842,27 @@ const ProfilePage = () => {
   };
 
   // Handle canceling pending invitation
-  const handleCancelInvitation = async () => {
+  const handleCancelInvitation = async (index) => {
+    const partner = formData.partners[index];
+    if (!partner || !partner.email) {
+      toast.error('Partner not found');
+      return;
+    }
     setInvitingPartner(true);
     try {
-      const response = await cancelPartnerInvitation();
+      const response = await cancelPartnerInvitation(partner.email);
       
       if (response.data.success) {
         toast.success('Convite cancelado!');
-        setFormData(prev => ({
-          ...prev,
-          partnerName: '',
-          partnerEmail: ''
-        }));
+        // Clear partner from form
+        setFormData(prev => {
+          const newPartners = [...prev.partners];
+          newPartners[index] = { name: '', email: '', role: '' };
+          return {
+            ...prev,
+            partners: newPartners
+          };
+        });
         fetchProfile();
       }
     } catch (error) {
@@ -807,23 +870,33 @@ const ProfilePage = () => {
       toast.error('Erro ao cancelar convite');
     } finally {
       setInvitingPartner(false);
+      setDeletingPartnerIndex(null);
       setShowDeletePartnerModal(false);
     }
   };
 
   // Handle removing approved partner
-  const handleRemovePartner = async () => {
+  const handleRemovePartner = async (index) => {
+    const partner = formData.partners[index];
+    if (!partner || !partner.email) {
+      toast.error('Partner not found');
+      return;
+    }
     setInvitingPartner(true);
     try {
-      const response = await removePartner();
+      const response = await removePartner(partner.email);
       
       if (response.data.success) {
         toast.success('Parceiro removido!');
-        setFormData(prev => ({
-          ...prev,
-          partnerName: '',
-          partnerEmail: ''
-        }));
+        // Clear partner from form
+        setFormData(prev => {
+          const newPartners = [...prev.partners];
+          newPartners[index] = { name: '', email: '', role: '' };
+          return {
+            ...prev,
+            partners: newPartners
+          };
+        });
         fetchProfile();
       }
     } catch (error) {
@@ -831,6 +904,7 @@ const ProfilePage = () => {
       toast.error('Erro ao remover parceiro');
     } finally {
       setInvitingPartner(false);
+      setDeletingPartnerIndex(null);
       setShowDeletePartnerModal(false);
     }
   };
@@ -856,7 +930,79 @@ const ProfilePage = () => {
     return labels[range] || range;
   };
 
-  // Handle opening vendor profile
+  // Get available partner roles based on current user's userType
+  const getAvailablePartnerRoles = (userType) => {
+    if (userType === 'bride') {
+      return [
+        { value: 'groom', label: 'Noivo' },
+        { value: 'wedding_planner', label: 'Organizador de Casamento' }
+      ];
+    }
+    if (userType === 'groom') {
+      return [
+        { value: 'bride', label: 'Noiva' },
+        { value: 'wedding_planner', label: 'Organizador de Casamento' }
+      ];
+    }
+    if (userType === 'wedding_planner') {
+      return [
+        { value: 'bride', label: 'Noiva' },
+        { value: 'groom', label: 'Noivo' }
+      ];
+    }
+    return [];
+  };
+
+  // Get partner label based on userType and index
+  const getPartnerLabel = (userType, index) => {
+    if (userType === 'bride') {
+      return index === 0 ? 'Noivo' : 'Organizador de Casamento';
+    }
+    if (userType === 'groom') {
+      return index === 0 ? 'Noiva' : 'Organizador de Casamento';
+    }
+    if (userType === 'wedding_planner') {
+      return index === 0 ? 'Noiva' : 'Noivo';
+    }
+    return `Parceiro ${index + 1}`;
+  };
+
+  // Get default role based on userType and index
+  const getDefaultRole = (userType, index) => {
+    if (userType === 'bride') {
+      return index === 0 ? 'groom' : 'wedding_planner';
+    }
+    if (userType === 'groom') {
+      return index === 0 ? 'bride' : 'wedding_planner';
+    }
+    if (userType === 'wedding_planner') {
+      return index === 0 ? 'bride' : 'groom';
+    }
+    return '';
+  };
+
+  // Check if a role is already taken
+  const isRoleTaken = (role, excludeIndex = -1) => {
+    return formData.partners.some((p, index) => p.role === role && index !== excludeIndex);
+  };
+
+  // Handler to show partner input fields
+  const handleShowPartnerInput = (index) => {
+    const newShow = [...showPartnerInputs];
+    newShow[index] = true;
+    setShowPartnerInputs(newShow);
+    // Auto-set the default role
+    setFormData(prev => {
+      const newPartners = [...prev.partners];
+      newPartners[index] = { 
+        ...newPartners[index], 
+        role: getDefaultRole(formData.userType, index) 
+      };
+      return { ...prev, partners: newPartners };
+    });
+  };
+
+  // Handler to hide partner input fields
   const handleVendorClick = async (vendorId) => {
     navigate('/vendor/' + vendorId);
   };
@@ -941,10 +1087,8 @@ const ProfilePage = () => {
         weddingDate: formData.weddingDate,
         weddingVenue: formData.weddingVenue,
         weddingGuestCount: formData.weddingGuestCount ? parseInt(formData.weddingGuestCount) : null,
-        partner: formData.partnerName || formData.partnerEmail ? {
-          name: formData.partnerName,
-          email: formData.partnerEmail,
-        } : undefined,
+        partnerName: formData.partnerName || null,
+        partnerEmail: formData.partnerEmail || null,
       };
 
       // Add vendor data if user is vendor
@@ -990,7 +1134,7 @@ const ProfilePage = () => {
   const userTypeOptions = [
     { value: 'bride', label: 'Noiva' },
     { value: 'groom', label: 'Noivo' },
-    { value: 'wedding_planner', label: 'Planejador de Casamento' },
+    { value: 'wedding_planner', label: 'Organizador de Casamento' },
     { value: 'vendor', label: 'Fornecedor' },
     { value: 'other', label: 'Outro' },
   ];
@@ -1021,7 +1165,7 @@ const ProfilePage = () => {
           <div className="max-w-4xl mx-auto flex items-center justify-center gap-2">
             <User className="w-5 h-5" />
             <span className="font-medium">
-              Você está a visualizar o perfil de {partnerName || 'um parceiro'}. Apenas pode visualizar as informações, não pode editar.
+              Você está a visualizar o perfil como convidado. Apenas pode visualizar as informações, não pode editar.
             </span>
           </div>
         </div>
@@ -1497,31 +1641,18 @@ const ProfilePage = () => {
                   </div>
                 </div>
 
-                {/* Partner Info */}
+
+                 {/* Partner Info Section - for bride or groom */}
                 {(formData.userType === 'bride' || formData.userType === 'groom') && (
                   <div className="mt-6 md:mt-8 pt-6 border-t border-gray-100">
                     <h3 className="text-base md:text-lg font-serif font-semibold text-black mb-4">
-                      Informações do Parceiro(a)
+                      Informações do {formData.userType === 'bride' ? 'Noivo' : 'Noiva'}
                     </h3>
                     
-                    {/* Info message */}
-                    <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
-                      <div className="flex items-start gap-2">
-                        <AlertCircle className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
-                        <div className="text-sm text-blue-800">
-                          <p className="font-medium">Convidar Parceiro(a)</p>
-                          <p className="text-xs mt-1">
-                            Convide seu parceiro(a) para aceder e gerir o casamento consigo. 
-                            Eles receberão um e-mail para criar uma conta e aceder ao planeamento.
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6">
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1 md:mb-2">
-                          Nome do(a) Parceiro(a)
+                          Nome do {formData.userType === 'bride' ? 'Noivo' : 'Noiva'}
                         </label>
                         <input
                           type="text"
@@ -1529,12 +1660,13 @@ const ProfilePage = () => {
                           value={formData.partnerName}
                           onChange={handleChange}
                           disabled={isPartner}
+                          placeholder={formData.userType === 'bride' ? 'Nome do noivo' : 'Nome da noiva'}
                           className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black text-sm md:text-base disabled:bg-gray-100 disabled:text-gray-500"
                         />
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1 md:mb-2">
-                          E-mail do(a) Parceiro(a)
+                          E-mail do {formData.userType === 'bride' ? 'Noivo' : 'Noiva'}
                         </label>
                         <input
                           type="email"
@@ -1542,86 +1674,248 @@ const ProfilePage = () => {
                           value={formData.partnerEmail}
                           onChange={handleChange}
                           disabled={isPartner}
+                          placeholder={formData.userType === 'bride' ? 'E-mail do noivo' : 'E-mail da noiva'}
                           className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black text-sm md:text-base disabled:bg-gray-100 disabled:text-gray-500"
                         />
                       </div>
                     </div>
-                    
-                    {/* Partner Status */}
-                    {(profile?.partner?.status && profile?.partner?.email) && (
-                      <div className="mt-4 p-3 rounded-lg bg-gray-50">
-                        <div className="flex items-center gap-2">
-                          {profile.partner.status === 'approved' ? (
-                            <CheckCircle className="w-5 h-5 text-green-500" />
-                          ) : (
-                            <Clock className="w-5 h-5 text-yellow-500" />
-                          )}
-                          <span className={`text-sm font-medium ${
-                            profile.partner.status === 'approved' ? 'text-green-700' : 'text-yellow-700'
-                          }`}>
-                            {profile.partner.status === 'approved' 
-                              ? 'Parceiro(a) verificado(a) e com acesso' 
-                              : 'Convite pendente de aprovação'}
-                          </span>
-                        </div>
-                        {profile.partner.status === 'pending' && (
-                          <div className="mt-3 flex flex-wrap gap-2">
-                            <button
-                              type="button"
-                              onClick={handleResendInvitation}
-                              disabled={invitingPartner}
-                              className="text-sm text-[#9CAA8E] hover:text-[#8A9A7E] disabled:opacity-50"
-                            >
-                              {invitingPartner ? 'A reenviar...' : 'Reenviar convite'}
-                            </button>
-                            <span className="text-gray-300">|</span>
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setDeletePartnerType('pending');
-                                setShowDeletePartnerModal(true);
-                              }}
-                              disabled={invitingPartner}
-                              className="text-sm text-red-500 hover:text-red-600 disabled:opacity-50"
-                            >
-                              Cancelar convite
-                            </button>
-                          </div>
-                        )}
-                        {(profile.partner.status === 'approved' && !isPartner) && (
-                          <div className="mt-3">
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setDeletePartnerType('approved');
-                                setShowDeletePartnerModal(true);
-                              }}
-                              disabled={invitingPartner}
-                              className="text-sm text-red-500 hover:text-red-600 disabled:opacity-50"
-                            >
-                              {invitingPartner ? 'A remover...' : 'Remover parceiro(a)'}
-                            </button>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                    
-                    {/* Invite Button */}
-                    {(formData.partnerEmail && formData.partnerName) && !profile?.partner?.status && (
-                      <div className="mt-4">
-                        <button
-                          type="button"
-                          onClick={handleInvitePartnerClick}
-                          disabled={invitingPartner}
-                          className="flex items-center gap-2 px-4 py-2 bg-[#9CAA8E] text-white rounded-lg hover:bg-[#8A9A7E] disabled:opacity-50 text-sm"
-                        >
-                          <Send className="w-4 h-4" />
-                          {invitingPartner ? 'A enviar convite...' : 'Enviar convite'}
-                        </button>
-                      </div>
-                    )}
                   </div>
                 )}
+
+                {/* Partner Info - for bride, groom, or wedding_planner */}
+                {(formData.userType === 'bride' || formData.userType === 'groom' || formData.userType === 'wedding_planner') && (
+                  <div className="mt-6 md:mt-8 pt-6 border-t border-gray-100">
+                    <h3 className="text-base md:text-lg font-serif font-semibold text-black mb-4">
+                      Informações dos Parceiros
+                    </h3>
+                    
+                    {/* Info message */}
+                    <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                      <div className="flex items-start gap-2">
+                        <AlertCircle className="w-5 h-5 text-blue-500 mt-0.5 flex-shrink-0" />
+                        <div className="text-sm text-blue-800">
+                          <p className="font-medium">Convidar Parceiros</p>
+                          <p className="text-xs mt-1">
+                            {formData.userType === 'wedding_planner' 
+                              ? 'Convide os noivos (noiva e noivo) para gerirem o casamento consigo.'
+                              : 'Convide seu parceiro e/ou Organizador de Casamento para aceder e gerir o casamento consigo.'}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Partner Slots */}
+                    
+                    <div className="space-y-4">
+
+                      <div className="space-y-4">
+  {formData.partners.map((partner, index) => {
+    const existingPartner = profile?.partners?.[index];
+    const hasExistingPartner = !!existingPartner?.status;
+    const isPending = existingPartner?.status === 'pending';
+    const isApproved = existingPartner?.status === 'approved';
+    
+    return (
+      <div key={index} className="border border-gray-200 rounded-xl p-4">
+        {/* Header with title and status */}
+        <div className="flex items-center justify-between mb-3">
+          <h4 className="font-medium text-gray-700">
+            {getPartnerLabel(formData.userType, index)}
+          </h4>
+          
+          {/* Partner Status - Only show if partner exists */}
+          {hasExistingPartner && (
+            <div className="flex items-center gap-2">
+              {isApproved ? (
+                <CheckCircle className="w-5 h-5 text-green-500" />
+              ) : (
+                <Clock className="w-5 h-5 text-yellow-500" />
+              )}
+              <span className={`text-sm font-medium ${
+                isApproved ? 'text-green-700' : 'text-yellow-700'
+              }`}>
+                {isApproved 
+                  ? 'Verificado e com acesso' 
+                  : 'Convite pendente'}
+              </span>
+            </div>
+          )}
+        </div>
+        
+        {/* Partner Information - Show for existing partners (both pending and approved) */}
+        {hasExistingPartner && (
+          <div className={`mb-3 rounded-lg p-3 ${
+            isApproved 
+              ? 'bg-green-50 border border-green-200' 
+              : 'bg-yellow-50 border border-yellow-200'
+          }`}>
+            <div className="flex items-center gap-2">
+              {isApproved ? (
+                <CheckCircle className="w-5 h-5 text-green-600" />
+              ) : (
+                <Clock className="w-5 h-5 text-yellow-600" />
+              )}
+              <div>
+                <p className={`font-medium ${
+                  isApproved ? 'text-green-800' : 'text-yellow-800'
+                }`}>
+                  {existingPartner.name}
+                </p>
+                <p className={`text-sm ${
+                  isApproved ? 'text-green-600' : 'text-yellow-600'
+                }`}>
+                  {existingPartner.email}
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
+        
+        {/* Invite Button - Only show if:
+            - No existing partner
+            - User is NOT a partner (isPartner = false)
+            - Input fields are not already showing
+        */}
+        {!hasExistingPartner && !isPartner && !showPartnerInputs[index] && (
+          <div className="mb-3">
+            <button
+              type="button"
+              onClick={() => handleShowPartnerInput(index)}
+              disabled={invitingPartner}
+              className="flex items-center gap-2 px-4 py-2 bg-[#9CAA8E] text-white rounded-lg hover:bg-[#8A9A7E] disabled:opacity-50 text-sm w-full justify-center"
+            >
+              <Plus className="w-4 h-4" />
+              Convidar {getPartnerLabel(formData.userType, index)}
+            </button>
+          </div>
+        )}
+        
+        {/* Input Fields - Only show if:
+            - No existing partner
+            - Input fields are set to show
+            - User is NOT a partner (isPartner = false)
+        */}
+        {!hasExistingPartner && showPartnerInputs[index] && !isPartner && (
+          <>
+            {/* Name and Email */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-3">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Nome do Parceiro
+                </label>
+                <input
+                  type="text"
+                  name={`partners[${index}].name`}
+                  value={partner.name}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  E-mail do Parceiro
+                </label>
+                <input
+                  type="email"
+                  name={`partners[${index}].email`}
+                  value={partner.email}
+                  onChange={handleChange}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black text-sm"
+                />
+              </div>
+            </div>
+            
+            {/* Action Buttons */}
+            {(partner.email && partner.name) && (
+              <div className="mt-3 flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleInvitePartnerClick(index)}
+                  disabled={invitingPartner}
+                  className="flex items-center gap-2 px-4 py-2 bg-[#9CAA8E] text-white rounded-lg hover:bg-[#8A9A7E] disabled:opacity-50 text-sm"
+                >
+                  <Send className="w-4 h-4" />
+                  {invitingPartner ? 'A enviar...' : 'Enviar convite'}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const newShow = [...showPartnerInputs];
+                    newShow[index] = false;
+                    setShowPartnerInputs(newShow);
+                  }}
+                  disabled={invitingPartner}
+                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 disabled:opacity-50 text-sm"
+                >
+                  Cancelar
+                </button>
+              </div>
+            )}         
+          </>
+        )}
+
+        {/* Action Buttons for Existing Partners - Only show if user is NOT a partner */}
+        {hasExistingPartner && !isPartner && (
+          <div className="mt-3">
+            {isPending && (
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleResendInvitation(index)}
+                  disabled={invitingPartner}
+                  className="text-sm text-[#9CAA8E] hover:text-[#8A9A7E] disabled:opacity-50"
+                >
+                  {invitingPartner ? 'A reenviar...' : 'Reenviar convite'}
+                </button>
+                <span className="text-gray-300">|</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDeletePartnerType('pending');
+                    setShowDeletePartnerModal(true);
+                  }}
+                  disabled={invitingPartner}
+                  className="text-sm text-red-500 hover:text-red-600 disabled:opacity-50"
+                >
+                  Cancelar convite
+                </button>
+              </div>
+            )}
+            
+            {isApproved && (
+              <button
+                type="button"
+                onClick={() => {
+                  setDeletePartnerType('approved');
+                  setShowDeletePartnerModal(true);
+                }}
+                disabled={invitingPartner}
+                className="text-sm text-red-500 hover:text-red-600 disabled:opacity-50"
+              >
+                {invitingPartner ? 'A remover...' : 'Remover parceiro'}
+              </button>
+            )}
+          </div>
+        )}
+
+        {/* Message for Partners - When user IS a partner and no existing partner */}
+        {!hasExistingPartner && isPartner && (
+          <div className="bg-gray-50 border border-gray-200 rounded-lg p-4 text-center">
+            <p className="text-sm text-gray-600">
+              Apenas o utilizador principal pode convidar parceiros.
+            </p>
+          </div>
+        )}
+      </div>
+    );
+  })}
+</div>
+                     
+                    </div>
+                  </div>
+                )}
+
+               
               </div>
             )}
 
@@ -3392,7 +3686,7 @@ const ProfilePage = () => {
         )}
 
         {/* Partner Confirmation Modal */}
-        {showPartnerConfirmModal && (
+        {showPartnerConfirmModal && invitingPartnerIndex !== null && (
           <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
             <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6">
               <div className="text-center mb-6">
@@ -3411,21 +3705,27 @@ const ProfilePage = () => {
                     <Mail className="w-5 h-5 text-[#9CAA8E]" />
                   </div>
                   <div>
-                    <p className="font-medium text-[#2a2a2a]">{formData.partnerName}</p>
-                    <p className="text-sm text-[#6b6b6b]">{formData.partnerEmail}</p>
+                    <p className="font-medium text-[#2a2a2a]">{formData.partners[invitingPartnerIndex]?.name}</p>
+                    <p className="text-sm text-[#6b6b6b]">{formData.partners[invitingPartnerIndex]?.email}</p>
+                    <p className="text-xs text-[#9CAA8E] mt-1">
+                      Tipo: {getAvailablePartnerRoles(formData.userType).find(r => r.value === formData.partners[invitingPartnerIndex]?.role)?.label}
+                    </p>
                   </div>
                 </div>
               </div>
 
               <p className="text-sm text-[#6b6b6b] mb-6">
-                O seu parceiro(a) receberá um e-mail com instruções para criar uma conta e aceder ao planeamento do casamento.
+                O seu parceiro receberá um e-mail com instruções para criar uma conta e aceder ao planeamento do casamento.
                 <br/>
                 <strong>Nota:</strong> O e-mail será guardado no seu perfil automaticamente.
               </p>
 
               <div className="flex gap-3">
                 <button
-                  onClick={() => setShowPartnerConfirmModal(false)}
+                  onClick={() => {
+                    setShowPartnerConfirmModal(false);
+                    setInvitingPartnerIndex(null);
+                  }}
                   className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium"
                 >
                   Cancelar
@@ -3440,7 +3740,7 @@ const ProfilePage = () => {
               </div>
             </div>
           </div>
-        )}
+        )}}
 
         {/* Delete Partner Modal */}
         {showDeletePartnerModal && (
@@ -3451,25 +3751,25 @@ const ProfilePage = () => {
                   <AlertCircle className="w-8 h-8 text-red-500" />
                 </div>
                 <h3 className="text-xl font-bold text-[#2a2a2a]">
-                  {deletePartnerType === 'pending' ? 'Cancelar Convite' : 'Remover Parceiro(a)'}
+                  {deletePartnerType === 'pending' ? 'Cancelar Convite' : 'Remover Parceiro'}
                 </h3>
                 <p className="text-[#6b6b6b] text-sm mt-2">
                   {deletePartnerType === 'pending' 
                     ? 'Tem certeza que deseja cancelar o convite pendente?'
-                    : 'Tem certeza que deseja remover o acesso do seu parceiro(a)?'
+                    : 'Tem certeza que deseja remover o acesso do seu parceiro?'
                   }
                 </p>
               </div>
 
-              {profile?.partner?.email && (
+              {profile?.partners?.[invitingPartnerIndex]?.email && (
                 <div className="bg-gray-50 rounded-xl p-4 mb-6">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-red-100 rounded-full flex items-center justify-center">
                       <Mail className="w-5 h-5 text-red-500" />
                     </div>
                     <div>
-                      <p className="font-medium text-[#2a2a2a]">{profile.partner.name}</p>
-                      <p className="text-sm text-[#6b6b6b]">{profile.partner.email}</p>
+                      <p className="font-medium text-[#2a2a2a]">{profile.partners[invitingPartnerIndex]?.name}</p>
+                      <p className="text-sm text-[#6b6b6b]">{profile.partners[invitingPartnerIndex]?.email}</p>
                     </div>
                   </div>
                 </div>
@@ -3478,31 +3778,34 @@ const ProfilePage = () => {
               <p className="text-sm text-[#6b6b6b] mb-6">
                 {deletePartnerType === 'pending'
                   ? 'O convite será cancelado e o e-mail será removido do seu perfil.'
-                  : 'O seu parceiro(a) perderá acesso à sua conta e não poderá mais gerir o casamento consigo.'
+                  : 'O seu parceiro perderá acesso à sua conta e não poderá mais gerir o casamento consigo.'
                 }
               </p>
 
               <div className="flex gap-3">
                 <button
-                  onClick={() => setShowDeletePartnerModal(false)}
+                  onClick={() => {
+                    setDeletingPartnerIndex(null);
+                    setShowDeletePartnerModal(false);
+                  }}
                   className="flex-1 px-4 py-3 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors font-medium"
                 >
                   Manter
                 </button>
                 <button
-                  onClick={deletePartnerType === 'pending' ? handleCancelInvitation : handleRemovePartner}
+                  onClick={deletePartnerType === 'pending' ? () => handleCancelInvitation(deletingPartnerIndex) : () => handleRemovePartner(deletingPartnerIndex)}
                   disabled={invitingPartner}
                   className="flex-1 px-4 py-3 bg-red-500 text-white rounded-xl hover:bg-red-600 transition-colors font-medium disabled:opacity-50"
                 >
                   {invitingPartner 
                     ? (deletePartnerType === 'pending' ? 'A cancelar...' : 'A remover...') 
-                    : (deletePartnerType === 'pending' ? 'Cancelar Convite' : 'Remover Parceiro(a)')
+                    : (deletePartnerType === 'pending' ? 'Cancelar Convite' : 'Remover Parceiro')
                   }
                 </button>
               </div>
             </div>
           </div>
-        )}
+        )}}
       </div>
     </div>
   );

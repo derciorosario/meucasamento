@@ -110,6 +110,7 @@ export default function WeddingLogin() {
         password: formData.password
       });
 
+     
        // Check if account selection is required
       if (response?.data?.requiresAccountSelection) {
         setAccountOptions(response.data.accounts || []);
@@ -119,7 +120,9 @@ export default function WeddingLogin() {
       }
 
 
-      localStorage.setItem('isPartner', 'false');
+      // Store isPartner flag based on login response
+      const isPartnerLogin = (response.data.loggedInAsPartner || response.data?.data?.loggedInAsPartner) === true;
+      localStorage.setItem('isPartner', isPartnerLogin ? 'true' : 'false');
 
       // Store tokens
       localStorage.setItem('accessToken', response.data.accessToken || response.data?.data?.accessToken);
@@ -303,7 +306,9 @@ export default function WeddingLogin() {
       }
 
 
-      localStorage.setItem('isPartner', 'false');
+      // Store isPartner flag based on login response (Google login)
+      const isPartnerLogin = (response.data?.loggedInAsPartner || response.data.data?.loggedInAsPartner) === true;
+      localStorage.setItem('isPartner', isPartnerLogin ? 'true' : 'false');
 
       // Store tokens
       localStorage.setItem('accessToken', response.data.data.accessToken);

@@ -406,7 +406,7 @@ export default function WeddingDashboard() {
   const budgetPercentage = budget.total > 0 ? Math.round((budget.spent / budget.total) * 100) : 0;
 
   // Get partner name for couple header
-  const partnerName = profile?.partner?.name || 'Parceiro(a)';
+  const partnerName = (profile?.partner?.name || profile?.partnerName) || 'Parceiro(a)';
   const weddingVenue = profile?.wedding?.venue || 'Local do Casamento';
   const weddingDateFormatted = profile?.wedding?.date 
     ? new Date(profile.wedding.date).toLocaleDateString('pt-PT', { day: 'numeric', month: 'long', year: 'numeric' })

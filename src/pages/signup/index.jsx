@@ -348,6 +348,8 @@ export default function WeddingSignUp() {
 
     
       if (googleConnected && response.data.data.accessToken) {
+
+        localStorage.setItem('isPartner', 'false');
         // Google users get tokens immediately
         localStorage.setItem('accessToken', response.data.data.accessToken);
       }

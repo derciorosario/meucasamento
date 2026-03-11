@@ -659,7 +659,7 @@ export const checkEmail = (email) => client.get(`/partner/check-email/${email}`)
 export const loginAsUser = (data) => client.post('/partner/login-as-user', data);
 
 // Cancel pending invitation
-export const cancelPartnerInvitation = () => client.delete('/partner/invitation');
+export const cancelPartnerInvitation = (email) => client.delete('/partner/invitation', { data: { email } });
 
 // Remove approved partner
-export const removePartner = () => client.delete('/partner/partner');
+export const removePartner = (email) => client.delete('/partner/partner', { data: { email } });

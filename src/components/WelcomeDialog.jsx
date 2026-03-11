@@ -226,7 +226,7 @@ export default function WelcomeDialog({ isOpen, onClose, isVendor = false }) {
               
               <div className="flex gap-2">
                 {[
-                  { label: 'Perfil', done: !!profile.partner?.name },
+                  { label: 'Perfil', done: !!(profile.partner?.name || profile?.partnerName) },
                   { label: 'Data', done: !!profile.wedding?.date },
                   { label: 'Local', done: !!profile.wedding?.venue },
                   { label: 'Orçamento', done: !!profile.wedding?.budget }
