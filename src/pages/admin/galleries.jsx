@@ -40,6 +40,52 @@ const AdminGalleries = () => {
   const [viewMode, setViewMode] = useState('grid');
   const [deleteModal, setDeleteModal] = useState({ isOpen: false, gallery: null });
   const [deletePhotoModal, setDeletePhotoModal] = useState({ isOpen: false, photo: null, albumId: null });
+  
+  // Touch state for swipe functionality
+  const [touchStart, setTouchStart] = useState(null);
+  const [touchEnd, setTouchEnd] = useState(null);
+  const minSwipeDistance = 50;
+
+  // Get current photo index
+  const getCurrentPhotoIndex = () => {
+    if (!selectedPhoto || !albumPhotos.length) return -1;
+    return albumPhotos.findIndex(p => p._id === selectedPhoto._id);
+  };
+
+  const goToNextPhoto = () => {
+    const currentIndex = getCurrentPhotoIndex();
+    if (currentIndex === -1 || albumPhotos.length <= 1) return;
+    const nextIndex = (currentIndex + 1) % albumPhotos.length;
+    setSelectedPhoto(albumPhotos[nextIndex]);
+  };
+
+  const goToPrevPhoto = () => {
+    const currentIndex = getCurrentPhotoIndex();
+    if (currentIndex === -1 || albumPhotos.length <= 1) return;
+    const prevIndex = (currentIndex - 1 + albumPhotos.length) % albumPhotos.length;
+    setSelectedPhoto(albumPhotos[prevIndex]);
+  };
+
+  const onTouchStart = (e) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+    if (isLeftSwipe) {
+      goToNextPhoto();
+    } else if (isRightSwipe) {
+      goToPrevPhoto();
+    }
+  };
 
   useEffect(() => {
     if (currentUser?.role !== 'admin') {
@@ -127,13 +173,36 @@ const AdminGalleries = () => {
   // Photo Lightbox View
   if (selectedPhoto && selectedAlbum) {
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center">
+      <div 
+        className="fixed inset-0 bg-black bg-opacity-90 z-50 flex items-center justify-center"
+        onTouchStart={onTouchStart}
+        onTouchMove={onTouchMove}
+        onTouchEnd={onTouchEnd}
+      >
         <button
           onClick={handleClosePhoto}
-          className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors"
+          className="absolute top-4 right-4 text-white hover:text-gray-300 transition-colors z-10"
         >
           <XMarkIcon className="w-8 h-8" />
         </button>
+        
+        {/* Navigation buttons */}
+        {albumPhotos.length > 1 && (
+          <>
+            <button
+              onClick={goToPrevPhoto}
+              className="absolute left-4 top-1/2 -translate-y-1/2 text-white hover:text-gray-300 transition-colors z-10"
+            >
+              <ChevronLeftIcon className="w-10 h-10" />
+            </button>
+            <button
+              onClick={goToNextPhoto}
+              className="absolute right-4 top-1/2 -translate-y-1/2 text-white hover:text-gray-300 transition-colors z-10"
+            >
+              <ChevronRightIcon className="w-10 h-10" />
+            </button>
+          </>
+        )}
         
         <div className="relative max-w-7xl mx-auto px-4">
           <img
