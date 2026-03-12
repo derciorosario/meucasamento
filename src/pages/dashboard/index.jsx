@@ -5,7 +5,8 @@ import {
   ChevronRight, Camera, UtensilsCrossed, Music, Flower2, 
   User, LogOut, Settings, X, ChevronDown, Plus, Loader2,
   TrendingUp, MessageSquare, Star, Eye, Briefcase, DollarSign,
-  Play, Home, List, ShoppingBag, Users2, Calendar as CalendarIcon, Wallet, Image, Gift, Menu, Clock
+  Play, Home, List, ShoppingBag, Users2, Calendar as CalendarIcon, Wallet, Image, Gift, Menu, Clock,
+  CheckCheck
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 import { API_URL, getTasks, getGuests, getGuestStats, getBudget, getCategories, updateBudget, getVendorQuoteRequests, getVendors, toggleTaskCompletion, getMyQuoteRequests, getVendor, getTutorials } from '../../api/client';
@@ -274,13 +275,14 @@ export default function WeddingDashboard() {
   // Couple tabs with icons
   const coupleTabs = [
     { id: 'inicio', label: 'Inicio', path: '/', icon: Home },
-    { id: 'agenda', label: 'Agenda', path: '/checklist', icon: List },
-    { id: 'programa', label: 'Programa', path: '/program', icon: Clock },
     { id: 'fornecedores', label: 'Fornecedores', path: '/vendors', icon: ShoppingBag },
     { id: 'orcamento', label: 'Orçamento', path: '/budget', icon: Wallet },
-    { id: 'convidados', label: 'Convidados', path: '/guests', icon: Users2 },
-    { id: 'gallery', label: 'Galeria', path: '/gallery', icon: Image },
-    { id: 'gifts', label: 'Presentes', path: '/gifts', icon: Gift },
+    { id: 'agenda', label: 'Tarefas', path: '/checklist', icon: CheckCheck },
+    { id: 'convidados', label: 'Lista de Convidados', path: '/guests', icon: Users2 },
+    { id: 'gifts', label: 'Lista de Presentes', path: '/gifts', icon: Gift },
+    { id: 'programa', label: 'Programa de Casamento', path: '/program', icon: Clock },
+    { id: 'gallery', label: 'Partilha de fotos', path: '/gallery', icon: Image },
+    
   ];
 
   // Vendor tabs with icons
