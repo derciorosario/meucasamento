@@ -299,8 +299,8 @@ const ProgramPage = () => {
     setLoadingShare(true);
     try {
       const newPublicState = !shareStatus.isPublic;
-      await api.toggleProgramShare(newPublicState);
-      setShareStatus(prev => ({ ...prev, isPublic: newPublicState }));
+      let response=await api.toggleProgramShare(newPublicState);
+      setShareStatus(prev => ({ ...prev, isPublic: newPublicState,shareCode:response?.data?.shareCode || response?.data?.data?.shareCode || prev.shareCode }));
       toast.success(newPublicState ? 'Programa tornado público!' : 'Programa tornado privado!');
     } catch (error) {
       console.error('Error toggling public:', error);
