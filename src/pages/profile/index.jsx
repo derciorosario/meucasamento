@@ -1384,7 +1384,7 @@ const ProfilePage = () => {
                   <User className="w-4 h-4 inline-block mr-1" />
                   Dados
                 </button>
-                {(formData.role === 'couple') && (
+                {(user?.role === 'couple') && (
                   <button
                     onClick={() => setActiveTab('wedding')}
                     className={`px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
@@ -1397,10 +1397,10 @@ const ProfilePage = () => {
                     Casamento
                   </button>
                 )}
-                {formData.role === 'couple' && (
+                {user?.role === 'couple' && (
                   <button
                     onClick={() => setActiveTab('gallery')}
-                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
+                    className={`px-4 py-2 hidden rounded-full text-sm font-medium transition-all whitespace-nowrap ${
                       activeTab === 'gallery' 
                         ? 'bg-[#9CAA8E] text-white shadow-md' 
                         : 'bg-white text-gray-600 border border-gray-200'
@@ -1410,7 +1410,7 @@ const ProfilePage = () => {
                     Galeria
                   </button>
                 )}
-                {formData.userType === 'vendor' && (
+                {user?.userType === 'vendor' && (
                   <button
                     onClick={() => setActiveTab('vendor')}
                     className={`px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
@@ -1423,7 +1423,7 @@ const ProfilePage = () => {
                     Empresa
                   </button>
                 )}
-                {formData.userType === 'vendor' && selectedVendor && (
+                {user?.userType === 'vendor' && selectedVendor && (
                   <>
                     <button
                       onClick={() => setActiveTab('quotes')}
@@ -1454,7 +1454,7 @@ const ProfilePage = () => {
                     </button>
                   </>
                 )}
-                {formData.role === 'couple' && (
+                {user?.role === 'couple' && (
                   <button
                     onClick={() => setActiveTab('myquotes')}
                     className={`px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
@@ -1472,7 +1472,7 @@ const ProfilePage = () => {
                     )}
                   </button>
                 )}
-                {(formData.userType === 'vendor' || formData.userType === 'wedding_planner') && (
+                {(user?.userType === 'vendor' || user?.userType === 'wedding_planner') && (
                   <button
                     onClick={() => setActiveTab('calendar')}
                     className={`px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
@@ -1489,7 +1489,7 @@ const ProfilePage = () => {
             </div>
             
             {/* Mobile Menu Button for additional actions */}
-            {formData.userType === 'vendor' && (
+            {user?.userType === 'vendor' && (
               <div className="relative ml-2" ref={mobileMenuRef}>
                 <button
                   onClick={() => setShowMobileMenu(!showMobileMenu)}
@@ -3434,7 +3434,7 @@ const ProfilePage = () => {
             </div>
 
             {/* Submit Button - Mobile Sticky Bottom */}
-            <div className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-10">
+            <div className="md:hidden bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-4 z-10">
               {!isPartner && (
                 <button
                   type="submit"
