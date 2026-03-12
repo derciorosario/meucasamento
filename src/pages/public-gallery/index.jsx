@@ -31,6 +31,15 @@ const PublicGallery = () => {
   const [viewMode, setViewMode] = useState('slides'); // 'slides' or 'grid'
   const [downloading, setDownloading] = useState(false);
   const [downloadProgress, setDownloadProgress] = useState(0);
+  
+  // Touch state for swipe functionality
+  const [touchStart, setTouchStart] = useState(null);
+  const [touchEnd, setTouchEnd] = useState(null);
+  const minSwipeDistance = 50;
+  
+  // Touch state for card slides
+  const [cardTouchStart, setCardTouchStart] = useState({});
+  const [cardTouchEnd, setCardTouchEnd] = useState({});
 
 
   const data=useData()
@@ -87,6 +96,53 @@ const PublicGallery = () => {
   const closeLightbox = () => {
     setLightboxGallery(null);
     setLightboxIndex(0);
+  };
+
+  // Touch handlers for lightbox swipe
+  const onTouchStart = (e) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+    if (isLeftSwipe && lightboxIndex < lightboxGallery.photos.length - 1) {
+      setLightboxIndex(lightboxIndex + 1);
+    } else if (isRightSwipe && lightboxIndex > 0) {
+      setLightboxIndex(lightboxIndex - 1);
+    }
+  };
+
+  // Touch handlers for card slides swipe
+  const onCardTouchStart = (e, galleryId) => {
+    setCardTouchEnd(prev => ({ ...prev, [galleryId]: null }));
+    setCardTouchStart(prev => ({ ...prev, [galleryId]: e.targetTouches[0].clientX }));
+  };
+
+  const onCardTouchMove = (e, galleryId) => {
+    setCardTouchEnd(prev => ({ ...prev, [galleryId]: e.targetTouches[0].clientX }));
+  };
+
+  const onCardTouchEnd = (galleryId, totalPhotos) => {
+    const touchStartVal = cardTouchStart[galleryId];
+    const touchEndVal = cardTouchEnd[galleryId];
+    if (!touchStartVal || !touchEndVal) return;
+    const distance = touchStartVal - touchEndVal;
+    const currentIdx = getGalleryIndex(galleryId);
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+    if (isLeftSwipe && currentIdx < totalPhotos - 1) {
+      setGalleryIndex(galleryId, currentIdx + 1);
+    } else if (isRightSwipe && currentIdx > 0) {
+      setGalleryIndex(galleryId, currentIdx - 1);
+    }
   };
 
   const nextSlide = () => {
@@ -307,7 +363,12 @@ const PublicGallery = () => {
       </div>
 
       {/* Slideshow - Responsive height */}
-      <div className="relative h-[300px] sm:h-[400px] bg-gray-900">
+      <div 
+        className="relative h-[300px] sm:h-[400px] bg-gray-900"
+        onTouchStart={(e) => onCardTouchStart(e, gallery._id)}
+        onTouchMove={(e) => onCardTouchMove(e, gallery._id)}
+        onTouchEnd={() => onCardTouchEnd(gallery._id, gallery.photos?.length || 0)}
+      >
         {gallery.photos && gallery.photos.length > 0 ? (
           <>
             <AnimatePresence mode='wait'>
@@ -523,6 +584,9 @@ const PublicGallery = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black z-50 flex items-center justify-center"
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
           >
             {/* Close button */}
             <button
