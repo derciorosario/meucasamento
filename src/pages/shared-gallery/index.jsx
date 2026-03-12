@@ -25,6 +25,11 @@ const SharedGallery = () => {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const fileInputRef = useRef(null);
+  
+  // Touch state for swipe functionality
+  const [touchStart, setTouchStart] = useState(null);
+  const [touchEnd, setTouchEnd] = useState(null);
+  const minSwipeDistance = 50;
 
     const data=useData()
     
@@ -42,6 +47,28 @@ const SharedGallery = () => {
       }
   
     },[lightboxIndex])
+
+  // Touch handlers for swipe functionality
+  const onTouchStart = (e) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+    if (isLeftSwipe && lightboxIndex < album.photos.length - 1) {
+      setLightboxIndex(lightboxIndex + 1);
+    } else if (isRightSwipe && lightboxIndex > 0) {
+      setLightboxIndex(lightboxIndex - 1);
+    }
+  };
 
   // Keyboard navigation
   const handleKeyDown = useCallback((e) => {
@@ -390,6 +417,9 @@ const SharedGallery = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black z-50 flex items-center justify-center"
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
           >
             {/* Close button */}
             <button

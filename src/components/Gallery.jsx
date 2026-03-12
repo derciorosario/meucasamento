@@ -60,6 +60,11 @@ const Gallery = ({ userId = null, isOwner = false, isPublicView = false }) => {
   const [photoViewMode, setPhotoViewMode] = useState('grid'); // 'grid' or 'list' - for photos inside album
   const fileInputRef = useRef(null);
   const albumMenuRef = useRef(null);
+  
+  // Touch state for swipe functionality
+  const [touchStart, setTouchStart] = useState(null);
+  const [touchEnd, setTouchEnd] = useState(null);
+  const minSwipeDistance = 50;
 
   const data=useData()
   
@@ -99,6 +104,28 @@ const Gallery = ({ userId = null, isOwner = false, isPublicView = false }) => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Touch handlers for swipe functionality
+  const onTouchStart = (e) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd || !selectedAlbum) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+    if (isLeftSwipe && lightboxIndex < selectedAlbum.photos.length - 1) {
+      setLightboxIndex(lightboxIndex + 1);
+    } else if (isRightSwipe && lightboxIndex > 0) {
+      setLightboxIndex(lightboxIndex - 1);
+    }
+  };
 
   // Keyboard navigation
   const handleKeyDown = useCallback((e) => {
@@ -1363,6 +1390,9 @@ const Gallery = ({ userId = null, isOwner = false, isPublicView = false }) => {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 className="hidden md:flex fixed inset-0 bg-black z-50 items-center justify-center"
+                onTouchStart={onTouchStart}
+                onTouchMove={onTouchMove}
+                onTouchEnd={onTouchEnd}
               >
                 {/* Close button */}
                 <button
@@ -1475,6 +1505,9 @@ const Gallery = ({ userId = null, isOwner = false, isPublicView = false }) => {
                 animate={{ opacity: 1 }}
                 exit={{ opacity: 0 }}
                 className="md:hidden fixed inset-0 bg-black z-50 flex flex-col"
+                onTouchStart={onTouchStart}
+                onTouchMove={onTouchMove}
+                onTouchEnd={onTouchEnd}
               >
                 {/* Header */}
                 <div className="absolute top-0 left-0 right-0 z-10 flex items-center justify-between p-4 bg-gradient-to-b from-black/50 to-transparent">
