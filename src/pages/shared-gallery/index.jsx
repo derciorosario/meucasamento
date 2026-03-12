@@ -226,48 +226,92 @@ const SharedGallery = () => {
       )}
 
       {/* Album Header */}
-      <div className="bg-white shadow-md p-6">
-        <div className="max-w-7xl mx-auto">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <a href="/" className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors">
-                <ChevronLeft className="w-5 h-5" />
-                <span>Voltar</span>
-              </a>
-            </div>
-            <div className="text-center">
-              <h1 className="text-2xl font-serif font-bold text-black max-md:text-[18px]">{album?.name}</h1>
-              {album?.createdBy && (
-                <p className="text-gray-500 text-sm">
-                  Por {album.createdBy.name}
-                </p>
-              )}
-            </div>
-           {album?.allowUpload && ( <div className="w-24 flex justify-end">
-              
-                <>
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleFileSelect}
-                    accept="image/*"
-                    multiple
-                    className="hidden"
-                    id="shared-photo-upload"
-                  />
-                  <label
-                    htmlFor="shared-photo-upload"
-                    className={`inline-flex items-center gap-2 px-4 py-2 bg-[#9CAA8E] text-white rounded-full cursor-pointer hover:bg-[#8A9A7E] transition-colors ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                  >
-                    <Upload className="w-4 h-4" />
-                     <span className="max-md:hidden">{uploading ? 'Carregando...' : 'Adicionar'}</span>
-                  </label>
-                </>
-             
-            </div> )}
-          </div>
+<div className="bg-white shadow-md p-6">
+  <div className="max-w-7xl mx-auto">
+    {/* Desktop layout */}
+    <div className="hidden md:flex items-center justify-between">
+      <div className="flex items-center gap-4">
+        <a href="/" className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors">
+          <ChevronLeft className="w-5 h-5" />
+          <span>Voltar</span>
+        </a>
+      </div>
+      <div className="text-center">
+        <h1 className="text-2xl font-serif font-bold text-black">{album?.name}</h1>
+        {album?.createdBy && (
+          <p className="text-gray-500 text-sm">
+            Por {album.createdBy.name}
+          </p>
+        )}
+      </div>
+      {album?.allowUpload && (
+        <div className="w-24 flex justify-end">
+          <>
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileSelect}
+              accept="image/*"
+              multiple
+              className="hidden"
+              id="shared-photo-upload"
+            />
+            <label
+              htmlFor="shared-photo-upload"
+              className={`inline-flex items-center gap-2 px-4 py-2 bg-[#9CAA8E] text-white rounded-full cursor-pointer hover:bg-[#8A9A7E] transition-colors whitespace-nowrap ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              <Upload className="w-4 h-4" />
+              <span>{uploading ? 'Carregando...' : 'Adicionar fotos'}</span>
+            </label>
+          </>
+        </div>
+      )}
+    </div>
+
+    {/* Mobile layout */}
+    <div className="flex md:hidden flex-col gap-4">
+      {/* Top row with back button and title */}
+      <div className="flex items-center justify-between">
+        <a href="/" className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors">
+          <ChevronLeft className="w-5 h-5" />
+          <span>Voltar</span>
+        </a>
+        <div className="flex-1 text-right">
+          <h1 className="text-lg font-serif font-bold text-black line-clamp-1">{album?.name}</h1>
+          {album?.createdBy && (
+            <p className="text-gray-500 text-xs">
+              Por {album.createdBy.name}
+            </p>
+          )}
         </div>
       </div>
+      
+      {/* Bottom row with upload button (if allowed) */}
+      {album?.allowUpload && (
+        <div className="w-full">
+          <>
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleFileSelect}
+              accept="image/*"
+              multiple
+              className="hidden"
+              id="shared-photo-upload-mobile"
+            />
+            <label
+              htmlFor="shared-photo-upload-mobile"
+              className={`w-full inline-flex items-center justify-center gap-2 px-4 py-3 bg-[#9CAA8E] text-white rounded-full cursor-pointer hover:bg-[#8A9A7E] transition-colors whitespace-nowrap ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              <Upload className="w-4 h-4" />
+              <span>{uploading ? 'Carregando...' : 'Adicionar fotos'}</span>
+            </label>
+          </>
+        </div>
+      )}
+    </div>
+  </div>
+</div>
 
       {/* Photo Grid */}
       <div className="max-w-7xl mx-auto p-6">
@@ -330,7 +374,7 @@ const SharedGallery = () => {
                   className={`inline-flex items-center gap-2 mt-4 px-6 py-3 bg-[#9CAA8E] text-white rounded-full cursor-pointer hover:bg-[#8A9A7E] transition-colors ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}
                 >
                   <Upload className="w-5 h-5" />
-                  {uploading ? 'Carregando...' : 'Adicionar Fotos'}
+                  {uploading ? 'Carregando...' : 'Adicionar fotos'}
                 </label>
               </>
             )}

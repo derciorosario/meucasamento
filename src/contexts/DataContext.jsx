@@ -14,6 +14,28 @@ export const DataProvider = ({ children }) => {
     ]
     const [_openPopUps, _setOpenPopUps] = useState(initial_popups);
 
+    // State for partner login status
+    const [isPartner, setIsPartner] = useState(() => {
+      return localStorage.getItem('isPartner') === 'true';
+    });
+
+    // Update isPartner when localStorage changes
+    useEffect(() => {
+      const handleStorageChange = () => {
+        setIsPartner(localStorage.getItem('isPartner') === 'true');
+      };
+      
+      // Listen for storage events (when localStorage changes in other tabs/windows)
+      window.addEventListener('storage', handleStorageChange);
+      
+      // Also check on mount and when component re-renders
+      handleStorageChange();
+      
+      return () => {
+        window.removeEventListener('storage', handleStorageChange);
+      };
+    }, []);
+
     function _closeAllPopUps(){
           _setOpenPopUps(initial_popups)
           document.removeEventListener('click', handleOutsideClick)
@@ -60,9 +82,12 @@ export const DataProvider = ({ children }) => {
      const [postDialogOpen, setPostDialogOpen] = useState(false);
 
     const env="test" //test || pro
+    
     const value = {
       postDialogOpen, setPostDialogOpen,
       env,
+      isPartner,
+      setIsPartner,
       _openPopUps,
       _scrollToSection,
       _closeAllPopUps,

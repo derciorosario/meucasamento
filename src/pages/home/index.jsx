@@ -580,50 +580,54 @@ export default function WeddingLanding() {
         
         {/* Content */}
         <div className="relative z-10 text-center text-white px-8 max-w-4xl mx-auto">
-          <h1 className="text-4xl md:text-6xl font-serif mb-6">
+          <h1 className="text-4xl md:text-[52px] font-serif mb-6">
             Planeie e organize o seu casamento em um só lugar
           </h1>
+
           <p className="text-xl md:text-2xl mb-12 text-white/95 max-lg:opacity-0 pointer-none:">
             {t('hero.subtitle')}
           </p>
+
         </div>
         
         {/* White Card Overlay */}
         <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-[70%] max-md:translate-y-[75%]  w-[95%] max-w-6xl bg-white rounded-3xl shadow-2xl z-20 p-8 md:p-12">
           <h2 className="text-3xl md:text-4xl font-serif text-center mb-12 text-black">Tudo o que você precisa</h2>
           
-         
-         
          <div className="grid grid-cols-2 md:grid-cols-7 gap-6 md:gap-8 mb-8">
-  <button onClick={() => navigate('/checklist')} className="text-center cursor-pointer">
-    <div className="flex flex-col items-start h-full">
-      <div className="w-14 h-14 md:w-16 md:h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3 hover:bg-primary-100 transition-colors">
-        <CheckSquare className="w-7 h-7 md:w-8 md:h-8 text-[#9CAA8E]" />
-      </div>
-      <h3 className="font-semibold text-sm md:text-base mb-1 text-black w-full">{t('features.checklist.title')}</h3>
-      <p className="text-xs md:text-sm text-gray-600 w-full">{t('features.checklist.description')}</p>
-    </div>
-  </button>
-  
-  <button onClick={() => navigate('/budget')} className="text-center cursor-pointer">
-    <div className="flex flex-col items-start h-full">
-      <div className="w-14 h-14 md:w-16 md:h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3 hover:bg-primary-100 transition-colors">
-        <DollarSign className="w-7 h-7 md:w-8 md:h-8 text-[#9CAA8E]" />
-      </div>
-      <h3 className="font-semibold text-sm md:text-base mb-1 text-black w-full">{t('features.budget.title')}</h3>
-      <p className="text-xs md:text-sm text-gray-600 w-full">{t('features.budget.description')}</p>
-    </div>
-  </button>
-  
-  <button onClick={() => navigate('/vendors')} className="text-center cursor-pointer">
-    <div className="flex flex-col items-start h-full">
-      <div className="w-14 h-14 md:w-16 md:h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3 hover:bg-primary-100 transition-colors">
-        <Users className="w-7 h-7 md:w-8 md:h-8 text-[#9CAA8E]" />
-      </div>
-      <h3 className="font-semibold text-sm md:text-base mb-1 text-black w-full">{t('features.vendors.title')}</h3>
-      <p className="text-xs md:text-sm text-gray-600 w-full">{t('features.vendors.description')}</p>
-    </div>
-  </button>
+
+            <button onClick={() => navigate('/vendors')} className="text-center cursor-pointer">
+              <div className="flex flex-col items-start h-full">
+                <div className="w-14 h-14 md:w-16 md:h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3 hover:bg-primary-100 transition-colors">
+                  <Users className="w-7 h-7 md:w-8 md:h-8 text-[#9CAA8E]" />
+                </div>
+                <h3 className="font-semibold text-sm md:text-base mb-1 text-black w-full">{t('features.vendors.title')}</h3>
+                <p className="text-xs md:text-sm text-gray-600 w-full">{t('features.vendors.description')}</p>
+              </div>
+          </button>
+          
+          <button onClick={() => navigate('/budget')} className="text-center cursor-pointer">
+            <div className="flex flex-col items-start h-full">
+              <div className="w-14 h-14 md:w-16 md:h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3 hover:bg-primary-100 transition-colors">
+                <DollarSign className="w-7 h-7 md:w-8 md:h-8 text-[#9CAA8E]" />
+              </div>
+              <h3 className="font-semibold text-sm md:text-base mb-1 text-black w-full">{t('features.budget.title')}</h3>
+              <p className="text-xs md:text-sm text-gray-600 w-full">{t('features.budget.description')}</p>
+            </div>
+          </button>
+
+
+        <button onClick={() => navigate('/checklist')} className="text-center cursor-pointer">
+          <div className="flex flex-col items-start h-full">
+            <div className="w-14 h-14 md:w-16 md:h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3 hover:bg-primary-100 transition-colors">
+              <CheckSquare className="w-7 h-7 md:w-8 md:h-8 text-[#9CAA8E]" />
+            </div>
+            <h3 className="font-semibold text-sm md:text-base mb-1 text-black w-full">{t('features.checklist.title')}</h3>
+            <p className="text-xs md:text-sm text-gray-600 w-full">{t('features.checklist.description')}</p>
+          </div>
+        </button>
+        
+
   
   <button onClick={() => navigate('/guests')} className="text-center cursor-pointer">
     <div className="flex flex-col items-start h-full">
@@ -644,6 +648,16 @@ export default function WeddingLanding() {
       <p className="text-xs md:text-sm text-gray-600 w-full">Gerencie seus presentes de casamento</p>
     </div>
   </button>
+
+   <button onClick={() => navigate('/program')} className="text-center cursor-pointer">
+    <div className="flex flex-col items-start h-full">
+      <div className="w-14 h-14 md:w-16 md:h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3 hover:bg-primary-100 transition-colors">
+        <Calendar className="w-7 h-7 md:w-8 md:h-8 text-[#9CAA8E]" />
+      </div>
+      <h3 className="font-semibold text-sm md:text-base mb-1 text-black w-full">Programa de Casamento</h3>
+      <p className="text-xs md:text-sm text-gray-600 w-full">Planeie o programa do grande dia</p>
+    </div>
+  </button>
   
   <button onClick={() => navigate('/public-gallery')} className="text-center cursor-pointer">
     <div className="flex flex-col items-start h-full">
@@ -655,15 +669,7 @@ export default function WeddingLanding() {
     </div>
   </button>
 
-  <button onClick={() => navigate('/program')} className="text-center cursor-pointer">
-    <div className="flex flex-col items-start h-full">
-      <div className="w-14 h-14 md:w-16 md:h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-3 hover:bg-primary-100 transition-colors">
-        <Calendar className="w-7 h-7 md:w-8 md:h-8 text-[#9CAA8E]" />
-      </div>
-      <h3 className="font-semibold text-sm md:text-base mb-1 text-black w-full">Programa de Casamento</h3>
-      <p className="text-xs md:text-sm text-gray-600 w-full">Planeie o programa do grande dia</p>
-    </div>
-  </button>
+ 
 </div>
           
           <div className="flex flex-col md:flex-row items-center justify-between gap-6 pt-6 border-t">
@@ -729,6 +735,27 @@ export default function WeddingLanding() {
           </div>
           
           <div className="grid md:grid-cols-5 gap-8">
+
+
+              <div className="text-center">
+              <div className="w-16 h-16 bg-white rounded-2xl shadow-md flex items-center justify-center mx-auto mb-4">
+                <Users className="w-8 h-8 text-[#9CAA8E]" />
+              </div>
+              <h3 className="font-semibold mb-2 text-black">Fornecedores</h3>
+              <p className="text-sm text-gray-600">Encontre fornecedores de confiança</p>
+            </div>
+
+
+               <div className="text-center">
+              <div className="w-16 h-16 bg-white rounded-2xl shadow-md flex items-center justify-center mx-auto mb-4">
+                <DollarSign className="w-8 h-8 text-[#9CAA8E]" />
+              </div>
+              <h3 className="font-semibold mb-2 text-black">Controle de Orçamento</h3>
+              <p className="text-sm text-gray-600">Controle orçamento e gastos</p>
+            </div>
+            
+
+           
             <div className="text-center">
               <div className="w-16 h-16 bg-white rounded-2xl shadow-md flex items-center justify-center mx-auto mb-4">
                 <CheckSquare className="w-8 h-8 text-[#9CAA8E]" />
@@ -737,21 +764,8 @@ export default function WeddingLanding() {
               <p className="text-sm text-gray-600">Organize todo o casamento passo a passo</p>
             </div>
             
-            <div className="text-center">
-              <div className="w-16 h-16 bg-white rounded-2xl shadow-md flex items-center justify-center mx-auto mb-4">
-                <DollarSign className="w-8 h-8 text-[#9CAA8E]" />
-              </div>
-              <h3 className="font-semibold mb-2 text-black">Controle de Orçamento</h3>
-              <p className="text-sm text-gray-600">Controle orçamento e gastos</p>
-            </div>
-            
-            <div className="text-center">
-              <div className="w-16 h-16 bg-white rounded-2xl shadow-md flex items-center justify-center mx-auto mb-4">
-                <Users className="w-8 h-8 text-[#9CAA8E]" />
-              </div>
-              <h3 className="font-semibold mb-2 text-black">Fornecedores</h3>
-              <p className="text-sm text-gray-600">Encontre fornecedores de confiança</p>
-            </div>
+         
+          
             
             <div className="text-center">
               <div className="w-16 h-16 bg-white rounded-2xl shadow-md flex items-center justify-center mx-auto mb-4">
@@ -760,14 +774,7 @@ export default function WeddingLanding() {
               <h3 className="font-semibold mb-2 text-black">Convites Online</h3>
               <p className="text-sm text-gray-600">Confirmação de presença online</p>
             </div>
-            
-            <div className="text-center hidden">
-              <div className="w-16 h-16 bg-white rounded-2xl shadow-md flex items-center justify-center mx-auto mb-4">
-                <Globe className="w-8 h-8 text-[#9CAA8E]" />
-              </div>
-              <h3 className="font-semibold mb-2 text-black">Site do Casal</h3>
-              <p className="text-sm text-gray-600">Site personalizado do casal</p>
-            </div>
+       
 
                 <div className="text-center">
         <div className="w-16 h-16 bg-white rounded-2xl shadow-md flex items-center justify-center mx-auto mb-4">
@@ -969,7 +976,7 @@ export default function WeddingLanding() {
                 </div>
               </div>
               
-              <button onClick={()=>navigate('/signup')} className="px-8 py-3 border-2 border-[#9CAA8E] text-[#9CAA8E] rounded-full hover:bg-[#9CAA8E] hover:text-white">
+              <button onClick={()=>navigate('/vendor-landing')} className="px-8 py-3 border-2 border-[#9CAA8E] text-[#9CAA8E] rounded-full hover:bg-[#9CAA8E] hover:text-white">
                 {t('cta.registerVendor')}
               </button>
             </div>

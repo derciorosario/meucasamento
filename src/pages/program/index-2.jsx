@@ -3,8 +3,7 @@ import DefaultLayout from '../../layout/DefaultLayout';
 import { 
   ChevronDown, Check, Heart, Loader2, Edit2, Trash2, X, Plus, 
   GripVertical, Clock, User, MapPin, Save, RotateCcw,
-  Menu, ChevronRight, Calendar, Users, Settings, MoreVertical, Play,
-  Share2, QrCode, Download, Eye, EyeOff, Copy, Printer
+  Menu, ChevronRight, Calendar, Users, Settings, MoreVertical, Play
 } from 'lucide-react';
 import { toast } from '../../lib/toast';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -142,12 +141,6 @@ const ProgramPage = () => {
   const [editSectionTitle, setEditSectionTitle] = useState('');
   const [resetConfirm, setResetConfirm] = useState(false);
   
-  // Share functionality state
-  const [shareStatus, setShareStatus] = useState({ isPublic: false, shareCode: null });
-  const [showShareModal, setShowShareModal] = useState(false);
-  const [showSettingsModal, setShowSettingsModal] = useState(false);
-  const [loadingShare, setLoadingShare] = useState(false);
-  
   // Drag and drop state
   const [draggedItem, setDraggedItem] = useState(null);
   const [dragOverItem, setDragOverItem] = useState(null);
@@ -277,74 +270,6 @@ const ProgramPage = () => {
 
     loadProgram();
   }, []);
-
-  // Load share status
-  useEffect(() => {
-    const loadShareStatus = async () => {
-      try {
-        const response = await api.getProgramShareStatus();
-        if (response.data.success) {
-          setShareStatus(response.data.data);
-        }
-      } catch (error) {
-        console.error('Error loading share status:', error);
-      }
-    };
-    
-    loadShareStatus();
-  }, []);
-
-  // Toggle public/private
-  const togglePublic = async () => {
-    setLoadingShare(true);
-    try {
-      const newPublicState = !shareStatus.isPublic;
-      await api.toggleProgramShare(newPublicState);
-      setShareStatus(prev => ({ ...prev, isPublic: newPublicState }));
-      toast.success(newPublicState ? 'Programa tornado público!' : 'Programa tornado privado!');
-    } catch (error) {
-      console.error('Error toggling public:', error);
-      toast.error('Erro ao alterar visibilidade');
-    } finally {
-      setLoadingShare(false);
-    }
-  };
-
-  // Copy share link
-  const copyShareLink = () => {
-    const link = `${window.location.origin}/program/shared/${shareStatus.shareCode}`;
-    navigator.clipboard.writeText(link);
-    toast.success('Link copiado para a área de transferência!');
-  };
-
-  // Get QR code URL
-  const getQRCodeUrl = () => {
-    const link = `${window.location.origin}/program/shared/${shareStatus.shareCode}`;
-    return `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(link)}`;
-  };
-
-  // Download QR code
-  const downloadQRCode = async () => {
-    const url = getQRCodeUrl();
-    try {
-      const response = await fetch(url);
-      const blob = await response.blob();
-      const link = document.createElement('a');
-      link.href = window.URL.createObjectURL(blob);
-      link.download = `qrcode-program.png`;
-      link.click();
-      window.URL.revokeObjectURL(link.href);
-      toast.success('QR Code descargado com sucesso');
-    } catch (error) {
-      console.error('Error downloading QR code:', error);
-      toast.error('Erro ao descargar QR Code');
-    }
-  };
-
-  // Print program as PDF
-  const printProgram = () => {
-    window.print();
-  };
 
   const saveProgramToApi = async (newProgram) => {
     setSaving(true);
@@ -1054,14 +979,6 @@ const handleAddResponsibleFromForm = async () => {
             <RotateCcw className="w-4 h-4" />
             Restaurar
           </button>
-        
-          <button
-            onClick={() => setShowShareModal(true)}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium bg-primary-500 text-white hover:bg-primary-600 transition-colors"
-          >
-            <Share2 className="w-4 h-4" />
-            Compartilhar
-          </button>
           <button
             onClick={() => setDeleteAllConfirm(true)}
             className="flex hidden items-center gap-2 px-4 py-2.5 rounded-lg font-medium text-red-600 hover:bg-red-50 transition-colors"
@@ -1106,13 +1023,12 @@ const handleAddResponsibleFromForm = async () => {
                   <RotateCcw className="w-3 h-3" />
                   Restaurar
                 </button>
-              
                 <button
-                  onClick={() => setShowShareModal(true)}
-                  className="px-3 py-1.5 bg-primary-500 rounded-lg text-xs font-medium text-white flex items-center gap-1"
+                  onClick={() => setDeleteAllConfirm(true)}
+                  className="px-3 hidden py-1.5 bg-white rounded-lg text-xs font-medium text-red-600 border border-gray-200 flex items-center gap-1"
                 >
-                  <Share2 className="w-3 h-3" />
-                  Compartilhar
+                  <Trash2 className="w-3 h-3" />
+                  Apagar
                 </button>
               </div>
               <button
@@ -3223,201 +3139,6 @@ const handleAddResponsibleFromForm = async () => {
             </div>
           </div>
         )}
-
-        {/* Share Modal - Desktop */}
-        {showShareModal && (
-          <div className="hidden lg:flex fixed inset-0 bg-black/50 items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-2xl p-6 max-w-sm w-full text-center">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-xl font-serif font-bold text-black">Compartilhar Programa</h3>
-                <button onClick={() => setShowShareModal(false)}>
-                  <X className="w-6 h-6 text-gray-400" />
-                </button>
-              </div>
-              
-              {/* Settings Toggle */}
-              <div className="mb-6 p-4 bg-gray-50 rounded-xl">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    {shareStatus.isPublic ? (
-                      <Eye className="w-5 h-5 text-green-500" />
-                    ) : (
-                      <EyeOff className="w-5 h-5 text-gray-400" />
-                    )}
-                    <span className="text-gray-700 font-medium">
-                      {shareStatus.isPublic ? 'Público' : 'Privado'}
-                    </span>
-                  </div>
-                  <button
-                    onClick={togglePublic}
-                    disabled={loadingShare}
-                    className={`p-2 rounded-full transition-colors ${shareStatus.isPublic ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-500'} ${loadingShare ? 'opacity-50' : ''}`}
-                  >
-                    {shareStatus.isPublic ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
-                  </button>
-                </div>
-                <p className="text-xs text-gray-500 mt-2">
-                  {shareStatus.isPublic 
-                    ? 'Qualquer pessoa com o link pode ver o programa' 
-                    : 'Apenas você pode ver o programa'}
-                </p>
-              </div>
-              
-              {shareStatus.isPublic && shareStatus.shareCode ? (
-                <>
-                  <div className="bg-gray-50 p-4 rounded-xl mb-4">
-                    <img 
-                      src={getQRCodeUrl()} 
-                      alt="QR Code" 
-                      className="w-48 h-48 mx-auto rounded-lg"
-                    />
-                    <button
-                      onClick={downloadQRCode}
-                      className="mt-3 w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-primary-500/10 text-primary-600 rounded-lg hover:bg-primary-500/20 transition-colors"
-                    >
-                      <Download className="w-4 h-4" />
-                      Baixar QR Code
-                    </button>
-                  </div>
-                  
-                  <p className="text-sm text-gray-600 mb-4">
-                    Escaneie o QR code ou use o link abaixo:
-                  </p>
-                  
-                  <div className="flex items-center gap-2 bg-gray-100 rounded-lg p-2 mb-4">
-                    <input
-                      type="text"
-                      value={`${window.location.origin}/program/shared/${shareStatus.shareCode}`}
-                      readOnly
-                      className="flex-1 bg-transparent text-sm text-black px-2"
-                    />
-                    <button
-                      onClick={copyShareLink}
-                      className="p-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600"
-                    >
-                      <Copy className="w-4 h-4" />
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <div className="text-center py-4">
-                  <p className="text-gray-600 mb-4">
-                    Ative o modo público para gerar um link e QR Code.
-                  </p>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Share Modal - Mobile */}
-        <AnimatePresence>
-          {showShareModal && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="lg:hidden fixed inset-0 bg-black/50 z-50 flex items-end"
-              onClick={() => setShowShareModal(false)}
-            >
-              <motion.div
-                initial={{ y: "100%" }}
-                animate={{ y: 0 }}
-                exit={{ y: "100%" }}
-                transition={{ type: "spring", damping: 25, stiffness: 300 }}
-                className="bg-white rounded-t-2xl w-full max-w-md mx-auto max-h-[90vh] overflow-y-auto"
-                onClick={e => e.stopPropagation()}
-              >
-                <div className="p-4 border-b border-gray-200">
-                  <div className="flex items-center justify-between">
-                    <h3 className="text-lg font-semibold text-black">Compartilhar Programa</h3>
-                    <button 
-                      onClick={() => setShowShareModal(false)}
-                      className="w-10 h-10 flex items-center justify-center rounded-full active:bg-gray-100"
-                    >
-                      <X className="w-5 h-5 text-gray-500" />
-                    </button>
-                  </div>
-                </div>
-                
-                <div className="p-6">
-                  {/* Settings Toggle - Mobile */}
-                  <div className="mb-6 p-4 bg-gray-50 rounded-xl">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-3">
-                        {shareStatus.isPublic ? (
-                          <Eye className="w-5 h-5 text-green-500" />
-                        ) : (
-                          <EyeOff className="w-5 h-5 text-gray-400" />
-                        )}
-                        <span className="text-gray-700 font-medium">
-                          {shareStatus.isPublic ? 'Público' : 'Privado'}
-                        </span>
-                      </div>
-                      <button
-                        onClick={togglePublic}
-                        disabled={loadingShare}
-                        className={`w-12 h-12 rounded-full flex items-center justify-center transition-colors ${shareStatus.isPublic ? 'bg-green-500 text-white' : 'bg-gray-200 text-gray-500'} ${loadingShare ? 'opacity-50' : ''}`}
-                      >
-                        {shareStatus.isPublic ? <Eye className="w-5 h-5" /> : <EyeOff className="w-5 h-5" />}
-                      </button>
-                    </div>
-                    <p className="text-xs text-gray-500 mt-2">
-                      {shareStatus.isPublic 
-                        ? 'Qualquer pessoa com o link pode ver o programa' 
-                        : 'Apenas você pode ver o programa'}
-                    </p>
-                  </div>
-                  
-                  {shareStatus.isPublic && shareStatus.shareCode ? (
-                    <>
-                      <div className="bg-gray-50 p-4 rounded-xl mb-4">
-                        <img 
-                          src={getQRCodeUrl()} 
-                          alt="QR Code" 
-                          className="w-48 h-48 mx-auto rounded-lg"
-                        />
-                        <button
-                          onClick={downloadQRCode}
-                          className="mt-3 w-full inline-flex items-center justify-center gap-2 px-4 py-2 bg-primary-500/10 text-primary-600 rounded-lg hover:bg-primary-500/20 transition-colors"
-                        >
-                          <Download className="w-4 h-4" />
-                          Baixar QR Code
-                        </button>
-                      </div>
-                      
-                      <p className="text-sm text-gray-600 mb-4 text-center">
-                        Escaneie o QR code ou use o link abaixo:
-                      </p>
-                      
-                      <div className="flex items-center gap-2 bg-gray-100 rounded-xl p-2 mb-4">
-                        <input
-                          type="text"
-                          value={`${window.location.origin}/program/shared/${shareStatus.shareCode}`}
-                          readOnly
-                          className="flex-1 bg-transparent text-sm text-black px-2 truncate"
-                        />
-                        <button
-                          onClick={copyShareLink}
-                          className="p-3 bg-primary-500 text-white rounded-lg active:bg-primary-600 flex-shrink-0"
-                          aria-label="Copiar link"
-                        >
-                          <Copy className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </>
-                  ) : (
-                    <div className="text-center py-4">
-                      <p className="text-gray-600 mb-4">
-                        Ative o modo público para gerar um link e QR Code.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
 
       <style jsx>{`

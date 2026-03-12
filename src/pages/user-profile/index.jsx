@@ -70,13 +70,13 @@ const UserProfile = () => {
         {/* Profile Header */}
         <div className="bg-white rounded-2xl shadow-md p-6 mb-6">
           <div className="flex items-center space-x-6">
-            <div className="w-24 h-24 rounded-full bg-[#9CAA8E] flex items-center justify-center shadow-lg">
-              <span className="text-4xl text-white font-bold">
-                {user?.name?.charAt(0)?.toUpperCase() || 'U'}
-              </span>
-            </div>
+           <div className="w-16 h-16 shrink-0 rounded-full bg-[#9CAA8E] flex items-center justify-center shadow-lg">
+  <span className="text-4xl max-md:text-2xl text-white font-bold">
+    {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+  </span>
+</div>
             <div>
-              <h1 className="text-3xl font-serif font-bold text-black">{user?.name || 'Usuário'}</h1>
+              <h1 className="text-3xl max-md:text-xl font-serif font-bold text-black">{user?.name || 'Usuário'}</h1>
               <p className="text-gray-500 mt-1">
                 {user?.userType === 'vendor' ? 'Fornecedor' : 
                  user?.userType === 'bride' ? 'Noiva' :
@@ -87,7 +87,7 @@ const UserProfile = () => {
         </div>
 
         {/* Tabs */}
-        <div className="flex space-x-3 mb-6 overflow-x-auto pb-2">
+        <div className="flex space-x-3 mb-6 overflow-x-auto pb-2 hidden">
           <button
             onClick={() => setActiveTab('gallery')}
             className={`px-6 py-3 rounded-full font-medium transition-all ${

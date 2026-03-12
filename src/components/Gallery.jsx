@@ -7,7 +7,8 @@ import {
   deleteAlbum, 
   uploadPhotos, 
   deletePhoto,
-  getUserPublicAlbums
+  getUserPublicAlbums,
+  uploadToSharedAlbum
 } from '../api/client';
 import { API_URL } from '../api/client';
 import { toast } from 'react-hot-toast';
@@ -50,6 +51,7 @@ const Gallery = ({ userId = null, isOwner = false, isPublicView = false }) => {
   const [showQRModal, setShowQRModal] = useState(false);
   const [showProfileShareModal, setShowProfileShareModal] = useState(false);
   const [showAlbumMenu, setShowAlbumMenu] = useState(false);
+  const [showUploadAlbumModal, setShowUploadAlbumModal] = useState(false); // For visitors to select album to upload
   const [deleteConfirm, setDeleteConfirm] = useState({ show: false, type: null, id: null, name: '' });
   const [newAlbum, setNewAlbum] = useState({ name: '', description: '', isPublic: false, allowUpload: true });
   const [selectedPhotos, setSelectedPhotos] = useState([]);
@@ -68,6 +70,7 @@ const Gallery = ({ userId = null, isOwner = false, isPublicView = false }) => {
           setShowQRModal(false);
           setShowProfileShareModal(false);
           setShowAlbumMenu(false);
+          setShowUploadAlbumModal(false);
           setLightboxIndex(-1)
 
       }
@@ -209,6 +212,12 @@ const Gallery = ({ userId = null, isOwner = false, isPublicView = false }) => {
     }
   };
 
+  // Check if upload is allowed (owner or visitor with allowUpload and shareCode)
+  const canUpload = isOwner || (selectedAlbum?.allowUpload && selectedAlbum?.shareCode);
+
+  // Get albums that allow visitor upload (for the modal)
+  const albumsAllowUpload = albums.filter(album => album.allowUpload && album.shareCode);
+
   const handleFileSelect = async (e) => {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
@@ -217,26 +226,44 @@ const Gallery = ({ userId = null, isOwner = false, isPublicView = false }) => {
     setUploadProgress(0);
     try {
       const formData = new FormData();
-      if (selectedAlbum) {
-        formData.append('albumId', selectedAlbum._id);
-      }
-      files.forEach(file => {
-        formData.append('photos', file);
-      });
-
-      const response = await uploadPhotos(formData, (progressEvent) => {
-        const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-        setUploadProgress(percentCompleted);
-      });
-      if (response.data.success) {
-        toast.success(`${files.length} foto(s) carregada(s) com sucesso`);
+      
+      // If visitor with shareCode, use shared upload API
+      if (!isOwner && selectedAlbum?.shareCode) {
+        files.forEach(file => {
+          formData.append('photos', file);
+        });
         
-        if (selectedAlbum) {
+        const response = await uploadToSharedAlbum(selectedAlbum.shareCode, formData, (progressEvent) => {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          setUploadProgress(percentCompleted);
+        });
+        if (response.data.success) {
+          toast.success(`${files.length} foto(s) carregada(s) com sucesso`);
           fetchAlbum(selectedAlbum._id);
-        } else {
-          fetchAlbums();
-          if (response.data.data._id) {
-            fetchAlbum(response.data.data._id);
+        }
+      } else {
+        // Owner upload
+        if (selectedAlbum) {
+          formData.append('albumId', selectedAlbum._id);
+        }
+        files.forEach(file => {
+          formData.append('photos', file);
+        });
+
+        const response = await uploadPhotos(formData, (progressEvent) => {
+          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
+          setUploadProgress(percentCompleted);
+        });
+        if (response.data.success) {
+          toast.success(`${files.length} foto(s) carregada(s) com sucesso`);
+          
+          if (selectedAlbum) {
+            fetchAlbum(selectedAlbum._id);
+          } else {
+            fetchAlbums();
+            if (response.data.data._id) {
+              fetchAlbum(response.data.data._id);
+            }
           }
         }
       }
@@ -481,8 +508,8 @@ const Gallery = ({ userId = null, isOwner = false, isPublicView = false }) => {
             </div>
           </div>
 
-          {/* Upload button for owner - Desktop */}
-          {isOwner && (
+          {/* Upload button - for owner or visitor with allowUpload */}
+          {(isOwner || (!isOwner && selectedAlbum?.allowUpload && selectedAlbum?.shareCode)) && (
             <div className="hidden md:block mb-6">
               {/* Download Progress */}
               {downloading && (
@@ -541,7 +568,7 @@ const Gallery = ({ userId = null, isOwner = false, isPublicView = false }) => {
                 className={`inline-flex items-center gap-2 px-6 py-3 bg-[#9CAA8E] text-white rounded-full cursor-pointer hover:bg-[#8A9A7E] transition-colors ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 <Upload className="w-5 h-5" />
-                {uploading ? 'Carregando...' : 'Adicionar Fotos'}
+                {uploading ? 'Carregando...' : (isOwner ? 'Adicionar Fotos' : 'Adicionar Fotos')}
               </label>
             </div>
           )}
@@ -568,8 +595,8 @@ const Gallery = ({ userId = null, isOwner = false, isPublicView = false }) => {
               </div>
             )}
 
-            {/* Upload button for owner - Mobile */}
-            {isOwner && (
+            {/* Upload button - for owner or visitor with allowUpload - Mobile */}
+            {(isOwner || (!isOwner && selectedAlbum?.allowUpload && selectedAlbum?.shareCode)) && (
               <div className="mb-4">
                 {uploading && (
                   <div className="mb-4 bg-white rounded-xl p-4 shadow-sm border border-gray-100">
@@ -708,7 +735,7 @@ const Gallery = ({ userId = null, isOwner = false, isPublicView = false }) => {
                   <Camera className="w-8 h-8 text-gray-400" />
                 </div>
                 <p className="text-gray-500 mb-4">Nenhuma foto neste álbum ainda</p>
-                {isOwner && (
+                {(isOwner || (!isOwner && selectedAlbum?.allowUpload && selectedAlbum?.shareCode)) && (
                   <label
                     htmlFor="photo-upload-mobile"
                     className="inline-flex items-center gap-2 px-6 py-3 bg-[#9CAA8E] text-white rounded-xl font-medium active:bg-[#8A9A7E] transition-colors"
@@ -779,7 +806,7 @@ const Gallery = ({ userId = null, isOwner = false, isPublicView = false }) => {
                 <div className="text-center py-16 bg-white rounded-2xl">
                   <Image className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                   <p className="text-gray-500">Nenhuma foto neste álbum ainda</p>
-                  {isOwner && (
+                  {(isOwner || (!isOwner && selectedAlbum?.allowUpload && selectedAlbum?.shareCode)) && (
                     <label
                       htmlFor="photo-upload"
                       className="inline-flex items-center gap-2 mt-4 px-6 py-3 bg-[#9CAA8E] text-white rounded-full cursor-pointer hover:bg-[#8A9A7E] transition-colors"
@@ -1547,6 +1574,19 @@ const Gallery = ({ userId = null, isOwner = false, isPublicView = false }) => {
           </div>
           
           <div className="flex items-center gap-2">
+            {/* Upload button for visitors - show if there are albums allowing upload */}
+            {!isOwner && albumsAllowUpload.length > 0 && (
+              <button
+                onClick={() => {
+                  setShowUploadAlbumModal(true);
+                  data.setPostDialogOpen(true);
+                }}
+                className="bg-[#9CAA8E] hover:bg-[#8A9A7E] flex items-center gap-2 px-4 py-2 rounded-full shadow hover:shadow-md transition-shadow"
+              >
+                <Upload className="w-4 h-4" />
+                Adicionar Fotos
+              </button>
+            )}
             {isOwner && (
               <button
                 onClick={() =>{
@@ -1576,62 +1616,86 @@ const Gallery = ({ userId = null, isOwner = false, isPublicView = false }) => {
 
         {/* Header - Mobile */}
         <div className="md:hidden sticky top-0 z-10 bg-white/80 backdrop-blur-lg border-b border-gray-200 -mx-4 px-4 py-3 mb-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-xl font-semibold text-black">Galeria</h1>
-              <p className="text-xs text-gray-500">{albums.length} {albums.length === 1 ? 'álbum' : 'álbuns'}</p>
-            </div>
-            
-            <div className="flex items-center gap-2">
-              {/* Mobile View Toggle for Albums */}
-              <div className="flex items-center gap-1 bg-white rounded-lg p-1 border border-gray-200 mr-1">
-                <button
-                  onClick={() => setAlbumViewMode('grid')}
-                  className={`p-2 rounded-md transition-colors ${
-                    albumViewMode === 'grid' ? 'bg-[#9CAA8E] text-white' : 'text-gray-500 active:bg-gray-100'
-                  }`}
-                  aria-label="Visualização em grade"
-                >
-                  <Grid className="w-4 h-4" />
-                </button>
-                <button
-                  onClick={() => setAlbumViewMode('list')}
-                  className={`p-2 rounded-md transition-colors ${
-                    albumViewMode === 'list' ? 'bg-[#9CAA8E] text-white' : 'text-gray-500 active:bg-gray-100'
-                  }`}
-                  aria-label="Visualização em lista"
-                >
-                  <List className="w-4 h-4" />
-                </button>
-              </div>
+  {/* First line - Title and view toggle */}
+  <div className="flex items-center justify-between mb-3">
+    <div>
+      <h1 className="text-xl font-semibold text-black">Galeria</h1>
+      <p className="text-xs text-gray-500">{albums.length} {albums.length === 1 ? 'álbum' : 'álbuns'}</p>
+    </div>
+    
+    {/* Mobile View Toggle for Albums */}
+    <div className="flex items-center gap-1 bg-white rounded-lg p-1 border border-gray-200">
+      <button
+        onClick={() => setAlbumViewMode('grid')}
+        className={`p-2 rounded-md transition-colors ${
+          albumViewMode === 'grid' ? 'bg-[#9CAA8E] text-white' : 'text-gray-500 active:bg-gray-100'
+        }`}
+        aria-label="Visualização em grade"
+      >
+        <Grid className="w-4 h-4" />
+      </button>
+      <button
+        onClick={() => setAlbumViewMode('list')}
+        className={`p-2 rounded-md transition-colors ${
+          albumViewMode === 'list' ? 'bg-[#9CAA8E] text-white' : 'text-gray-500 active:bg-gray-100'
+        }`}
+        aria-label="Visualização em lista"
+      >
+        <List className="w-4 h-4" />
+      </button>
+    </div>
+  </div>
 
-              {isOwner && (
-                <>
-                  <button
-                    onClick={() =>{
-                       setShowProfileShareModal(true)
-                       data.setPostDialogOpen(true)
-                    }}
-                    className="w-10 h-10 flex items-center justify-center rounded-full active:bg-gray-100 transition-colors"
-                    aria-label="Compartilhar perfil"
-                  >
-                    <Share2 className="w-5 h-5 text-gray-700" />
-                  </button>
-                  <button
-                    onClick={() => {
-                      setShowNewAlbumModal(true)
-                      data.setPostDialogOpen(true)
-                    }}
-                    className="w-10 h-10 flex items-center justify-center rounded-full bg-[#9CAA8E] text-white active:bg-[#8A9A7E] transition-colors"
-                    aria-label="Novo álbum"
-                  >
-                    <Plus className="w-5 h-5" />
-                  </button>
-                </>
-              )}
-            </div>
-          </div>
-        </div>
+  {/* Second line - Action buttons with labels */}
+  <div className="flex flex-wrap items-center gap-2">
+    {/* Upload button for visitors - mobile with label */}
+    {!isOwner && albumsAllowUpload.length > 0 && (
+      <button
+        onClick={() => {
+          setShowUploadAlbumModal(true);
+          data.setPostDialogOpen(true);
+        }}
+        className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#9CAA8E] text-white active:bg-[#8A9A7E] transition-colors"
+        aria-label="Adicionar fotos"
+      >
+        <Upload className="w-5 h-5" />
+        <span className="text-sm font-medium">Adicionar foto</span>
+      </button>
+    )}
+
+    {/* Owner buttons with labels */}
+    {isOwner && (
+      <>
+        <button
+          onClick={() =>{
+            setShowProfileShareModal(true)
+            data.setPostDialogOpen(true)
+          }}
+          className="flex items-center gap-2 px-4 py-2 rounded-full bg-gray-100 active:bg-gray-200 transition-colors"
+          aria-label="Compartilhar perfil"
+        >
+          <Share2 className="w-5 h-5 text-gray-700" />
+          <span className="text-sm font-medium text-gray-700">Compartilhar</span>
+        </button>
+        
+        <button
+          onClick={() => {
+            setShowNewAlbumModal(true)
+            data.setPostDialogOpen(true)
+          }}
+          className="flex items-center gap-2 px-4 py-2 rounded-full bg-[#9CAA8E] text-white active:bg-[#8A9A7E] transition-colors"
+          aria-label="Novo álbum"
+        >
+          <Plus className="w-5 h-5" />
+          <span className="text-sm font-medium">Novo álbum</span>
+        </button>
+      </>
+    )}
+  </div>
+</div>
+     
+     
+
 
         {/* Desktop Albums Grid with QR Panel */}
         <div className="hidden md:flex gap-6">
@@ -2146,6 +2210,122 @@ const Gallery = ({ userId = null, isOwner = false, isPublicView = false }) => {
             </motion.div>
           )}
         </AnimatePresence>
+
+        {/* Upload Album Selection Modal for Visitors */}
+        {showUploadAlbumModal && (
+          <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+            <div className="bg-white rounded-2xl p-6 max-w-md w-full max-h-[80vh] overflow-hidden flex flex-col">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-xl font-serif font-bold text-black">Adicionar Fotos</h3>
+                <button onClick={() => {
+                  setShowUploadAlbumModal(false);
+                  data.setPostDialogOpen(false);
+                }}>
+                  <X className="w-6 h-6 text-gray-400" />
+                </button>
+              </div>
+              
+              <p className="text-gray-600 mb-4">Selecione um álbum para adicionar fotos:</p>
+              
+              <div className="flex-1 overflow-y-auto space-y-3">
+                {albumsAllowUpload.map((album) => (
+                  <button
+                    key={album._id}
+                    onClick={() => {
+                      setShowUploadAlbumModal(false);
+                      data.setPostDialogOpen(false);
+                      fetchAlbum(album._id);
+                    }}
+                    className="w-full flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors text-left"
+                  >
+                    <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0">
+                      {album.coverPhoto ? (
+                        <img 
+                          src={`${API_URL}${album.coverPhoto}`} 
+                          alt={album.name}
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                          <Image className="w-6 h-6 text-gray-400" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <h4 className="font-medium text-black truncate">{album.name}</h4>
+                      <p className="text-sm text-gray-500">
+                        {album.photoCount || album.photos?.length || 0} fotos
+                      </p>
+                    </div>
+                    <Upload className="w-5 h-5 text-[#9CAA8E]" />
+                  </button>
+                ))}
+              </div>
+              
+              {albumsAllowUpload.length === 0 && (
+                <div className="text-center py-8">
+                  <p className="text-gray-500">Nenhum álbum disponível para upload</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+const UploadAlbumModal = ({ show, onClose, albums, onSelectAlbum }) => {
+  if (!show) return null;
+  
+  return (
+    <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white rounded-2xl p-6 max-w-md w-full max-h-[80vh] overflow-hidden flex flex-col">
+        <div className="flex justify-between items-center mb-4">
+          <h3 className="text-xl font-serif font-bold text-black">Adicionar Fotos</h3>
+          <button onClick={onClose}>
+            <X className="w-6 h-6 text-gray-400" />
+          </button>
+        </div>
+        
+        <p className="text-gray-600 mb-4">Selecione um álbum para adicionar fotos:</p>
+        
+        <div className="flex-1 overflow-y-auto space-y-3">
+          {albums.map((album) => (
+            <button
+              key={album._id}
+              onClick={() => onSelectAlbum(album)}
+              className="w-full flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors text-left"
+            >
+              <div className="w-16 h-16 rounded-lg overflow-hidden flex-shrink-0">
+                {album.coverPhoto ? (
+                  <img 
+                    src={`${API_URL}${album.coverPhoto}`} 
+                    alt={album.name}
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full bg-gray-200 flex items-center justify-center">
+                    <Image className="w-6 h-6 text-gray-400" />
+                  </div>
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <h4 className="font-medium text-black truncate">{album.name}</h4>
+                <p className="text-sm text-gray-500">
+                  {album.photoCount || album.photos?.length || 0} fotos
+                </p>
+              </div>
+              <Upload className="w-5 h-5 text-[#9CAA8E]" />
+            </button>
+          ))}
+        </div>
+        
+        {albums.length === 0 && (
+          <div className="text-center py-8">
+            <p className="text-gray-500">Nenhum álbum disponível para upload</p>
+          </div>
+        )}
       </div>
     </div>
   );

@@ -1215,7 +1215,7 @@ const ProfilePage = () => {
               </button>
             </div>
             <div>
-              <h1 className="text-3xl font-serif font-bold text-black">{formData.name}</h1>
+              <h1 className="text-3xl max-md:text-2xl font-serif font-bold text-black">{formData.name}</h1>
               <p className="text-gray-500 mt-1">{user?.email}</p>
               <span className="inline-block mt-2 px-4 py-1.5 text-sm font-medium bg-[#9CAA8E] text-white rounded-full">
                 {userTypeOptions.find(opt => opt.value === formData.userType)?.label || formData.userType}
@@ -1277,6 +1277,7 @@ const ProfilePage = () => {
 
         {/* Tabs - Desktop */}
         <div className="hidden md:flex space-x-3 mb-6 overflow-x-auto pb-2">
+        
           <button
             onClick={() => setActiveTab('personal')}
             className={`px-6 py-3 rounded-full font-medium transition-all whitespace-nowrap ${
@@ -1287,7 +1288,7 @@ const ProfilePage = () => {
           >
             Dados Pessoais
           </button>
-          {(formData.role === 'couple') && (
+          {(user?.role === 'couple') && (
             <button
               onClick={() => setActiveTab('wedding')}
               className={`px-6 py-3 rounded-full font-medium transition-all whitespace-nowrap ${
@@ -1299,7 +1300,7 @@ const ProfilePage = () => {
               Casamento
             </button>
           )}
-          {formData.role === 'couple' && (
+          {user?.role === 'couple' && (
             <button
               onClick={() => setActiveTab('gallery')}
               className={`px-6 py-3 hidden rounded-full font-medium transition-all whitespace-nowrap ${
@@ -1311,7 +1312,7 @@ const ProfilePage = () => {
               Galeria
             </button>
           )}
-          {formData.userType === 'vendor' && (
+          {user?.userType === 'vendor' && (
             <button
               onClick={() => setActiveTab('vendor')}
               className={`px-6 py-3 rounded-full font-medium transition-all whitespace-nowrap ${
@@ -1323,7 +1324,7 @@ const ProfilePage = () => {
               Serviço/Empresa
             </button>
           )}
-          {formData.userType === 'vendor' && selectedVendor && (
+          {user?.userType === 'vendor' && selectedVendor && (
             <>
               <button
                 onClick={() => setActiveTab('quotes')}
@@ -1350,7 +1351,7 @@ const ProfilePage = () => {
               </button>
             </>
           )}
-          {formData.role === 'couple' && (
+          {user?.role === 'couple' && (
             <button
               onClick={() => setActiveTab('myquotes')}
               className={`px-6 py-3 rounded-full font-medium transition-all whitespace-nowrap ${

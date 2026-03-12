@@ -311,6 +311,18 @@ export const deleteActivity = (sectionKey, activityId) =>
 export const reorderActivities = (sectionKey, orderedActivityIds) => 
   client.put(`/program/section/${sectionKey}/reorder`, { orderedActivityIds });
 
+// Share program
+export const toggleProgramShare = (enable) => 
+  client.post('/program/share', { enable });
+
+// Get share status
+export const getProgramShareStatus = () => 
+  client.get('/program/share/status');
+
+// Get shared program
+export const getSharedProgram = (shareCode) => 
+  client.get(`/program/shared/${shareCode}`);
+
 // Initialize default tasks for a new user
 export const initDefaultTasks = () => client.post('/tasks/init');
 

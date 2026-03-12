@@ -38,9 +38,11 @@ import VendorProfilePage from './pages/vendor';
 import WeddingGifts from './pages/gifts';
 import SharedGifts from './pages/shared-gifts';
 import WeddingProgram from './pages/program';
+import SharedProgram from './pages/shared-program';
 import SetupPartnerPassword from './pages/setup-partner-password';
 import VendorLanding from './pages/vendor-landing';
 import VendorSignup from './pages/vendor-signup';
+import NotFound from './pages/not-found';
 import { trackPlatformVisit } from './api/client';
 
 function App() {
@@ -62,6 +64,8 @@ function App() {
       <Route path="/" element={<Home />} />
       <Route path="/gallery/shared/:shareCode" element={<SharedGallery />} />
       <Route path="/gifts/shared/:shareCode" element={<SharedGifts />} />
+      <Route path="/program/shared/:shareCode" element={<SharedProgram />} />
+      <Route path="/programa/:shareCode" element={<SharedProgram />} />
       <Route path="/profile/:userId" element={<UserProfile />} />
       <Route path="/vendors" element={<WeddingVendors />} />
       <Route path="/vendors/plans" element={<VendorPlans />} />
@@ -100,6 +104,9 @@ function App() {
 
 
       </Route>
+      
+      {/* Catch-all route for 404 */}
+      <Route path="*" element={<NotFound />} />
     </Routes>
   );
 }
