@@ -591,7 +591,7 @@ export default function WeddingLanding() {
         </div>
         
         {/* White Card Overlay */}
-        <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-[70%] max-md:translate-y-[75%]  w-[95%] max-w-6xl bg-white rounded-3xl shadow-2xl z-20 p-8 md:p-12">
+        <div className="absolute bottom-0 left-1/2 transform -translate-x-1/2 translate-y-[75%] max-md:translate-y-[75%]  w-[95%] max-w-6xl bg-white rounded-3xl shadow-2xl z-20 p-8 md:p-12">
           <h2 className="text-3xl md:text-4xl font-serif text-center mb-12 text-black">Tudo o que você precisa</h2>
           
          <div className="grid grid-cols-2 md:grid-cols-7 gap-6 md:gap-8 mb-8">
@@ -723,7 +723,7 @@ export default function WeddingLanding() {
       </section>
 
 
-      <div className="mt-[300px] max-md:mt-[740px]"></div>
+      <div className="mt-[350px] max-md:mt-[800px]"></div>
       
 
       {/* Features Section */}
