@@ -37,6 +37,7 @@ import {
   Menu,
   ChevronDown
 } from 'lucide-react';
+import Footer from '../../components/Footer';
 
 const AdminInspiration = () => {
   const { user: currentUser } = useAuth();
@@ -944,6 +945,8 @@ const AdminInspiration = () => {
         </div>
       )}
 
+
+
       {/* Animation styles */}
       <style jsx>{`
         @keyframes fadeIn {
@@ -960,6 +963,8 @@ const AdminInspiration = () => {
           animation: fadeIn 0.2s ease-out;
         }
       `}</style>
+
+      <Footer largerPadding={true}/>
     </div>
   );
 };

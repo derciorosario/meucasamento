@@ -21,7 +21,8 @@ import {
   BuildingStorefrontIcon,
   MapPinIcon,
   TagIcon,
-  EyeIcon
+  EyeIcon,
+  ClockIcon
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 
@@ -31,6 +32,7 @@ const AdminVendors = () => {
   const [loading, setLoading] = useState(true);
   const [vendors, setVendors] = useState([]);
   const [pagination, setPagination] = useState({ page: 1, limit: 20, total: 0, pages: 0 });
+  const [statusCounts, setStatusCounts] = useState({ pending: 0, approved: 0, rejected: 0, total: 0 });
   const [filters, setFilters] = useState({
     isFeatured: '',
     status: '',
@@ -47,6 +49,8 @@ const AdminVendors = () => {
   const [showProfile, setShowProfile] = useState(false);
   const [selectedVendor, setSelectedVendor] = useState(null);
   const [currentSlide, setCurrentSlide] = useState(0);
+  const [approveModal, setApproveModal] = useState({ show: false, vendorId: null, vendorName: '' });
+  const [rejectModal, setRejectModal] = useState({ show: false, vendorId: null, vendorName: '', reason: '' });
   
 
   useEffect(() => {
@@ -74,6 +78,7 @@ const AdminVendors = () => {
       if (response.data.success) {
         setVendors(response.data.data.vendors);
         setPagination(response.data.data.pagination);
+        setStatusCounts(response.data.data.statusCounts || { pending: 0, approved: 0, rejected: 0, total: 0 });
       }
 
       setFirstLoad(true)
@@ -132,10 +137,15 @@ const AdminVendors = () => {
   };
 
   const handleApprove = async (vendorId) => {
+    setApproveModal({ show: true, vendorId, vendorName: vendors.find(v => v._id === vendorId)?.name || 'this vendor' });
+  };
+
+  const confirmApprove = async () => {
     try {
-      const response = await approveVendor(vendorId);
+      const response = await approveVendor(approveModal.vendorId);
       if (response.data.success) {
         toast.success('Vendor approved successfully');
+        setApproveModal({ show: false, vendorId: null, vendorName: '' });
         fetchVendors();
       }
     } catch (error) {
@@ -145,11 +155,15 @@ const AdminVendors = () => {
   };
 
   const handleReject = async (vendorId) => {
-    const reason = prompt('Enter rejection reason (optional):');
+    setRejectModal({ show: true, vendorId, vendorName: vendors.find(v => v._id === vendorId)?.name || 'this vendor', reason: '' });
+  };
+
+  const confirmRejectAction = async () => {
     try {
-      const response = await rejectVendor(vendorId, reason || '');
+      const response = await rejectVendor(rejectModal.vendorId, rejectModal.reason || '');
       if (response.data.success) {
         toast.success('Vendor status changed to rejected');
+        setRejectModal({ show: false, vendorId: null, vendorName: '', reason: '' });
         fetchVendors();
       }
     } catch (error) {
@@ -273,12 +287,12 @@ const AdminVendors = () => {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-6 gap-6 mb-8">
           <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Total Vendors</p>
-                <p className="text-2xl font-semibold text-gray-900">{pagination.total}</p>
+                <p className="text-2xl font-semibold text-gray-900">{statusCounts.total}</p>
               </div>
               <div className="p-3 bg-[#9CAA8E]/10 rounded-lg">
                 <BuildingStorefrontIcon className="w-6 h-6 text-[#9CAA8E]" />
@@ -286,7 +300,47 @@ const AdminVendors = () => {
             </div>
           </div>
           
-         
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Pending</p>
+                <p className="text-2xl font-semibold text-yellow-600">
+                  {statusCounts.pending}
+                </p>
+              </div>
+              <div className="p-3 bg-yellow-50 rounded-lg">
+                <ClockIcon className="w-6 h-6 text-yellow-600" />
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Approved</p>
+                <p className="text-2xl font-semibold text-green-600">
+                  {statusCounts.approved}
+                </p>
+              </div>
+              <div className="p-3 bg-green-50 rounded-lg">
+                <CheckCircleIcon className="w-6 h-6 text-green-600" />
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm font-medium text-gray-600">Rejected</p>
+                <p className="text-2xl font-semibold text-red-600">
+                  {statusCounts.rejected}
+                </p>
+              </div>
+              <div className="p-3 bg-red-50 rounded-lg">
+                <XCircleIcon className="w-6 h-6 text-red-600" />
+              </div>
+            </div>
+          </div>
           
           <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
             <div className="flex items-center justify-between">
@@ -808,6 +862,102 @@ const AdminVendors = () => {
                   </button>
                   <button
                     onClick={confirmReject}
+                    className="px-6 py-2.5 bg-red-600 text-white font-medium rounded-xl hover:bg-red-700 transition-colors"
+                  >
+                    Reject
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Approve Confirmation Modal */}
+      {approveModal.show && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex min-h-screen items-center justify-center p-4">
+            {/* Backdrop */}
+            <div 
+              className="fixed inset-0 bg-black/50 transition-opacity"
+              onClick={() => setApproveModal({ show: false, vendorId: null, vendorName: '' })}
+            />
+            
+            {/* Modal */}
+            <div className="relative bg-white rounded-2xl shadow-xl max-w-md w-full p-6 transform transition-all">
+              <div className="text-center">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100 mb-4">
+                  <CheckCircleIcon className="h-8 w-8 text-green-600" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  Approve Vendor
+                </h3>
+                <p className="text-gray-600 mb-6">
+                  Are you sure you want to approve <span className="font-semibold">{approveModal.vendorName}</span>? This will allow the vendor to be visible on the platform.
+                </p>
+                <div className="flex gap-3 justify-center">
+                  <button
+                    onClick={() => setApproveModal({ show: false, vendorId: null, vendorName: '' })}
+                    className="px-6 py-2.5 border border-gray-300 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmApprove}
+                    className="px-6 py-2.5 bg-green-600 text-white font-medium rounded-xl hover:bg-green-700 transition-colors"
+                  >
+                    Approve
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reject Confirmation Modal */}
+      {rejectModal.show && (
+        <div className="fixed inset-0 z-50 overflow-y-auto">
+          <div className="flex min-h-screen items-center justify-center p-4">
+            {/* Backdrop */}
+            <div 
+              className="fixed inset-0 bg-black/50 transition-opacity"
+              onClick={() => setRejectModal({ show: false, vendorId: null, vendorName: '', reason: '' })}
+            />
+            
+            {/* Modal */}
+            <div className="relative bg-white rounded-2xl shadow-xl max-w-md w-full p-6 transform transition-all">
+              <div className="text-center">
+                <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-red-100 mb-4">
+                  <XCircleIcon className="h-8 w-8 text-red-600" />
+                </div>
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  Reject Vendor
+                </h3>
+                <p className="text-gray-600 mb-4">
+                  Are you sure you want to reject <span className="font-semibold">{rejectModal.vendorName}</span>?
+                </p>
+                <div className="mb-6">
+                  <label className="block text-sm font-medium text-gray-700 mb-2 text-left">
+                    Reason (optional)
+                  </label>
+                  <textarea
+                    value={rejectModal.reason}
+                    onChange={(e) => setRejectModal({ ...rejectModal, reason: e.target.value })}
+                    placeholder="Enter reason for rejection..."
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black"
+                    rows="3"
+                  />
+                </div>
+                <div className="flex gap-3 justify-center">
+                  <button
+                    onClick={() => setRejectModal({ show: false, vendorId: null, vendorName: '', reason: '' })}
+                    className="px-6 py-2.5 border border-gray-300 text-gray-700 font-medium rounded-xl hover:bg-gray-50 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={confirmRejectAction}
                     className="px-6 py-2.5 bg-red-600 text-white font-medium rounded-xl hover:bg-red-700 transition-colors"
                   >
                     Reject

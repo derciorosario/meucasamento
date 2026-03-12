@@ -157,6 +157,16 @@ const AdminGalleries = () => {
             </button>
           </div>
         </div>
+
+        {deletePhotoModal.isOpen && (
+          <DeleteConfirmationModal
+            title="Delete Photo"
+            message="Are you sure you want to delete this photo? This action cannot be undone."
+            itemName={deletePhotoModal.photo?.caption || 'this photo'}
+            onConfirm={handleDeletePhotoConfirm}
+            onCancel={() => setDeletePhotoModal({ isOpen: false, photo: null, albumId: null })}
+          />
+        )}
       </div>
     );
   }
@@ -169,59 +179,97 @@ const AdminGalleries = () => {
         
         <div className="bg-white border-gray-200 shadow-sm border-y">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-              <div>
-                <button
-                  onClick={handleCloseAlbum}
-                  className="inline-flex items-center text-sm text-gray-500 hover:text-[#9CAA8E] transition-colors mb-2"
-                >
-                  <ChevronLeftIcon className="w-4 h-4 mr-1" />
-                  Back to Galleries
-                </button>
-                <h1 className="text-3xl font-bold text-gray-900">{selectedAlbum.name}</h1>
-                <div className="flex items-center gap-4 mt-2">
-                  <div className="flex items-center text-sm text-gray-500">
-                    <UserCircleIcon className="w-5 h-5 mr-1" />
-                    {selectedAlbum.createdBy?.name || 'Unknown'}
-                  </div>
-                  <div className="flex items-center text-sm text-gray-500">
-                    <PhotoIcon className="w-5 h-5 mr-1" />
-                    {albumPhotos.length} photos
-                  </div>
-                  <div className="flex items-center text-sm text-gray-500">
-                    <CalendarIcon className="w-5 h-5 mr-1" />
-                    {new Date(selectedAlbum.createdAt).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    })}
-                  </div>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setViewMode('grid')}
-                  className={`p-2 rounded-lg transition-colors ${
-                    viewMode === 'grid' 
-                      ? 'bg-[#9CAA8E] text-white' 
-                      : 'bg-white border border-gray-300 text-gray-600 hover:bg-gray-50'
-                  }`}
-                >
-                  <Squares2X2Icon className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={() => setViewMode('list')}
-                  className={`p-2 rounded-lg transition-colors ${
-                    viewMode === 'list' 
-                      ? 'bg-[#9CAA8E] text-white' 
-                      : 'bg-white border border-gray-300 text-gray-600 hover:bg-gray-50'
-                  }`}
-                >
-                  <ListBulletIcon className="w-5 h-5" />
-                </button>
-              </div>
-            </div>
+           
+           <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4 sm:gap-6">
+  {/* Left Section - Back button and Album Info */}
+  <div className="flex-1 min-w-0">
+    <button
+      onClick={handleCloseAlbum}
+      className="inline-flex items-center text-xs sm:text-sm text-gray-500 hover:text-[#9CAA8E] transition-colors mb-2 sm:mb-3"
+    >
+      <ChevronLeftIcon className="w-3 h-3 sm:w-4 sm:h-4 mr-1" />
+      <span className="truncate">Back to Galleries</span>
+    </button>
+    
+    <h1 className="text-xl sm:text-2xl md:text-3xl font-bold text-gray-900 break-words">
+      {selectedAlbum.name}
+    </h1>
+    
+    {/* Metadata - Responsive layout */}
+    <div className="flex flex-wrap items-center gap-2 sm:gap-4 mt-2 sm:mt-3">
+      {/* Creator */}
+      <div className="flex items-center text-xs sm:text-sm text-gray-500">
+        <UserCircleIcon className="w-4 h-4 sm:w-5 sm:h-5 mr-1 flex-shrink-0" />
+        <span className="truncate max-w-[100px] sm:max-w-[150px] md:max-w-[200px]">
+          {selectedAlbum.createdBy?.name || 'Unknown'}
+        </span>
+      </div>
+      
+      {/* Photo count */}
+      <div className="flex items-center text-xs sm:text-sm text-gray-500">
+        <PhotoIcon className="w-4 h-4 sm:w-5 sm:h-5 mr-1 flex-shrink-0" />
+        <span className="whitespace-nowrap">{albumPhotos.length} {albumPhotos.length === 1 ? 'photo' : 'photos'}</span>
+      </div>
+      
+      {/* Date - Always visible with responsive formatting */}
+      <div className="flex items-center text-xs sm:text-sm text-gray-500">
+        <CalendarIcon className="w-4 h-4 sm:w-5 sm:h-5 mr-1 flex-shrink-0" />
+        {/* Mobile: Short date format */}
+        <span className="sm:hidden whitespace-nowrap">
+          {new Date(selectedAlbum.createdAt).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'numeric',
+            day: 'numeric'
+          })}
+        </span>
+        {/* Desktop: Long date format */}
+        <span className="hidden sm:inline whitespace-nowrap">
+          {new Date(selectedAlbum.createdAt).toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          })}
+        </span>
+      </div>
+    </div>
+    
+    {/* Optional: Album description if available */}
+    {selectedAlbum.description && (
+      <p className="mt-2 sm:mt-3 text-sm sm:text-base text-gray-600 line-clamp-2 sm:line-clamp-3">
+        {selectedAlbum.description}
+      </p>
+    )}
+  </div>
+  
+  {/* Right Section - View Mode Toggles */}
+  <div className="flex items-center gap-2 sm:gap-3 self-start md:self-center">
+    <button
+      onClick={() => setViewMode('grid')}
+      className={`p-1.5 sm:p-2 rounded-lg transition-colors ${
+        viewMode === 'grid' 
+          ? 'bg-[#9CAA8E] text-white' 
+          : 'bg-white border border-gray-300 text-gray-600 hover:bg-gray-50'
+      }`}
+      aria-label="Grid view"
+      title="Grid view"
+    >
+      <Squares2X2Icon className="w-4 h-4 sm:w-5 sm:h-5" />
+    </button>
+    <button
+      onClick={() => setViewMode('list')}
+      className={`p-1.5 sm:p-2 rounded-lg transition-colors ${
+        viewMode === 'list' 
+          ? 'bg-[#9CAA8E] text-white' 
+          : 'bg-white border border-gray-300 text-gray-600 hover:bg-gray-50'
+      }`}
+      aria-label="List view"
+      title="List view"
+    >
+      <ListBulletIcon className="w-4 h-4 sm:w-5 sm:h-5" />
+    </button>
+  </div>
+</div>
+
           </div>
         </div>
 
@@ -240,7 +288,7 @@ const AdminGalleries = () => {
                       alt={photo.caption || `Photo ${index + 1}`}
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                     />
-                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100">
+                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 md:bg-opacity-0 md:group-hover:bg-opacity-30 transition-all flex items-center justify-center opacity-0 group-hover:opacity-100 md:opacity-0 md:group-hover:opacity-100">
                       <div className="flex gap-2">
                         <button
                           onClick={(e) => {
@@ -256,7 +304,7 @@ const AdminGalleries = () => {
                             e.stopPropagation();
                             handleDeletePhotoClick(photo, selectedAlbum._id);
                           }}
-                          className="p-2 bg-red-600 rounded-lg hover:bg-red-700 transition-colors"
+                          className="p-2 bg-red-600 max-md:hidden rounded-lg hover:bg-red-700 transition-colors"
                         >
                           <TrashIcon className="w-5 h-5 text-white" />
                         </button>
@@ -283,7 +331,7 @@ const AdminGalleries = () => {
                     </div>
                     <div className="ml-4 flex-1">
                       <p className="text-sm font-medium text-gray-900">
-                        {photo.caption || 'Untitled'}
+                        {photo.caption || ''}
                       </p>
                       <p className="text-xs text-gray-500 mt-1">
                         Added {new Date(photo.uploadedAt || selectedAlbum.createdAt).toLocaleDateString()}
@@ -706,7 +754,7 @@ const AdminGalleries = () => {
 
 const DeleteConfirmationModal = ({ title, message, itemName, onConfirm, onCancel }) => {
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+    <div style={{zIndex:9999}} className="fixed inset-0 bg-black bg-opacity-50  flex items-center justify-center p-4">
       <div className="bg-white rounded-xl max-w-md w-full shadow-2xl animate-fadeIn">
         <div className="p-6">
           <div className="flex items-center justify-center w-16 h-16 mx-auto bg-red-100 rounded-full mb-4">
@@ -771,3 +819,4 @@ styleSheet.innerText = styles;
 document.head.appendChild(styleSheet);
 
 export default AdminGalleries;
+

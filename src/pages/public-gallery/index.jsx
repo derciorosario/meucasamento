@@ -239,140 +239,165 @@ const PublicGallery = () => {
           </div>
         ) : viewMode === 'slides' ? (
           /* Slides View - Carousel */
+        
+        
           <div className="space-y-8">
-            {galleries.map((gallery, idx) => (
-              <motion.div
-                key={gallery._id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: idx * 0.1 }}
-                className="bg-white rounded-2xl shadow-lg overflow-hidden"
-              >
-                {/* Album Header */}
-                <div className="p-6 border-b border-gray-100">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                      {gallery.createdBy?.avatar ? (
-                        <img 
-                          src={getImageUrl(gallery.createdBy.avatar)} 
-                          alt={gallery.createdBy.name}
-                          className="w-10 h-10 rounded-full object-cover"
-                        />
-                      ) : (
-                        <div className="w-10 h-10 bg-[#9CAA8E]/20 rounded-full flex items-center justify-center">
-                          <User className="w-5 h-5 text-[#9CAA8E]" />
-                        </div>
-                      )}
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-900">{gallery.name}</h3>
-                        <div className="flex items-center gap-3 text-sm text-gray-500">
-                          <span className="flex items-center gap-1">
-                            <User className="w-3 h-3" />
-                            {gallery.createdBy?.name || 'Anónimo'}
-                          </span>
-                          <span className="flex items-center gap-1">
-                            <Calendar className="w-3 h-3" />
-                            {new Date(gallery.createdAt).toLocaleDateString('pt-MZ')}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-sm">
-                        {gallery.photos?.length || 0} fotos
-                      </span>
-                    </div>
-                  </div>
-                  {gallery.description && (
-                    <p className="mt-3 text-gray-600">{gallery.description}</p>
-                  )}
-                </div>
-
-                {/* Slideshow */}
-                <div className="relative h-[400px] bg-gray-900">
-                  {gallery.photos && gallery.photos.length > 0 ? (
-                    <>
-                      <AnimatePresence mode='wait'>
-                          <motion.img
-                            key={`${gallery._id}-${getGalleryIndex(gallery._id)}`}
-                            initial={{ opacity: 0 }}
-                            animate={{ opacity: 1 }}
-                            exit={{ opacity: 0 }}
-                            transition={{ duration: 0.3 }}
-                            src={getImageUrl(gallery.photos[getGalleryIndex(gallery._id)]?.url || gallery.coverPhoto)}
-                          alt={gallery.name}
-                          className="w-full h-full object-contain"
-                          onClick={() => openLightbox(gallery)}
-                        />
-                      </AnimatePresence>
-                      
-                      {/* Slide Navigation */}
-                      {gallery.photos.length > 1 && (
-                        <>
-                          <button
-                            onClick={() => {
-                              const currentIdx = getGalleryIndex(gallery._id);
-                              if (currentIdx > 0) {
-                                setGalleryIndex(gallery._id, currentIdx - 1);
-                              }
-                            }}
-                            disabled={getGalleryIndex(gallery._id) === 0}
-                            className="absolute left-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/90 hover:bg-white rounded-full flex items-center justify-center shadow-lg transition-all disabled:opacity-50"
-                          >
-                            <ChevronLeft className="w-6 h-6 text-gray-800" />
-                          </button>
-                          <button
-                            onClick={() => {
-                              const currentIdx = getGalleryIndex(gallery._id);
-                              if (currentIdx < gallery.photos.length - 1) {
-                                setGalleryIndex(gallery._id, currentIdx + 1);
-                              }
-                            }}
-                            disabled={getGalleryIndex(gallery._id) >= gallery.photos.length - 1}
-                            className="absolute right-4 top-1/2 -translate-y-1/2 w-12 h-12 bg-white/90 hover:bg-white rounded-full flex items-center justify-center shadow-lg transition-all disabled:opacity-50"
-                          >
-                            <ChevronRight className="w-6 h-6 text-gray-800" />
-                          </button>
-                          
-                          {/* Slide Indicators */}
-                          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2">
-                            {Array.from({ length: gallery.photos.length }, (_, i) => (
-                              <button
-                                key={i}
-                                onClick={() => setGalleryIndex(gallery._id, i)}
-                                className={`w-2 h-2 rounded-full transition-all ${
-                                  getGalleryIndex(gallery._id) === i 
-                                    ? 'w-6 bg-white' 
-                                    : 'bg-white/50 hover:bg-white/80'
-                                }`}
-                              />
-                            ))}
-                          </div>
-                        </>
-                      )}
-
-                      {/* Photo Counter */}
-                      <div className="absolute top-4 right-4 px-3 py-1 bg-black/50 backdrop-blur-sm text-white text-sm rounded-full">
-                        {getGalleryIndex(gallery._id) + 1} / {gallery.photos.length}
-                      </div>
-
-                      {/* View All Button */}
-                      <button
-                        onClick={() => openLightbox(gallery)}
-                        className="absolute bottom-4 right-4 px-4 py-2 bg-white/90 hover:bg-white text-gray-800 rounded-lg font-medium text-sm transition-all shadow-lg"
-                      >
-                        Ver todas as fotos
-                      </button>
-                    </>
-                  ) : (
-                    <div className="flex items-center justify-center h-full">
-                      <Image className="w-16 h-16 text-gray-600" />
-                    </div>
-                  )}
-                </div>
-              </motion.div>
-            ))}
+  {galleries.map((gallery, idx) => (
+    <motion.div
+      key={gallery._id}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: idx * 0.1 }}
+      className="bg-white rounded-2xl shadow-lg overflow-hidden"
+    >
+      {/* Album Header - Responsive */}
+      <div className="p-4 sm:p-6 border-b border-gray-100">
+        {/* Mobile: Stacked layout, Desktop: Flex row */}
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          {/* User info - Left side */}
+          <div className="flex items-center gap-3 sm:gap-4">
+            {gallery.createdBy?.avatar ? (
+              <img 
+                src={getImageUrl(gallery.createdBy.avatar)} 
+                alt={gallery.createdBy.name}
+                className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover flex-shrink-0"
+              />
+            ) : (
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-[#9CAA8E]/20 rounded-full flex items-center justify-center flex-shrink-0">
+                <User className="w-5 h-5 sm:w-6 sm:h-6 text-[#9CAA8E]" />
+              </div>
+            )}
+            
+            {/* Title and metadata */}
+            <div className="min-w-0 flex-1">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 truncate">
+                {gallery.name}
+              </h3>
+              <div className="flex flex-wrap items-center gap-2 sm:gap-3 text-xs sm:text-sm text-gray-500">
+                <span className="flex items-center gap-1">
+                  <User className="w-3 h-3 flex-shrink-0" />
+                  <span className="truncate max-w-[120px] sm:max-w-none">
+                    {gallery.createdBy?.name || 'Anónimo'}
+                  </span>
+                </span>
+                <span className="flex items-center gap-1">
+                  <Calendar className="w-3 h-3 flex-shrink-0" />
+                  <span className="whitespace-nowrap">
+                    {new Date(gallery.createdAt).toLocaleDateString('pt-MZ')}
+                  </span>
+                </span>
+              </div>
+            </div>
           </div>
+
+          {/* Photo count - Right side */}
+          <div className="flex items-center justify-start sm:justify-end">
+            <span className="px-2 sm:px-3 py-1 bg-gray-100 text-gray-600 rounded-full text-xs sm:text-sm whitespace-nowrap">
+              {gallery.photos?.length || 0} {gallery.photos?.length === 1 ? 'foto' : 'fotos'}
+            </span>
+          </div>
+        </div>
+
+        {/* Description - Full width below */}
+        {gallery.description && (
+          <p className="mt-3 text-sm sm:text-base text-gray-600 line-clamp-2 sm:line-clamp-3">
+            {gallery.description}
+          </p>
+        )}
+      </div>
+
+      {/* Slideshow - Responsive height */}
+      <div className="relative h-[300px] sm:h-[400px] bg-gray-900">
+        {gallery.photos && gallery.photos.length > 0 ? (
+          <>
+            <AnimatePresence mode='wait'>
+              <motion.img
+                key={`${gallery._id}-${getGalleryIndex(gallery._id)}`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                transition={{ duration: 0.3 }}
+                src={getImageUrl(gallery.photos[getGalleryIndex(gallery._id)]?.url || gallery.coverPhoto)}
+                alt={gallery.name}
+                className="w-full h-full object-contain cursor-pointer"
+                onClick={() => openLightbox(gallery)}
+              />
+            </AnimatePresence>
+            
+            {/* Slide Navigation - Responsive button sizes */}
+            {gallery.photos.length > 1 && (
+              <>
+                <button
+                  onClick={() => {
+                    const currentIdx = getGalleryIndex(gallery._id);
+                    if (currentIdx > 0) {
+                      setGalleryIndex(gallery._id, currentIdx - 1);
+                    }
+                  }}
+                  disabled={getGalleryIndex(gallery._id) === 0}
+                  className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 bg-white/90 hover:bg-white rounded-full flex items-center justify-center shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  aria-label="Previous photo"
+                >
+                  <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6 text-gray-800" />
+                </button>
+                
+                <button
+                  onClick={() => {
+                    const currentIdx = getGalleryIndex(gallery._id);
+                    if (currentIdx < gallery.photos.length - 1) {
+                      setGalleryIndex(gallery._id, currentIdx + 1);
+                    }
+                  }}
+                  disabled={getGalleryIndex(gallery._id) >= gallery.photos.length - 1}
+                  className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 w-10 h-10 sm:w-12 sm:h-12 bg-white/90 hover:bg-white rounded-full flex items-center justify-center shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                  aria-label="Next photo"
+                >
+                  <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6 text-gray-800" />
+                </button>
+                
+                {/* Slide Indicators - Responsive spacing */}
+                <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 sm:gap-2">
+                  {Array.from({ length: gallery.photos.length }, (_, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setGalleryIndex(gallery._id, i)}
+                      className={`transition-all duration-300 ${
+                        getGalleryIndex(gallery._id) === i 
+                          ? 'w-4 sm:w-6 h-1.5 sm:h-2 bg-white rounded-full' 
+                          : 'w-1.5 sm:w-2 h-1.5 sm:h-2 bg-white/50 hover:bg-white/80 rounded-full'
+                      }`}
+                      aria-label={`Go to photo ${i + 1}`}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+
+            {/* Photo Counter - Responsive positioning */}
+            <div className="absolute top-2 sm:top-4 right-2 sm:right-4 px-2 sm:px-3 py-1 bg-black/50 backdrop-blur-sm text-white text-xs sm:text-sm rounded-full">
+              {getGalleryIndex(gallery._id) + 1} / {gallery.photos.length}
+            </div>
+
+            {/* View All Button - Responsive */}
+            <button
+              onClick={() => openLightbox(gallery)}
+              className="absolute bottom-4 left-1/2 -translate-x-1/2 sm:left-auto sm:right-4 sm:translate-x-0 px-3 sm:px-4 py-1.5 sm:py-2 bg-white/90 hover:bg-white text-gray-800 rounded-lg font-medium text-xs sm:text-sm transition-all shadow-lg whitespace-nowrap"
+            >
+              <span className="sm:hidden">Ver todas</span>
+              <span className="hidden sm:inline">Ver todas as fotos</span>
+            </button>
+          </>
+        ) : (
+          <div className="flex items-center justify-center h-full">
+            <Image className="w-12 h-12 sm:w-16 sm:h-16 text-gray-600" />
+          </div>
+        )}
+      </div>
+    </motion.div>
+  ))}
+</div>
+
+
         ) : (
           /* Grid View */
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">

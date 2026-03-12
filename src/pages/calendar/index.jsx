@@ -9,7 +9,8 @@ import {
   Store,
   ChevronDown,
   X,
-  Plus
+  Plus,
+  Calendar as CalendarIcon
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -32,8 +33,8 @@ const CalendarPage = () => {
         const { user, vendors, vendor } = response.data;
         setUser(user);
         setVendors(vendors || []);
-        // Set selected vendor - prefer the vendor object from response, otherwise first vendor
-        setSelectedVendor(vendor || (vendors && vendors.length > 0 ? vendors[0] : null));
+        // Default to null (view all) - user can select a specific vendor
+        setSelectedVendor(null);
       }
     } catch (error) {
       console.error('Error fetching user:', error);
@@ -77,13 +78,19 @@ const CalendarPage = () => {
                   </div>
                   <div>
                     <p className="font-medium text-black">
-                      {selectedVendor?.name || 'Selecione um fornecedor'}
+                      {selectedVendor === null 
+                        ? 'Ver todos' 
+                        : selectedVendor?.name || 'Selecione um fornecedor'}
                     </p>
-                    {selectedVendor?.category && (
+                    {selectedVendor?.category ? (
                       <p className="text-xs text-gray-500">
                         {selectedVendor.category.name}
                       </p>
-                    )}
+                    ) : selectedVendor === null ? (
+                      <p className="text-xs text-gray-500">
+                        Todos os fornecedores
+                      </p>
+                    ) : null}
                   </div>
                 </div>
                 <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${showVendorSelector ? 'rotate-180' : ''}`} />
@@ -98,6 +105,25 @@ const CalendarPage = () => {
                     className="absolute z-10 mt-2 w-full md:w-80 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden"
                   >
                     <div className="max-h-60 overflow-y-auto">
+                      {/* View All Option */}
+                      <button
+                        onClick={() => handleVendorSelect(null)}
+                        className={`w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors ${
+                          selectedVendor === null ? 'bg-[#9CAA8E]/10' : ''
+                        }`}
+                      >
+                        <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center flex-shrink-0">
+                          <CalendarIcon className="w-5 h-5 text-gray-500" />
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="font-medium text-black">Ver todos</p>
+                          <p className="text-xs text-gray-500">Todos os fornecedores</p>
+                        </div>
+                        {selectedVendor === null && (
+                          <div className="w-2 h-2 bg-[#9CAA8E] rounded-full flex-shrink-0" />
+                        )}
+                      </button>
+                      
                       {vendors.map((vendor) => (
                         <button
                           key={vendor._id}
@@ -128,7 +154,11 @@ const CalendarPage = () => {
           </div>
         )}
 
-        <CalendarComponent userId={user?.id} vendorId={selectedVendor?._id} />
+        <CalendarComponent 
+          userId={user?.id} 
+          vendorId={selectedVendor?._id || null} 
+          vendors={vendors}
+        />
       </div>
     </div>
   );

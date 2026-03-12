@@ -9,7 +9,7 @@ import {
   CheckCheck
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { API_URL, getTasks, getGuests, getGuestStats, getBudget, getCategories, updateBudget, getVendorQuoteRequests, getVendors, toggleTaskCompletion, getMyQuoteRequests, getVendor, getTutorials } from '../../api/client';
+import { API_URL, getTasks, getGuests, getGuestStats, getBudget, getCategories, updateBudget, getVendorQuoteRequests, getVendors, toggleTaskCompletion, getMyQuoteRequests, getVendor, getTutorials, getProfile } from '../../api/client';
 import VendorProfileModal from '../../components/VendorProfileModal';
 import WelcomeDialog from '../../components/WelcomeDialog';
 import { toast } from 'react-hot-toast';
@@ -33,6 +33,7 @@ export default function WeddingDashboard() {
   const [vendors, setVendors] = useState([]);
   const [quoteRequests, setQuoteRequests] = useState([]);
   const [myQuoteRequests, setMyQuoteRequests] = useState([]);
+  const [vendorStats, setVendorStats] = useState({ profileViews: 0, averageRating: 0, totalReviews: 0 });
   const [loading, setLoading] = useState(true);
   
   // Tutorial videos state
@@ -193,6 +194,18 @@ export default function WeddingDashboard() {
           // Fetch vendor data
           const quotesRes = await getVendorQuoteRequests();
           setQuoteRequests(quotesRes?.data || []);
+          
+          // Fetch vendor profile for stats
+          const profileRes = await getProfile();
+          if (profileRes.data?.vendors && profileRes.data.vendors.length > 0) {
+            // Get the approved vendor or the first one
+            const vendor = profileRes.data.vendors.find(v => v.status === 'approved') || profileRes.data.vendors[0];
+            setVendorStats({
+              profileViews: vendor.profileViews || 0,
+              averageRating: vendor.averageRating || 0,
+              totalReviews: vendor.totalReviews || 0
+            });
+          }
         }
       } catch (error) {
         console.error('Error fetching dashboard data:', error);
@@ -646,7 +659,7 @@ export default function WeddingDashboard() {
                     <Eye className="w-5 h-5 text-purple-600" />
                   </div>
                 </div>
-                <div className="text-2xl font-light text-gray-800">--</div>
+                <div className="text-2xl font-light text-gray-800">{vendorStats.profileViews}</div>
                 <div className="text-sm text-gray-500">Visualizações do Perfil</div>
               </div>
               
@@ -656,7 +669,7 @@ export default function WeddingDashboard() {
                     <Star className="w-5 h-5 text-amber-600" />
                   </div>
                 </div>
-                <div className="text-2xl font-light text-gray-800">--</div>
+                <div className="text-2xl font-light text-gray-800">{vendorStats.averageRating > 0 ? `${vendorStats.averageRating} (${vendorStats.totalReviews})` : '0'}</div>
                 <div className="text-sm text-gray-500">Avaliações</div>
               </div>
             </div>

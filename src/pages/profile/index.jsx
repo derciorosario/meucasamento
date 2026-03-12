@@ -722,12 +722,12 @@ const ProfilePage = () => {
     toast.success('Imagem removida');
   };
 
-  const handleQuoteResponse = async (quoteId, status) => {
-    if (!selectedVendor) return;
+  const handleQuoteResponse = async (quote, status) => {
+    if (!quote?.vendor?._id) return;
     try {
       const response = await updateQuoteRequestStatus(
-        selectedVendor._id,
-        quoteId,
+        quote.vendor._id,
+        quote._id,
         status,
         responseMessage
       );
@@ -1472,19 +1472,7 @@ const ProfilePage = () => {
                     )}
                   </button>
                 )}
-                {(user?.userType === 'vendor' || user?.userType === 'wedding_planner') && (
-                  <button
-                    onClick={() => setActiveTab('calendar')}
-                    className={`px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${
-                      activeTab === 'calendar' 
-                        ? 'bg-[#9CAA8E] text-white shadow-md' 
-                        : 'bg-white text-gray-600 border border-gray-200'
-                    }`}
-                  >
-                    <Calendar className="w-4 h-4 inline-block mr-1" />
-                    Calendário
-                  </button>
-                )}
+                
               </div>
             </div>
             
@@ -2002,8 +1990,8 @@ const ProfilePage = () => {
                       Selecione o fornecedor para editar:
                     </label>
                     
-                    {/* Vendor View Toggle - Mobile Only */}
-                    <div className="md:hidden flex items-center justify-between mb-3">
+                    {/* Vendor View Toggle - Mobile Only - leave hidden*/}
+                    <div className="hidden flex items-center justify-between mb-3">
                       <span className="text-xs text-gray-500">{vendors.length} fornecedor(es)</span>
                       <div className="flex items-center gap-1 bg-white rounded-lg p-1 border border-gray-200">
                         <button
@@ -2469,11 +2457,11 @@ const ProfilePage = () => {
                               
                               {/* Overlay with delete button */}
                               <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors flex items-end">
-                                <div className="absolute top-1 right-1 md:top-2 md:right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                <div className="absolute top-1 right-1 md:top-2 md:right-2 group-hover:opacity-100 transition-opacity">
                                   <button
                                     type="button"
                                     onClick={() => handleDeleteImage(img)}
-                                    className="p-1.5 md:p-2 bg-red-500 text-white rounded-full hover:bg-red-600"
+                                    className="p-2 bg-red-500 text-white rounded-full hover:bg-red-600"
                                   >
                                     <Trash2 className="w-3 h-3 md:w-4 md:h-4" />
                                   </button>
@@ -3176,13 +3164,13 @@ const ProfilePage = () => {
                             />
                             <div className="flex flex-col md:flex-row gap-2">
                               <button
-                                onClick={() => handleQuoteResponse(quote._id, 'accepted')}
+                                onClick={() => handleQuoteResponse(quote, 'accepted')}
                                 className="flex items-center justify-center gap-2 px-4 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 text-sm"
                               >
                                 <Check className="w-4 h-4" /> Aceitar
                               </button>
                               <button
-                                onClick={() => handleQuoteResponse(quote._id, 'rejected')}
+                                onClick={() => handleQuoteResponse(quote, 'rejected')}
                                 className="flex items-center justify-center gap-2 px-4 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 text-sm"
                               >
                                 <XCircle className="w-4 h-4" /> Recusar

@@ -113,13 +113,30 @@ const Header = ({notSticky, returnEmpty}) => {
       show: true
     });
 
+ 
     if (user?.role === "vendor") {
+
       items.push({
         label: 'Calendário',
         path: '/calendar',
         icon: Calendar,
         show: true
       });
+
+      items.push({
+        label: 'Pedidos',
+        path: '/profile?tab=quotes',
+        icon: MessageSquare,
+        show: true
+      });
+
+      items.push({
+        label: 'Perfil',
+        path: '/profile?tab=personal',
+        icon: User,
+        show: true
+      });
+      
     }
 
     if (user?.role === "couple") {
@@ -504,9 +521,9 @@ const Header = ({notSticky, returnEmpty}) => {
                       </div>
                     )}
 
-                    {/* Quick Stats for Vendors */}
+                    {/* Quick Stats for Vendors - leave hidden */}
                     {user?.role === 'vendor' && (
-                      <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
+                      <div className="bg-gray-50  hidden rounded-xl p-4 border border-gray-100">
                         <h3 className="text-sm font-medium text-gray-700 mb-3 flex items-center gap-2">
                           <Briefcase className="w-4 h-4 text-[#9CAA8E]" />
                           Estatísticas

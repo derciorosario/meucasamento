@@ -193,23 +193,24 @@ const SettingsPage = () => {
             <h2 className="text-xl font-semibold text-gray-900 mb-6">Informações do Perfil</h2>
             
             {/* Profile Info Display */}
-            <div className="flex items-center gap-6 mb-6">
-              {user?.avatar ? (
-                <img
-                  src={user.avatar.startsWith('http') ? user.avatar : `${API_URL}${user.avatar}`}
-                  alt={user?.name}
-                  className="w-24 h-24 rounded-full object-cover border-4 border-primary-100"
-                />
-              ) : (
-                <div className="w-24 h-24 rounded-full bg-gradient-to-r from-primary-500 to-secondary-500 flex items-center justify-center text-white text-3xl font-bold border-4 border-primary-100">
-                  {user?.name?.charAt(0)?.toUpperCase() || 'U'}
-                </div>
-              )}
-              <div>
-                <p className="text-xl font-semibold text-gray-900">{user?.name}</p>
-                <p className="text-gray-500">{user?.email}</p>
-              </div>
-            </div>
+         
+         <div className="flex items-center gap-6 mb-6">
+  {user?.avatar ? (
+    <img
+      src={user.avatar.startsWith('http') ? user.avatar : `${API_URL}${user.avatar}`}
+      alt={user?.name}
+      className="w-20 h-20 rounded-full object-cover border-4 border-primary-100 flex-shrink-0"
+    />
+  ) : (
+    <div className="w-24 h-24 rounded-full bg-gradient-to-r from-primary-500 to-secondary-500 flex items-center justify-center text-white text-3xl font-bold border-4 border-primary-100 flex-shrink-0">
+      {user?.name?.charAt(0)?.toUpperCase() || 'U'}
+    </div>
+  )}
+  <div className="min-w-0"> {/* Added min-w-0 to allow text truncation/break */}
+    <p className="text-xl font-semibold text-gray-900 truncate">{user?.name}</p>
+    <p className="text-gray-500 break-all">{user?.email}</p> {/* Added break-all for email */}
+  </div>
+</div>
 
             {/* Profile Details */}
             <div className="space-y-4">

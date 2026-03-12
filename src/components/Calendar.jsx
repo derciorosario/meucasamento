@@ -27,6 +27,7 @@ import {
   List,
   Grid,
   AlertTriangle,
+  Store,
 } from 'lucide-react';
 
 // Event categories with colors
@@ -50,7 +51,7 @@ const MONTHS = [
 // Day names
 const DAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
-const Calendar = ({ userId, vendorId }) => {
+const Calendar = ({ userId, vendorId, vendors = [] }) => {
   const [events, setEvents] = useState([]);
   const [currentDate, setCurrentDate] = useState(new Date());
   const [selectedDate, setSelectedDate] = useState(null);
@@ -91,10 +92,17 @@ const Calendar = ({ userId, vendorId }) => {
       const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
       const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
       
-      const response = await getCalendarEvents({
+      const params = {
         startDate: startOfMonth.toISOString(),
         endDate: endOfMonth.toISOString(),
-      });
+      };
+      
+      // Only add vendorId filter if a specific vendor is selected
+      if (vendorId) {
+        params.vendorId = vendorId;
+      }
+      
+      const response = await getCalendarEvents(params);
       
       if (response.data.success) {
         setEvents(response.data.data);
@@ -105,11 +113,22 @@ const Calendar = ({ userId, vendorId }) => {
     } finally {
       setLoading(false);
     }
-  }, [currentDate]);
+  }, [currentDate, vendorId]);
 
   useEffect(() => {
     loadEvents();
   }, [loadEvents]);
+
+  // Update event form vendorId when vendorId prop changes
+  useEffect(() => {
+    if (!showEventModal) {
+      // Only update the default vendorId when modal is not open
+      setEventForm(prev => ({
+        ...prev,
+        vendorId: vendorId || '',
+      }));
+    }
+  }, [vendorId, showEventModal]);
 
   // Get days in month
   const getDaysInMonth = () => {
@@ -259,6 +278,12 @@ const Calendar = ({ userId, vendorId }) => {
   const handleSaveEvent = async (e) => {
     e.preventDefault();
     
+    // Validate vendor is selected
+    if (!eventForm.vendorId) {
+      toast.error('Por favor, selecione um fornecedor para o evento');
+      return;
+    }
+    
     const startDateTime = eventForm.allDay
       ? new Date(eventForm.startDate)
       : new Date(`${eventForm.startDate}T${eventForm.startTime}`);
@@ -311,7 +336,11 @@ const Calendar = ({ userId, vendorId }) => {
       loadEvents();
     } catch (error) {
       console.error('Error saving event:', error);
-      toast.error('Erro ao guardar evento');
+      if (error.response?.data?.message) {
+        toast.error(error.response.data.message);
+      } else {
+        toast.error('Erro ao guardar evento');
+      }
     }
   };
 
@@ -708,7 +737,7 @@ const Calendar = ({ userId, vendorId }) => {
                   </div>
 
                   {/* Date and Time */}
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className={`grid gap-4 ${eventForm.allDay ? 'grid-cols-1':'grid-cols-2'}  max-sm:grid-cols-1`}>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Data de Início
@@ -738,7 +767,7 @@ const Calendar = ({ userId, vendorId }) => {
                     )}
                   </div>
 
-                  <div className="grid grid-cols-2 gap-4">
+                  <div className={`grid ${eventForm.allDay ? 'grid-cols-1':'grid-cols-2'} gap-4 max-sm:grid-cols-1`}>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Data de Fim
@@ -782,6 +811,27 @@ const Calendar = ({ userId, vendorId }) => {
                       {Object.entries(CATEGORIES).map(([key, value]) => (
                         <option key={key} value={key}>
                           {value.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Vendor */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Fornecedor <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      name="vendorId"
+                      value={eventForm.vendorId}
+                      onChange={handleFormChange}
+                      required
+                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#9CAA8E] focus:border-transparent text-black bg-white"
+                    >
+                      <option value="">Selecione um fornecedor</option>
+                      {vendors.map((vendor) => (
+                        <option key={vendor._id} value={vendor._id}>
+                          {vendor.name}
                         </option>
                       ))}
                     </select>

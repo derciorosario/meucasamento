@@ -405,12 +405,17 @@ const VendorProfilePage = () => {
 
   const [showQuoteModal, setShowQuoteModal] = useState(false);
   const [showReviewModal, setShowReviewModal] = useState(false);
-  const [quoteForm, setQuoteForm] = useState({ eventDate: '', guestCount: 50, message: 'Olá! Gostaria de pedir um orçamento para o meu casamento. Por favor, entre em contacto para mais detalhes.' });
+  const [quoteForm, setQuoteForm] = useState({ eventDate: '', guestCount: '', message: 'Olá! Gostaria de pedir um orçamento para o meu casamento. Por favor, entre em contacto para mais detalhes.' });
   const [reviewForm, setReviewForm] = useState({ rating: 5, comment: '' });
   const [isSubmittingQuote, setIsSubmittingQuote] = useState(false);
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [relatedVendors, setRelatedVendors] = useState([]);
   const [relatedVendorsLoading, setRelatedVendorsLoading] = useState(false);
+  
+  // Touch state for swipe functionality
+  const [touchStart, setTouchStart] = useState(null);
+  const [touchEnd, setTouchEnd] = useState(null);
+  const minSwipeDistance = 50;
 
 
     const data=useData()
@@ -549,6 +554,28 @@ const VendorProfilePage = () => {
   const nextLightboxSlide = () => setLightboxIndex((prev) => (prev + 1) % allImages.length);
   const prevLightboxSlide = () => setLightboxIndex((prev) => (prev - 1 + allImages.length) % allImages.length);
 
+  // Touch handlers for swipe functionality
+  const onTouchStart = (e) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+    if (isLeftSwipe) {
+      nextLightboxSlide();
+    } else if (isRightSwipe) {
+      prevLightboxSlide();
+    }
+  };
+
   const handleRequestQuote = () => {
     if (!user) { toast.error('Precisa fazer login para pedir orçamento'); return; }
     setShowQuoteModal(true);
@@ -562,7 +589,7 @@ const VendorProfilePage = () => {
       await requestVendorQuote(vendor._id, quoteForm);
       toast.success('Pedido de orçamento enviado com sucesso!');
       setShowQuoteModal(false);
-      setQuoteForm({ eventDate: '', guestCount: 50, message: '' });
+      setQuoteForm({ eventDate: '', guestCount: '', message: '' });
     } catch (error) {
       console.error('Error requesting quote:', error);
       toast.error('Erro ao enviar pedido de orçamento');
@@ -625,7 +652,7 @@ const VendorProfilePage = () => {
         <div className="flex-1 flex items-center justify-center">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#9CAA8E]"></div>
         </div>
-        <Footer />
+        <Footer  />
       </div>
     );
   }
@@ -712,9 +739,10 @@ const VendorProfilePage = () => {
 
   return (
     <div className="min-h-screen flex flex-col bg-gray-50">
+
       <Header notSticky={true} />
 
-      <main className="flex-1 py-4 md:py-8">
+      <main className="flex-1 py-4 md:py-8 pb-24">
         <div className="w-full max-w-6xl mx-auto px-3 sm:px-4 md:px-6 lg:px-8">
           {/* Back Button - Hidden on mobile */}
           <button
@@ -1008,6 +1036,14 @@ const VendorProfilePage = () => {
                   <span>Email</span>
                 </a>
               )}
+              <motion.button
+                whileTap={{ scale: 0.95 }}
+                onClick={handleRequestQuote}
+                className="flex-1 bg-gradient-to-r from-primary-600 to-primary-500 text-white py-2.5 rounded-xl font-medium flex items-center justify-center gap-2 text-sm"
+              >
+                <Send className="w-4 h-4" />
+                <span>Orçamento</span>
+              </motion.button>
             </div>
           </div>
 
@@ -1408,7 +1444,7 @@ const VendorProfilePage = () => {
         </div>
       </main>
 
-      <Footer />
+      <Footer largerPadding={true} />
 
       {/* Lightbox */}
       <AnimatePresence>
@@ -1419,6 +1455,9 @@ const VendorProfilePage = () => {
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[60] bg-black flex items-center justify-center"
             onClick={closeLightbox}
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
           >
             <button onClick={closeLightbox} className="absolute top-2 right-2 md:top-4 md:right-4 w-8 h-8 md:w-10 md:h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition-colors z-10">
               <X className="w-5 h-5 md:w-6 md:h-6 text-white" />
@@ -1504,7 +1543,7 @@ const VendorProfilePage = () => {
                     <label className="block text-xs md:text-sm font-medium text-gray-700 mb-2">Número de convidados</label>
                     <div className="relative">
                       <Users className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                      <input type="number" min="1" value={quoteForm.guestCount} onChange={(e) => setQuoteForm({ ...quoteForm, guestCount: parseInt(e.target.value) || 0 })} className="w-full pl-10 pr-4 py-2.5 md:py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition-all text-gray-900 text-sm" />
+                      <input type="number" value={quoteForm.guestCount} onChange={(e) => setQuoteForm({ ...quoteForm, guestCount: e.target.value })} className="w-full pl-10 pr-4 py-2.5 md:py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:border-primary-400 focus:ring-2 focus:ring-primary-100 transition-all text-gray-900 text-sm" placeholder="Ex: 100" />
                     </div>
                   </div>
                   <div>

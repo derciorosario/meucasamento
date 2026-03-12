@@ -366,30 +366,33 @@ export default function WeddingLogin() {
             <form className="space-y-6" onSubmit={handleSubmit}>
               {/* Google Connected State */}
               {googleConnected ? (
-                <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      {googleData.avatar && (
-                        <img 
-                          src={googleData.avatar} 
-                          alt="Google avatar" 
-                          className="w-10 h-10 rounded-full"
-                        />
-                      )}
-                      <div>
-                        <p className="text-sm font-medium text-green-800">Conectado com Google</p>
-                        <p className="text-xs text-green-600">{googleData.email}</p>
-                      </div>
-                    </div>
-                    <button
-                      type="button"
-                      onClick={disconnectGoogle}
-                      className="text-sm text-red-600 hover:text-red-700"
-                    >
-                      Usar outra conta
-                    </button>
-                  </div>
-                </div>
+
+<div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-4">
+  <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+    <div className="flex items-center gap-3 w-full sm:w-auto">
+      {googleData.avatar && (
+        <img 
+          src={googleData.avatar} 
+          alt="Google avatar" 
+          className="w-10 h-10 rounded-full flex-shrink-0"
+        />
+      )}
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium text-green-800 truncate">Conectado com Google</p>
+        <p className="text-xs text-green-600 truncate">{googleData.email}</p>
+      </div>
+    </div>
+    
+    <button
+      type="button"
+      onClick={disconnectGoogle}
+      className="text-sm text-red-600 hover:text-red-700 w-full sm:w-auto text-left sm:text-right"
+    >
+      Usar outra conta
+    </button>
+  </div>
+</div>
+
               ) : (
                 <button
                   type="button"

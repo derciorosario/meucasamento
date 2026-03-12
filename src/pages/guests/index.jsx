@@ -357,8 +357,8 @@ export default function GuestsPage() {
         group: guestForm.group || null,
         table: guestForm.table || null,
         menu: guestForm.menu || null,
-        adults: guestForm.adults ?? 1,
-        children: guestForm.children ?? 0,
+        adults: guestForm.adults === '' ? 1 : (guestForm.adults ?? 1),
+        children: guestForm.children === '' ? 0 : (guestForm.children ?? 0),
         status: guestForm.status,
         kinship: guestForm.kinship || null,
       };
@@ -507,7 +507,7 @@ export default function GuestsPage() {
     try {
       const tableData = {
         name: tableForm.name,
-        capacity: tableForm.capacity ?? 8,
+        capacity: tableForm.capacity === '' ? 8 : (tableForm.capacity ?? 8),
       };
       
       if (editingTable) {
@@ -2461,8 +2461,9 @@ export default function GuestsPage() {
                       type="number"
                       min="1"
                       value={guestForm.adults}
-                      onChange={(e) => setGuestForm({ ...guestForm, adults: parseInt(e.target.value) || 1 })}
+                      onChange={(e) => setGuestForm({ ...guestForm, adults: e.target.value === '' ? '' : parseInt(e.target.value) || 1 })}
                       className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 text-black"
+                      placeholder="1"
                     />
                   </div>
                   <div>
@@ -2471,8 +2472,9 @@ export default function GuestsPage() {
                       type="number"
                       min="0"
                       value={guestForm.children}
-                      onChange={(e) => setGuestForm({ ...guestForm, children: parseInt(e.target.value) || 0 })}
+                      onChange={(e) => setGuestForm({ ...guestForm, children: e.target.value === '' ? '' : parseInt(e.target.value) || 0 })}
                       className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 text-black"
+                      placeholder="0"
                     />
                   </div>
                   <div className="hidden">
@@ -2691,8 +2693,9 @@ export default function GuestsPage() {
                     min="1"
                     max="20"
                     value={tableForm.capacity}
-                    onChange={(e) => setTableForm({ ...tableForm, capacity: parseInt(e.target.value) || 8 })}
+                    onChange={(e) => setTableForm({ ...tableForm, capacity: e.target.value === '' ? '' : parseInt(e.target.value) || 8 })}
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-primary-500 text-black"
+                    placeholder="8"
                   />
                 </div>
                 <div className="flex gap-3 pt-4">
@@ -3000,193 +3003,205 @@ export default function GuestsPage() {
         )}
 
         {/* Import Guests Modal */}
-        {showImportModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50">
-            <div className="bg-white rounded-t-3xl sm:rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-black">
-                  {importStep === 1 ? 'Importar Convidados' : 'Revisar Convidados'}
-                </h2>
-                <button 
-                  onClick={() => { setShowImportModal(false); setImportStep(1); setImportedGuests([]); }}
-                  className="p-2 hover:bg-gray-100 rounded-full"
+       
+       {showImportModal && (
+  <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50">
+    <div className="bg-white rounded-t-3xl sm:rounded-2xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+      
+      <div className="flex items-center justify-between mb-4">
+       
+        <h2 className="text-xl font-semibold text-black">
+          {importStep === 1 ? 'Importar Convidados' : 'Revisar Convidados'}
+        </h2>
+
+        <button 
+          onClick={() => { setShowImportModal(false); setImportStep(1); setImportedGuests([]); }}
+          className="p-2 hover:bg-gray-100 rounded-full"
+        >
+          <X className="w-5 h-5 text-gray-500" />
+        </button>
+
+      </div>
+
+      {importStep === 1 ? (
+        /* Step 1: Download Template and Upload */
+        <div className="space-y-6">
+
+          <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+            <div className="flex items-start gap-3">
+              <FileSpreadsheet className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium text-gray-900 mb-1">Modelo de Importação</p>
+                <p className="text-sm text-gray-600 mb-3">
+                  Baixe o modelo Excel e preencha com os dados dos convidados. O ficheiro deve conter as colunas: nome completo, email, telefone, numero de adultos, numero de criancas, Nome do grupo.
+                </p>
+                <button
+                  onClick={downloadTemplate}
+                  className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
                 >
-                  <X className="w-5 h-5 text-gray-500" />
+                  <Download className="w-4 h-4" />
+                  Baixar Modelo Excel
                 </button>
               </div>
-
-              {importStep === 1 ? (
-                /* Step 1: Download Template and Upload */
-                <div className="space-y-6">
-                  <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
-                    <div className="flex items-start gap-3">
-                      <FileSpreadsheet className="w-6 h-6 text-blue-600 flex-shrink-0 mt-0.5" />
-                      <div>
-                        <p className="font-medium text-gray-900 mb-1">Modelo de Importação</p>
-                        <p className="text-sm text-gray-600 mb-3">
-                          Baixe o modelo Excel e preencha com os dados dos convidados. O ficheiro deve conter as colunas: nome completo, email, telefone, numero de adultos, numero de criancas, Nome do grupo.
-                        </p>
-                        <button
-                          onClick={downloadTemplate}
-                          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
-                        >
-                          <Download className="w-4 h-4" />
-                          Baixar Modelo Excel
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center">
-                    <input
-                      type="file"
-                      ref={fileInputRef}
-                      accept=".xlsx,.xls"
-                      onChange={handleFileUpload}
-                      className="hidden"
-                    />
-                    <Upload className="w-12 h-12 text-gray-400 mx-auto mb-3" />
-                    <p className="text-gray-700 font-medium mb-2">
-                      Arraste o ficheiro aqui ou
-                    </p>
-                    <button
-                      onClick={() => fileInputRef.current?.click()}
-                      className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 text-sm"
-                    >
-                      Selecionar Ficheiro
-                    </button>
-                    <p className="text-xs text-gray-500 mt-3">
-                      Formatos aceitos: XLSX, XLS
-                    </p>
-                  </div>
-
-                  {isProcessing && (
-                    <div className="flex items-center justify-center gap-2 py-4">
-                      <div className="w-5 h-5 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
-                      <span className="text-gray-600">A processar...</span>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                /* Step 2: Review and Edit */
-                <div className="flex-1 overflow-hidden flex flex-col">
-                  <p className="text-sm text-gray-600 mb-3">
-                    Revise os dados antes de importar. Apenas o <strong>nome</strong> é obrigatório. 
-                    Pode editar os campos diretamente na tabela abaixo.
-                  </p>
-
-                  <div className="flex-1 overflow-y-auto border border-gray-200 rounded-xl">
-                    <table className="w-full text-sm">
-                      <thead className="bg-gray-50 sticky top-0">
-                        <tr>
-                          <th className="px-3 py-2 text-left font-medium text-gray-600">Nome *</th>
-                          <th className="px-3 py-2 text-left font-medium text-gray-600">Email</th>
-                          <th className="px-3 py-2 text-left font-medium text-gray-600">Telefone</th>
-                          <th className="px-3 py-2 text-center font-medium text-gray-600">Adultos</th>
-                          <th className="px-3 py-2 text-center font-medium text-gray-600">Crianças</th>
-                          <th className="px-3 py-2 text-left font-medium text-gray-600">Grupo</th>
-                          <th className="px-2 py-2"></th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-100">
-                        {importedGuests.map((guest) => (
-                          <tr key={guest.id} className="hover:bg-gray-50">
-                            <td className="px-2 py-2">
-                              <input
-                                type="text"
-                                value={guest.name || ''}
-                                onChange={(e) => handleUpdateImportedGuest(guest.id, 'name', e.target.value)}
-                                className="w-full px-2 py-1 border border-gray-300 rounded text-black text-sm"
-                                placeholder="Nome obrigatório"
-                              />
-                            </td>
-                            <td className="px-2 py-2">
-                              <input
-                                type="email"
-                                value={guest.email || ''}
-                                onChange={(e) => handleUpdateImportedGuest(guest.id, 'email', e.target.value)}
-                                className={`w-full px-2 py-1 border rounded text-black text-sm ${guest.email && !isValidEmail(guest.email) ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
-                                placeholder={guest.email && !isValidEmail(guest.email) ? 'Email inválido' : ''}
-                              />
-                            </td>
-                            <td className="px-2 py-2">
-                              <input
-                                type="tel"
-                                value={guest.phone || ''}
-                                onChange={(e) => handleUpdateImportedGuest(guest.id, 'phone', e.target.value)}
-                                className="w-full px-2 py-1 border border-gray-300 rounded text-black text-sm"
-                              />
-                            </td>
-                            <td className="px-2 py-2">
-                              <input
-                                type="number"
-                                min="1"
-                                value={guest.adults || 1}
-                                onChange={(e) => handleUpdateImportedGuest(guest.id, 'adults', parseInt(e.target.value) || 1)}
-                                className="w-16 px-2 py-1 border border-gray-300 rounded text-black text-sm text-center"
-                              />
-                            </td>
-                            <td className="px-2 py-2">
-                              <input
-                                type="number"
-                                min="0"
-                                value={guest.children || 0}
-                                onChange={(e) => handleUpdateImportedGuest(guest.id, 'children', parseInt(e.target.value) || 0)}
-                                className="w-16 px-2 py-1 border border-gray-300 rounded text-black text-sm text-center"
-                              />
-                            </td>
-                            <td className="px-2 py-2">
-                              <select
-                                value={guest.groupName || ''}
-                                onChange={(e) => handleUpdateImportedGuest(guest.id, 'groupName', e.target.value)}
-                                className="w-full px-2 py-1 border border-gray-300 rounded text-black text-sm bg-white"
-                              >
-                                <option value="">Sem grupo</option>
-                                {groups.map((g) => (
-                                  <option key={g._id} value={g.name}>{g.name}</option>
-                                ))}
-                              </select>
-                            </td>
-                            <td className="px-2 py-2">
-                              <button
-                                onClick={() => handleRemoveImportedGuest(guest.id)}
-                                className="p-1 text-red-500 hover:bg-red-50 rounded"
-                                title="Remover"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                              </button>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-
-                  <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
-                    <p className="text-sm text-gray-600">
-                      Total: <strong>{importedGuests.length}</strong> convidado(s)
-                    </p>
-                    <div className="flex gap-3">
-                      <button
-                        onClick={() => setImportStep(1)}
-                        className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 text-sm"
-                      >
-                        Voltar
-                      </button>
-                      <button
-                        onClick={handleConfirmImport}
-                        disabled={isProcessing || importedGuests.length === 0}
-                        className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 text-sm disabled:opacity-50"
-                      >
-                        {isProcessing ? 'A importar...' : `Importar ${importedGuests.length} convidado(s)`}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
             </div>
           </div>
-        )}
+
+          <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center">
+            <input
+              type="file"
+              ref={fileInputRef}
+              accept=".xlsx,.xls"
+              onChange={handleFileUpload}
+              className="hidden"
+            />
+            <Upload className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+            <p className="text-gray-700 font-medium mb-2">
+              Arraste o ficheiro aqui ou
+            </p>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 text-sm"
+            >
+              Selecionar Ficheiro
+            </button>
+            <p className="text-xs text-gray-500 mt-3">
+              Formatos aceitos: XLSX, XLS
+            </p>
+          </div>
+
+          {isProcessing && (
+            <div className="flex items-center justify-center gap-2 py-4">
+              <div className="w-5 h-5 border-2 border-primary-500 border-t-transparent rounded-full animate-spin"></div>
+              <span className="text-gray-600">A processar...</span>
+            </div>
+          )}
+        </div>
+      ) : (
+        /* Step 2: Review and Edit */
+        <div className="flex-1 overflow-hidden flex flex-col">
+          <p className="text-sm text-gray-600 mb-3">
+            Revise os dados antes de importar. Apenas o <strong>nome</strong> é obrigatório. 
+            Pode editar os campos diretamente na tabela abaixo.
+          </p>
+
+          {/* Mobile-friendly scrollable table container */}
+          <div className="flex-1 overflow-x-auto border border-gray-200 rounded-xl">
+            <div className="min-w-[800px] lg:min-w-full">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-3 py-2 text-left font-medium text-gray-600 whitespace-nowrap">Nome *</th>
+                    <th className="px-3 py-2 text-left font-medium text-gray-600 whitespace-nowrap">Email</th>
+                    <th className="px-3 py-2 text-left font-medium text-gray-600 whitespace-nowrap">Telefone</th>
+                    <th className="px-3 py-2 text-center font-medium text-gray-600 whitespace-nowrap">Adultos</th>
+                    <th className="px-3 py-2 text-center font-medium text-gray-600 whitespace-nowrap">Crianças</th>
+                    <th className="px-3 py-2 text-left font-medium text-gray-600 whitespace-nowrap">Grupo</th>
+                    <th className="px-2 py-2 whitespace-nowrap"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {importedGuests.map((guest) => (
+                    <tr key={guest.id} className="hover:bg-gray-50">
+                      <td className="px-3 py-2">
+                        <input
+                          type="text"
+                          value={guest.name || ''}
+                          onChange={(e) => handleUpdateImportedGuest(guest.id, 'name', e.target.value)}
+                          className="w-full min-w-[140px] px-2 py-1.5 border border-gray-300 rounded text-black text-sm"
+                          placeholder="Nome obrigatório"
+                        />
+                      </td>
+                      <td className="px-3 py-2">
+                        <input
+                          type="email"
+                          value={guest.email || ''}
+                          onChange={(e) => handleUpdateImportedGuest(guest.id, 'email', e.target.value)}
+                          className={`w-full min-w-[160px] px-2 py-1.5 border rounded text-black text-sm ${guest.email && !isValidEmail(guest.email) ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
+                          placeholder={guest.email && !isValidEmail(guest.email) ? 'Email inválido' : 'Email'}
+                        />
+                      </td>
+                      <td className="px-3 py-2">
+                        <input
+                          type="tel"
+                          value={guest.phone || ''}
+                          onChange={(e) => handleUpdateImportedGuest(guest.id, 'phone', e.target.value)}
+                          className="w-full min-w-[120px] px-2 py-1.5 border border-gray-300 rounded text-black text-sm"
+                          placeholder="Telefone"
+                        />
+                      </td>
+                      <td className="px-3 py-2">
+                        <input
+                          type="number"
+                          min="1"
+                          value={guest.adults || 1}
+                          onChange={(e) => handleUpdateImportedGuest(guest.id, 'adults', e.target.value === '' ? '' : parseInt(e.target.value) || 1)}
+                          className="w-20 px-2 py-1.5 border border-gray-300 rounded text-black text-sm text-center"
+                          placeholder="1"
+                        />
+                      </td>
+                      <td className="px-3 py-2">
+                        <input
+                          type="number"
+                          min="0"
+                          value={guest.children || 0}
+                          onChange={(e) => handleUpdateImportedGuest(guest.id, 'children', e.target.value === '' ? '' : parseInt(e.target.value) || 0)}
+                          className="w-20 px-2 py-1.5 border border-gray-300 rounded text-black text-sm text-center"
+                          placeholder="0"
+                        />
+                      </td>
+                      <td className="px-3 py-2">
+                        <select
+                          value={guest.groupName || ''}
+                          onChange={(e) => handleUpdateImportedGuest(guest.id, 'groupName', e.target.value)}
+                          className="w-full min-w-[140px] px-2 py-1.5 border border-gray-300 rounded text-black text-sm bg-white"
+                        >
+                          <option value="">Sem grupo</option>
+                          {groups.map((g) => (
+                            <option key={g._id} value={g.name}>{g.name}</option>
+                          ))}
+                        </select>
+                      </td>
+                      <td className="px-2 py-2">
+                        <button
+                          onClick={() => handleRemoveImportedGuest(guest.id)}
+                          className="p-1.5 text-red-500 hover:bg-red-50 rounded"
+                          title="Remover"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between mt-4 pt-4 border-t border-gray-200">
+            <p className="text-sm text-gray-600">
+              Total: <strong>{importedGuests.length}</strong> convidado(s)
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setImportStep(1)}
+                className="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 text-sm"
+              >
+                Voltar
+              </button>
+              <button
+                onClick={handleConfirmImport}
+                disabled={isProcessing || importedGuests.length === 0}
+                className="px-4 py-2 bg-primary-500 text-white rounded-lg hover:bg-primary-600 text-sm disabled:opacity-50"
+              >
+                {isProcessing ? 'A importar...' : `Importar ${importedGuests.length} convidado(s)`}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  </div>
+)}
         {/* Import Result Modal */}
         {showImportResultModal && importResult && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-end sm:items-center justify-center z-50">
