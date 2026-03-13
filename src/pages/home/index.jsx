@@ -69,11 +69,6 @@ export default function WeddingLanding() {
   // Inspiration gallery lightbox state
   const [showInspirationModal, setShowInspirationModal] = useState(false);
   const [currentInspirationSlide, setCurrentInspirationSlide] = useState(0);
-  
-  // Touch state for swipe functionality
-  const [touchStart, setTouchStart] = useState(null);
-  const [touchEnd, setTouchEnd] = useState(null);
-  const minSwipeDistance = 50;
 
   
         useEffect(()=>{
@@ -1195,135 +1190,138 @@ export default function WeddingLanding() {
       />
     )}
 
+    
     {/* Inspiration Gallery Lightbox Modal */}
-    {showInspirationModal && (
-      <>
-        <div 
-          className="fixed inset-0 bg-black/90 z-50"
-          onClick={() => {
-            setShowInspirationModal(false);
-            data.setPostDialogOpen(false);
-          }}
-        />
-        <div 
-          className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          onTouchStart={onTouchStart}
-          onTouchMove={onTouchMove}
-          onTouchEnd={onTouchEnd}
-        >
-          {/* Close button */}
-          <button 
-            onClick={() => {
-              setShowInspirationModal(false);
-              data.setPostDialogOpen(false);
-            }}
-            className="absolute top-4 right-4 w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition-colors z-10"
-          >
-            <X className="w-6 h-6 text-white" />
-          </button>
+{showInspirationModal && (
+  <>
+    <div 
+      className="fixed inset-0 bg-black/90 z-50"
+      onClick={() => {
+        setShowInspirationModal(false);
+        data.setPostDialogOpen(false);
+      }}
+    />
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      {/* Close button */}
+      <button 
+        onClick={() => {
+          setShowInspirationModal(false);
+          data.setPostDialogOpen(false);
+        }}
+        className="absolute top-4 right-4 w-10 h-10 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition-colors z-10"
+      >
+        <X className="w-6 h-6 text-white" />
+      </button>
 
-          {/* Previous button */}
-          <button 
-            onClick={prevInspirationSlide}
-            className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 md:w-12 md:h-12 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition-colors z-10"
-          >
-            <ChevronLeft className="w-5 h-5 md:w-6 md:h-6 text-white" />
-          </button>
+      {/* Previous button */}
+      <button 
+        onClick={prevInspirationSlide}
+        className="absolute left-4 top-1/2 -translate-y-1/2 w-10 h-10 md:w-12 md:h-12 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition-colors z-10"
+      >
+        <ChevronLeft className="w-5 h-5 md:w-6 md:h-6 text-white" />
+      </button>
 
-          {/* Content Container */}
-          {(() => {
-            const items = getInspirationItems();
-            const currentItem = items[currentInspirationSlide];
-            if (!currentItem) return null;
-            
-            if (currentItem.type === 'photo') {
-              return (
-                <div 
-                  className="max-w-[95vw] max-h-[90vh] flex items-center justify-center"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <img 
-                    src={currentItem.image}
-                    alt={`Inspiration ${currentInspirationSlide + 1}`}
-                    className="max-w-full max-h-[90vh] object-contain rounded-lg"
-                  />
-                </div>
-              );
-            } else {
-              const imageUrl = currentItem.card.image?.startsWith('http') 
-                ? currentItem.card.image 
-                : `${API_URL}${currentItem.card.image}`;
-              
-              return (
-                <div 
-                  className="w-full max-w-4xl max-h-[90vh] bg-white rounded-xl overflow-hidden flex flex-col md:flex-row"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <div className="w-full md:w-3/5 h-64 md:h-auto bg-gray-100 flex items-center justify-center">
-                    {currentItem.card.image ? (
-                      <img 
-                        src={imageUrl}
-                        alt={currentItem.card.title}
-                        className="w-full h-full object-cover md:object-contain"
-                      />
-                    ) : (
-                      <div className="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center">
-                        <Camera className="w-10 h-10 text-gray-400" />
-                      </div>
-                    )}
-                  </div>
-                  <div className="w-full md:w-2/5 p-6 overflow-y-auto">
-                    <h3 className="text-xl md:text-2xl font-semibold text-gray-800 mb-3">
-                      {currentItem.card.title}
-                    </h3>
-                    {currentItem.card.content && (
-                      <p className="text-gray-600 text-sm md:text-base leading-relaxed">
-                        {currentItem.card.content}
-                      </p>
-                    )}
-                    {currentItem.card.category && (
-                      <div className="mt-4 pt-4 border-t border-gray-100">
-                        <span className="text-xs text-gray-500">
-                          Categoria: {currentItem.card.category}
-                        </span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              );
-            }
-          })()}
-
-          {/* Next button */}
-          <button 
-            onClick={nextInspirationSlide}
-            className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 md:w-12 md:h-12 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition-colors z-10"
-          >
-            <ChevronRight className="w-5 h-5 md:w-6 md:h-6 text-white" />
-          </button>
-
-          {/* Slide indicators */}
-          <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 md:gap-2">
-            {getInspirationItems().map((_, idx) => (
-              <button
-                key={idx}
-                onClick={() => setCurrentInspirationSlide(idx)}
-                className={`transition-all duration-300 ${
-                  idx === currentInspirationSlide 
-                    ? 'w-6 md:w-8 h-1.5 md:h-2 bg-white rounded-full' 
-                    : 'w-1.5 md:w-2 h-1.5 md:h-2 bg-white/50 rounded-full hover:bg-white/80'
-                }`}
+      {/* Content Container */}
+      {(() => {
+        const items = getInspirationItems();
+        const currentItem = items[currentInspirationSlide];
+        if (!currentItem) return null;
+        
+        if (currentItem.type === 'photo') {
+          return (
+            <div 
+              className="max-w-[95vw] max-h-[90vh] flex items-center justify-center"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <img 
+                src={currentItem.image}
+                alt={`Inspiration ${currentInspirationSlide + 1}`}
+                className="max-w-full max-h-[90vh] object-contain rounded-lg"
               />
-            ))}
-          </div>
+            </div>
+          );
+        } else {
+          // Card type - show image with text overlay for better balance
+          const imageUrl = currentItem.card.image?.startsWith('http') 
+            ? currentItem.card.image 
+            : `${API_URL}${currentItem.card.image}`;
+          
+          return (
+            <div 
+              className="w-full max-w-4xl max-h-[90vh] bg-white rounded-xl overflow-hidden flex flex-col md:flex-row"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Image Section - centered and responsive */}
+              <div className="w-full md:w-3/5 h-64 md:h-auto bg-gray-100 flex items-center justify-center">
+                {currentItem.card.image ? (
+                  <img 
+                    src={imageUrl}
+                    alt={currentItem.card.title}
+                    className="w-full h-full object-cover md:object-contain"
+                  />
+                ) : (
+                  <div className="w-20 h-20 bg-gray-200 rounded-full flex items-center justify-center">
+                    <Camera className="w-10 h-10 text-gray-400" />
+                  </div>
+                )}
+              </div>
+              
+              {/* Content Section - scrollable if text is long */}
+              <div className="w-full md:w-2/5 p-6 overflow-y-auto">
+                <h3 className="text-xl md:text-2xl font-semibold text-gray-800 mb-3">
+                  {currentItem.card.title}
+                </h3>
+                {currentItem.card.content && (
+                  <p className="text-gray-600 text-sm md:text-base leading-relaxed">
+                    {currentItem.card.content}
+                  </p>
+                )}
+                
+                {/* Optional metadata */}
+                {currentItem.card.category && (
+                  <div className="mt-4 pt-4 border-t border-gray-100">
+                    <span className="text-xs text-gray-500">
+                      Categoria: {currentItem.card.category}
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
+          );
+        }
+      })()}
 
-          {/* Image counter */}
-          <div className="absolute top-4 left-4 px-2 md:px-3 py-1 bg-white/10 backdrop-blur-sm text-white text-xs md:text-sm rounded-full">
-            {currentInspirationSlide + 1} / {getInspirationItems().length}
-          </div>
-        </div>
-      </>
-    )}
+      {/* Next button */}
+      <button 
+        onClick={nextInspirationSlide}
+        className="absolute right-4 top-1/2 -translate-y-1/2 w-10 h-10 md:w-12 md:h-12 bg-white/10 hover:bg-white/20 rounded-full flex items-center justify-center transition-colors z-10"
+      >
+        <ChevronRight className="w-5 h-5 md:w-6 md:h-6 text-white" />
+      </button>
+
+      {/* Slide indicators - responsive */}
+      <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-1.5 md:gap-2">
+        {getInspirationItems().map((_, idx) => (
+          <button
+            key={idx}
+            onClick={() => setCurrentInspirationSlide(idx)}
+            className={`transition-all duration-300 ${
+              idx === currentInspirationSlide 
+                ? 'w-6 md:w-8 h-1.5 md:h-2 bg-white rounded-full' 
+                : 'w-1.5 md:w-2 h-1.5 md:h-2 bg-white/50 rounded-full hover:bg-white/80'
+            }`}
+          />
+        ))}
+      </div>
+
+      {/* Image counter - responsive */}
+      <div className="absolute top-4 left-4 px-2 md:px-3 py-1 bg-white/10 backdrop-blur-sm text-white text-xs md:text-sm rounded-full">
+        {currentInspirationSlide + 1} / {getInspirationItems().length}
+      </div>
+    </div>
+  </>
+)}
   </div>
   );
 }
+
