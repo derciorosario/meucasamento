@@ -108,6 +108,36 @@ const VendorsPage = () => {
   const [vendorTutorial, setVendorTutorial] = useState(null);
   const [playingTutorial, setPlayingTutorial] = useState(null);
 
+  // Touch state for swipe functionality on vendor cards
+  const [cardTouchStart, setCardTouchStart] = useState(null);
+  const [cardTouchEnd, setCardTouchEnd] = useState(null);
+  const [activeSwipeVendor, setActiveSwipeVendor] = useState(null);
+  const minSwipeDistance = 50;
+
+  const handleCardTouchStart = (e, vendorId) => {
+    setCardTouchEnd(null);
+    setCardTouchStart(e.targetTouches[0].clientX);
+    setActiveSwipeVendor(vendorId);
+  };
+
+  const handleCardTouchMove = (e) => {
+    setCardTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const handleCardTouchEnd = () => {
+    if (!cardTouchStart || !cardTouchEnd || !activeSwipeVendor) return;
+    const distance = cardTouchStart - cardTouchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+    const allImages = getAllVendorImages(vendors.find(v => v._id === activeSwipeVendor));
+    if (isLeftSwipe && allImages.length > 1) {
+      nextVendorSlide(activeSwipeVendor, allImages.length);
+    } else if (isRightSwipe && allImages.length > 1) {
+      prevVendorSlide(activeSwipeVendor, allImages.length);
+    }
+    setActiveSwipeVendor(null);
+  };
+
   // Helper function to extract YouTube video ID
   const extractYouTubeId = (url) => {
     if (!url) return null;
@@ -876,7 +906,12 @@ const VendorsPage = () => {
                   className="group bg-white rounded-2xl shadow-sm hover:shadow-xl border border-gray-100 overflow-hidden transition-all duration-300 cursor-pointer"
                 >
                   {/* Image Slideshow */}
-                  <div className="relative h-48 overflow-hidden">
+                  <div 
+                    className="relative h-48 overflow-hidden"
+                    onTouchStart={(e) => handleCardTouchStart(e, vendor._id)}
+                    onTouchMove={handleCardTouchMove}
+                    onTouchEnd={handleCardTouchEnd}
+                  >
                     {(() => {
                       const allImages = getAllVendorImages(vendor);
                       return allImages.length > 0 ? (

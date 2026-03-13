@@ -117,6 +117,55 @@ const VendorProfilePage = () => {
   const [isSubmittingQuote, setIsSubmittingQuote] = useState(false);
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
 
+  // Touch state for swipe functionality
+  const [touchStart, setTouchStart] = useState(null);
+  const [touchEnd, setTouchEnd] = useState(null);
+  const minSwipeDistance = 50;
+
+  // Touch handlers for swipe
+  const onTouchStart = (e) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+    if (isLeftSwipe) {
+      nextLightboxSlide();
+    } else if (isRightSwipe) {
+      prevLightboxSlide();
+    }
+  };
+
+  // Touch handlers for cover slideshow swipe
+  const onSlideshowTouchStart = (e) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onSlideshowTouchMove = (e) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onSlideshowTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+    if (isLeftSwipe) {
+      nextSlide();
+    } else if (isRightSwipe) {
+      prevSlide();
+    }
+  };
+
   useEffect(() => {
     const fetchVendor = async () => {
       try {
@@ -304,7 +353,12 @@ const VendorProfilePage = () => {
 
           <div className="bg-white rounded-3xl shadow-lg overflow-hidden">
             {/* Cover Image Slideshow */}
-            <div className="relative h-72 sm:h-80 lg:h-96 mb-6">
+            <div 
+              className="relative h-72 sm:h-80 lg:h-96 mb-6"
+              onTouchStart={onSlideshowTouchStart}
+              onTouchMove={onSlideshowTouchMove}
+              onTouchEnd={onSlideshowTouchEnd}
+            >
               {allImages.length > 0 ? (
                 <>
                   <motion.img 
@@ -636,6 +690,9 @@ const VendorProfilePage = () => {
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[60] bg-black flex items-center justify-center"
             onClick={closeLightbox}
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
           >
             {/* Close button */}
             <button

@@ -69,6 +69,32 @@ export default function WeddingLanding() {
   // Inspiration gallery lightbox state
   const [showInspirationModal, setShowInspirationModal] = useState(false);
   const [currentInspirationSlide, setCurrentInspirationSlide] = useState(0);
+  
+  // Touch state for swipe gesture
+  const [inspirationTouchStart, setInspirationTouchStart] = useState(null);
+  const [inspirationTouchEnd, setInspirationTouchEnd] = useState(null);
+  const minSwipeDistance = 50;
+  
+  const onInspirationTouchStart = (e) => {
+    setInspirationTouchEnd(null);
+    setInspirationTouchStart(e.targetTouches[0].clientX);
+  };
+  
+  const onInspirationTouchMove = (e) => {
+    setInspirationTouchEnd(e.targetTouches[0].clientX);
+  };
+  
+  const onInspirationTouchEnd = () => {
+    if (!inspirationTouchStart || !inspirationTouchEnd) return;
+    const distance = inspirationTouchStart - inspirationTouchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+    if (isLeftSwipe) {
+      nextInspirationSlide();
+    } else if (isRightSwipe) {
+      prevInspirationSlide();
+    }
+  };
 
   
         useEffect(()=>{
@@ -1201,7 +1227,12 @@ export default function WeddingLanding() {
         data.setPostDialogOpen(false);
       }}
     />
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+    <div 
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      onTouchStart={onInspirationTouchStart}
+      onTouchMove={onInspirationTouchMove}
+      onTouchEnd={onInspirationTouchEnd}
+    >
       {/* Close button */}
       <button 
         onClick={() => {
